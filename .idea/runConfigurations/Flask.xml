@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Flask" type="Python.FlaskServer" nameIsGenerated="true">
+    <option name="additionalOptions" value="--host=0.0.0.0" />
+    <option name="application" value="app.py" />
+    <module name="howler_api" />
+    <option name="targetType" value="PYTHON" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="FLASK_APP" value="howler/app" />
+    </envs>
+    <option name="SDK_HOME" value="$PROJECT_DIR$/venv/bin/python" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="launchJavascriptDebuger" value="false" />
+    <method v="2" />
+  </configuration>
+</component>

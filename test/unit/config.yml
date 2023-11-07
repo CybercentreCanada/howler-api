@@ -1,0 +1,24 @@
+auth:
+  internal:
+    enabled: true
+  oauth:
+    enabled: true
+
+
+datastore:
+  ilm:
+    enabled: false
+    indexes: {}
+
+logging:
+  log_level: INFO
+  log_as_json: false
+
+system:
+  type: development
+
+ui:
+  audit: false
+  debug: true
+  enforce_quota: false
+  validate_session_useragent: false

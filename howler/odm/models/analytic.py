@@ -1,0 +1,62 @@
+# mypy: ignore-errors
+from typing import Optional
+
+from howler import odm
+
+
+@odm.model(index=True, store=True, description="Comment definition.")
+class Comment(odm.Model):
+    id = odm.UUID(description="A unique ID for the comment")
+    timestamp = odm.Date(
+        description="Timestamp at which the comment took place.", default="NOW"
+    )
+    modified = odm.Date(
+        description="Timestamp at which the comment was last edited.", default="NOW"
+    )
+    detection: Optional[str] = odm.Keyword(
+        description="The detection the comment applies to, if it applies to a particular detection",
+        optional=True,
+    )
+    value = odm.Text(description="The comment itself.")
+    user = odm.Keyword(description="User ID who created the comment.")
+    reactions: dict[str, str] = odm.Mapping(
+        odm.Keyword(),
+        default={},
+        description="A list of reactions to the comment",
+    )
+
+
+@odm.model(index=True, store=True, description="Notebook definition.")
+class Notebook(odm.Model):
+    id = odm.UUID(description="A unique ID for the notebook")
+    detection: Optional[str] = odm.Keyword(
+        description="The detection the notebook applies to, if it applies to a particular detection",
+        optional=True,
+    )
+    value = odm.Text(description="The link to the notebook")
+    name = odm.Text(description="Name for the analytic")
+    user = odm.Keyword(description="User ID who added the notebook.")
+
+
+@odm.model(index=True, store=True, description="Model of analytics")
+class Analytic(odm.Model):
+    analytic_id: str = odm.UUID(description="A UUID for this analytic")
+    notebooks: list[Notebook] = odm.List(
+        odm.Compound(Notebook),
+        default=[],
+        description="A list of useful notebooks for the analytic",
+    )
+    name: str = odm.Keyword(description="The name of the analytic.")
+    description: Optional[str] = odm.Text(
+        description="A markdown description of the analytic", optional=True
+    )
+    detections: list[str] = odm.List(
+        odm.Keyword(),
+        description="The detections which this analytic contains.",
+        default=[],
+    )
+    comment: list[Comment] = odm.List(
+        odm.Compound(Comment),
+        default=[],
+        description="A list of comments with timestamps and attribution.",
+    )

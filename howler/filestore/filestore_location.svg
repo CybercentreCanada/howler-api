@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="436px" height="200px" viewBox="0 0 436 200" xmlns:xlink="http://www.w3.org/1999/xlink" style="overflow: hidden; display: block; width: 436px; height: 200px;"><rect width="436px" height="200px" fill="white"/><clipPath id="ygc135_1"><rect width="386" y="25" x="25" height="150"/></clipPath><g clip-path="url(#ygc135_1)"><g style="pointer-events:visiblePainted" transform="translate(317.5 99.5)" image-rendering="auto" shape-rendering="auto"><g><path fill="none" stroke="rgb(102,56,0)" d="M -190.47619047619048,0.5 L -136.27380952380952,0.5" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/><use xlink:href="#ygc135_0" transform="matrix(-0.75 0 0 -0.75 -133.05413960969943 0.5)" style="pointer-events: none;"/></g><g><path fill="none" stroke="rgb(102,56,0)" d="M -51.47619047619047,0.5 L 2.726190476190477,0.5" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/><use xlink:href="#ygc135_0" transform="matrix(-0.75 0 0 -0.75 5.945860390300567 0.5)" style="pointer-events: none;"/></g><rect fill="rgb(255,255,255)" stroke="rgb(0,0,0)" fill-opacity="0" stroke-opacity="1" stroke-width="1" stroke-dasharray="2,2,0.01,2" stroke-dashoffset="1" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="10" width="376" ry="3" rx="3" y="-69.5" x="-287.5" height="140"/><g transform="translate(-106.5 -69.5)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-decoration="none" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)">All</text></g><g><svg xmlns="http://www.w3.org/2000/svg" id="database" viewBox="0 0 70 70" width="82" height="80" x="-271.5" y="-39.5" preserveAspectRatio="none">
+  <style>
+    .st0{fill:#61ace0}.st1{fill:#96cdea}.st2{fill:#3c89c9}
+  </style>
+  <g id="disk_3_ygc0_">
+    <path fill="#61ace0" d="M35 46.2c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2V42c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 46.2c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M35 35.9c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.7 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_2_ygc0_">
+    <path fill="#61ace0" d="M35 32.7c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 32.7c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M34.9 22.4c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.6 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_1_ygc0_">
+    <path fill="#61ace0" d="M35 19.5c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 19.5c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <ellipse fill="#61ace0" cx="35" cy="13.3" rx="18.4" ry="3.9"/>
+  </g>
+</svg></g><g transform="translate(-244 45.5)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-decoration="none" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)">Near</text></g><g><svg xmlns="http://www.w3.org/2000/svg" id="database" viewBox="0 0 70 70" width="82" height="80" x="-132.5" y="-39.5" preserveAspectRatio="none">
+  <style>
+    .st0{fill:#61ace0}.st1{fill:#96cdea}.st2{fill:#3c89c9}
+  </style>
+  <g id="disk_3_ygc1_">
+    <path fill="#61ace0" d="M35 46.2c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2V42c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 46.2c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M35 35.9c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.7 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_2_ygc1_">
+    <path fill="#61ace0" d="M35 32.7c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 32.7c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M34.9 22.4c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.6 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_1_ygc1_">
+    <path fill="#61ace0" d="M35 19.5c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 19.5c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <ellipse fill="#61ace0" cx="35" cy="13.3" rx="18.4" ry="3.9"/>
+  </g>
+</svg></g><g transform="translate(-97 45.5)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-decoration="none" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)">...</text></g><g><svg xmlns="http://www.w3.org/2000/svg" id="database" viewBox="0 0 70 70" width="82" height="80" x="6.5" y="-39.5" preserveAspectRatio="none">
+  <style>
+    .st0{fill:#61ace0}.st1{fill:#96cdea}.st2{fill:#3c89c9}
+  </style>
+  <g id="disk_3_ygc2_">
+    <path fill="#61ace0" d="M35 46.2c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2V42c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 46.2c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M35 35.9c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.7 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_2_ygc2_">
+    <path fill="#61ace0" d="M35 32.7c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 32.7c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <path fill="#3c89c9" d="M34.9 22.4c10.2 0 19.6 2.8 19.6 2.8-.4 2.7-5.4 5.4-19.6 5.4-12.1 0-18.5-2.5-19.5-4.9-.3-.6 9.3-3.3 19.5-3.3z"/>
+  </g>
+  <g id="disk_1_ygc2_">
+    <path fill="#61ace0" d="M35 19.5c-10.8 0-19.6-1.9-19.6-4.2v10c0 2.3 8.8 4.2 19.6 4.2s19.6-1.9 19.6-4.2v-10c0 2.3-8.8 4.2-19.6 4.2z"/>
+    <path fill="#96cdea" d="M35 19.5c10.8 0 19.6-1.9 19.6-4.2l-1.2-2c0 2.2-8.2 3.9-18.4 3.9-9.5 0-17.4-2-18.4-3.9l-1.2 2c0 2.3 8.8 4.2 19.6 4.2z"/>
+    <ellipse fill="#61ace0" cx="35" cy="13.3" rx="18.4" ry="3.9"/>
+  </g>
+</svg></g><g transform="translate(38 45.5)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-decoration="none" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)">Far</text></g></g></g><defs><path fill="rgb(102,56,0)" stroke="rgb(102,56,0)" d="M 5,-5 L 0,0 L 5,5 Z" fill-opacity="1" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" id="ygc135_0"/></defs></svg>

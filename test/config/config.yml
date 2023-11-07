@@ -1,0 +1,27 @@
+core:
+  metrics:
+    apm_server:
+      server_url: null
+  redis:
+    nonpersistent:
+      host: redis
+    persistent:
+      host: redis
+      port: 6379
+
+datastore:
+  hosts: [http://elastic:devpass@elasticsearch:9200]
+
+filestore:
+  storage:
+    [
+      "s3://hwl_storage_key:Ch@ngeTh!sPa33w0rd@minio:9000?s3_bucket=hwl-storage&use_ssl=False",
+    ]
+
+logging:
+  log_to_console: true
+  log_to_file: false
+  log_to_syslog: false
+
+ui:
+  enforce_quota: false
