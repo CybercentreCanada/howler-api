@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="API Server + Dependencies" type="CompoundRunConfigurationType">
+    <toRun name="Docker-Compose" type="docker-deploy" />
+    <toRun name="Flask" type="Python.FlaskServer" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,128 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+
+variables:
+  tag: "$(Build.BuildId)"
+  containerRegistry: "uchimera"
+  branch: "$(Build.SourceBranchName)"
+  repoName: "howler-api"
+  isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+  isPrBranch: $[eq(variables['Build.SourceBranchName'], 'merge')]
+  pythonVersion: "3.9"
+  dockerfilePath: "$(Build.SourcesDirectory)/docker/Dockerfile"
+
+pool: "stratus-build-pool.u"
+
+resources:
+  containers:
+    - container: redis
+      image: uchimera.azurecr.io/bitnami/redis:7.0.5-debian-11-r7
+      ports:
+        - 6379:6379
+      env:
+        ALLOW_EMPTY_PASSWORD: yes
+    - container: elasticsearch
+      image: uchimera.azurecr.io/elasticsearch/elasticsearch:8.5.2
+      env:
+        ES_JAVA_OPTS: "-Xms256m -Xmx512m"
+        discovery.type: "single-node"
+        ELASTIC_PASSWORD: "devpass"
+        xpack.security.enabled: "false"
+      ports:
+        - 9200:9200
+    - container: minio
+      image: uchimera.azurecr.io/bitnami/minio:2022.10.8-debian-11-r0
+      env:
+        MINIO_ROOT_USER: hwl_storage_key
+        MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
+      ports:
+        - 9000:9000
+
+stages:
+  - stage: test
+    jobs:
+      - job: run_test
+        strategy:
+          matrix:
+            python3_9:
+              python.version: "3.9"
+        timeoutInMinutes: "20"
+        services:
+          elasticsearch: elasticsearch
+          redis: redis
+          minio: minio
+
+        steps:
+          - checkout: self
+            fetchDepth: 100
+          - script: |
+              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 develop
+            displayName: Fetch develop for diff coverage
+          - task: UsePythonVersion@0
+            displayName: Set python version
+            inputs:
+              versionSpec: "3.9"
+          - script: |
+              sudo mkdir -p /var/cache/howler/
+              sudo mkdir -p /var/lib/howler/
+              sudo chmod a+rw /var/cache/howler/
+              sudo chmod a+rw /var/lib/howler/
+              sudo cp test/unit/config.yml /etc/howler/conf/config.yml
+              sudo apt-get update
+              sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libsasl2-dev wget
+            displayName: Setup Environment
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              python -m venv venv
+              . ./venv/bin/activate
+              python -m pip install --upgrade pip
+              python -m pip install -e .
+              python -m pip install -r test/requirements.txt
+            displayName: Install howler-api
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              . ./venv/bin/activate
+              ./build_scripts/type_check.sh
+            displayName: Run type checking
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              . ./venv/bin/activate
+              python build_scripts/run_tests.py
+            workingDirectory: $(Pipeline.Workspace)/s
+            displayName: Test
+          - script: |
+              . ./venv/bin/activate
+              GIT_BRANCH=$(branch) python build_scripts/coverage_reports.py
+            workingDirectory: $(Pipeline.Workspace)/s
+            displayName: Coverage Results
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: "$(Pipeline.Workspace)/s/**/test-*.xml"
+              testRunTitle: "Publish test results for Python $(python.version)"
+          - task: PublishCodeCoverageResults@1
+            condition: succeededOrFailed()
+            inputs:
+              codeCoverageTool: Cobertura
+              summaryFileLocation: "$(Pipeline.Workspace)/s/**/coverage.xml"
+              reportDirectory: "$(Pipeline.Workspace)/s/**/htmlcov"
+          - task: GithubComment@0
+            condition: and(eq(variables.isPrBranch, true), succeeded())
+            inputs:
+              githubConnection: Howler Github PAT
+              repositoryName: "$(Build.Repository.Name)"
+              comment: $(coverage_result)
