@@ -96,3 +96,13 @@ python howler/app.py
 Launching the API Server manually unfortunately does not give you access to a debugger. If you want to be able to debug you code, you can use the predefined launch target inside of VSCode:
 
 ![Task explorer](run_debug.png)
+
+## Running Tests
+
+In order to run the tests, start up the dependencies and launch the API, then use pytest:
+
+```bash
+# Install test dependencies
+pip install -r test/requirements.txt
+pytest -s -v
+```
