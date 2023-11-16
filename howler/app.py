@@ -19,7 +19,6 @@ from howler.api.v1.help import help_api
 from howler.api.v1.hit import hit_api
 from howler.api.v1.notebook import notebook_api
 from howler.api.v1.search import search_api
-from howler.api.v1.spellbook import spellbook_api
 from howler.api.v1.template import template_api
 from howler.api.v1.tool import tool_api
 from howler.api.v1.user import user_api
@@ -88,9 +87,7 @@ if HWL_USE_REST_API or DEBUG:
     app.register_blueprint(user_api)
     app.register_blueprint(view_api)
 
-    if config.core.spellbook.enabled:
-        logger.debug("Enabled Spellbook Integration")
-        app.register_blueprint(spellbook_api)
+
 
     if config.core.notebook.enabled:
         logger.debug("Enabled notebook Integration")
