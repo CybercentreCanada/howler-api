@@ -17,7 +17,6 @@ from howler.api.v1.auth import auth_api
 from howler.api.v1.configs import config_api
 from howler.api.v1.help import help_api
 from howler.api.v1.hit import hit_api
-from howler.api.v1.notebook import notebook_api
 from howler.api.v1.search import search_api
 from howler.api.v1.template import template_api
 from howler.api.v1.tool import tool_api
@@ -87,11 +86,6 @@ if HWL_USE_REST_API or DEBUG:
     app.register_blueprint(user_api)
     app.register_blueprint(view_api)
 
-
-
-    if config.core.notebook.enabled:
-        logger.debug("Enabled notebook Integration")
-        app.register_blueprint(notebook_api)
 else:
     logger.info("Disabled REST API")
 
