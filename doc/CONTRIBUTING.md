@@ -104,5 +104,9 @@ In order to run the tests, start up the dependencies and launch the API, then us
 ```bash
 # Install test dependencies
 pip install -r test/requirements.txt
+
+# Generate mitre lookups
+python howler/external/generate_mitre.py /etc/howler/lookups
+
 pytest -s -v
 ```

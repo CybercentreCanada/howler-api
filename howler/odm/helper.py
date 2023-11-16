@@ -39,25 +39,7 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     hit.event.provider = choice(["HBS", "NBS", "CBS", "AssemblyLine"])
     hit.timestamp = hit.event.created
     hit.organization.name, hit.organization.id = random_department()
-    hit.threat.framework = choice(["MITRE ATT&CK", "Custom"])
-    tactic_id = choice(
-        choice(
-            [
-                list(lookups["tactics"].keys()),
-                [icon for icon in lookups["icons"] if icon.startswith("TA")],
-            ]
-        )
-    )
-    technique_id = choice(
-        choice(
-            [
-                list(lookups["techniques"].keys()),
-                [icon for icon in lookups["icons"] if not icon.startswith("TA")],
-            ]
-        )
-    )
-    hit.threat.tactic.id = tactic_id
-    hit.threat.tactic.name = lookups["tactics"][tactic_id]["name"]
+
     hit.threat.technique.id = technique_id
     hit.threat.technique.name = lookups["techniques"][technique_id]["name"]
     hit.howler.outline.threat = get_random_ip()
