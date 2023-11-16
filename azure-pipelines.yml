@@ -1,0 +1,204 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+
+variables:
+  tag: "$(Build.BuildId)"
+  containerRegistry: "uchimera"
+  branch: "$(Build.SourceBranchName)"
+  repoName: "howler-api"
+  isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+  isPrBranch: $[eq(variables['Build.SourceBranchName'], 'merge')]
+  pythonVersion: "3.9"
+  dockerfilePath: "$(Build.SourcesDirectory)/docker/Dockerfile"
+
+pool: "stratus-build-pool.u"
+
+resources:
+  containers:
+    - container: redis
+      image: uchimera.azurecr.io/bitnami/redis:7.0.5-debian-11-r7
+      ports:
+        - 6379:6379
+      env:
+        ALLOW_EMPTY_PASSWORD: yes
+    - container: elasticsearch
+      image: uchimera.azurecr.io/elasticsearch/elasticsearch:8.5.2
+      env:
+        ES_JAVA_OPTS: "-Xms256m -Xmx512m"
+        discovery.type: "single-node"
+        ELASTIC_PASSWORD: "devpass"
+        xpack.security.enabled: "false"
+      ports:
+        - 9200:9200
+    - container: minio
+      image: uchimera.azurecr.io/bitnami/minio:2022.10.8-debian-11-r0
+      env:
+        MINIO_ROOT_USER: hwl_storage_key
+        MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
+      ports:
+        - 9000:9000
+    - container: keycloak
+      image: uchimera.azurecr.io/cccs/hogwarts-mini/keycloak:1.0.0
+      ports:
+        - 9100:8080
+
+stages:
+  - stage: test
+    jobs:
+      - job: run_test
+        strategy:
+          matrix:
+            python3_9:
+              python.version: "3.9"
+        timeoutInMinutes: "20"
+        services:
+          elasticsearch: elasticsearch
+          redis: redis
+          minio: minio
+          keycloak: keycloak
+
+        steps:
+          - task: UsePythonVersion@0
+            displayName: Set python version
+            inputs:
+              versionSpec: "3.9"
+          - script: |
+              sleep 30
+            displayName: sleep time (allow ES to be ready)
+          - script: |
+              sudo mkdir -p /var/cache/howler/
+              sudo mkdir -p /var/lib/howler/
+              sudo chmod a+rw /var/cache/howler/
+              sudo chmod a+rw /var/lib/howler/
+              sudo apt-get update
+              sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libldap2-dev libsasl2-dev wget
+            displayName: Setup Environment
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              python -m venv venv
+              . ./venv/bin/activate
+              python -m pip install --upgrade pip
+              python -m pip install --no-cache-dir -e .
+
+              python -m pip install --no-cache-dir -r test/requirements.txt
+            displayName: Install howler-api
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              . ./venv/bin/activate
+              python -m howler.app &
+              pytest -rsx -vv test
+            workingDirectory: $(Pipeline.Workspace)/s
+            displayName: Test
+
+  - stage: Build_And_Push
+    jobs:
+      - job: BuildPythonArtifact
+        workspace:
+          clean: all
+        steps:
+          - task: UsePythonVersion@0
+            displayName: Set python version
+            inputs:
+              versionSpec: "3.9"
+          - script: |
+              virtualenv -p python$(pythonVersion) env
+              source env/bin/activate
+              pip install wheel
+              pip install -r requirements.txt -r test/requirements.txt
+              pip install pytest pytest-azurepipelines
+              echo '.$(tag)' >> version.txt
+              git config --global --add url."git@github.com:".insteadOf "https://github.com/"
+              python$(pythonVersion) -m pytest -s -v test/unit || exit $?
+              python setup.py bdist_wheel
+            displayName: "Install and Build."
+            name: InstallAndBuild
+          - task: CopyFiles@2
+            inputs:
+              targetFolder: $(Build.ArtifactStagingDirectory)
+            displayName: "Stage build artifact to publish"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathtoPublish: "$(Build.ArtifactStagingDirectory)/dist"
+              artifactName: "howler_api"
+              publishLocation: "Container"
+            displayName: Publish build artifacts
+      - job: BuildDockerDeployment
+        displayName: Build and Push Docker Images
+        condition: eq(variables.isPrBranch, false)
+        dependsOn: BuildPythonArtifact
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: "current"
+              downloadType: "specific"
+              downloadPath: $(Build.SourcesDirectory)/dist
+            displayName: "Download build artifact."
+          - script: |
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+              REPO_NAME=$(repoName)
+              FULL_BRANCH=$(Build.SourceBranch)
+              BRANCH=${FULL_BRANCH:11}
+              VERSION=$(chappie version $REPO_NAME $BRANCH -c -strip)
+              VERSION_FULL=$(chappie version $REPO_NAME $BRANCH -c)
+              echo branchName: ${BRANCH}
+              echo version: $VERSION
+              echo version_full: $VERSION_FULL
+              echo "##vso[task.setvariable variable=version]$VERSION"
+              echo "##vso[task.setvariable variable=version_full]$VERSION_FULL"
+            displayName: "Extract version"
+            name: ExtractVersion
+          - bash: |
+              COMMIT=$(Build.SourceVersion)
+              COMMIT_SHORT=${COMMIT:0:7}
+              SOURCE_DIR=$(Build.SourcesDirectory)
+              echo commit: $COMMIT
+              echo commitShort: $COMMIT_SHORT
+              echo "##vso[task.setvariable variable=commitShort]$COMMIT_SHORT"
+            displayName: "Extract commit short sha."
+          - bash: |
+              cp /etc/pip.conf $(Build.SourcesDirectory)
+              ls -l $(Build.SourcesDirectory)
+              ls -l $(Build.SourcesDirectory)/*
+              cp $(Build.SourcesDirectory)/dist/howler_api/* $(Build.SourcesDirectory)/dist
+            displayName: "Copy stratus-feed pip.conf"
+          - task: Docker@2
+            displayName: Build howler-api-public image to the uchimera registry.
+            inputs:
+              command: "build"
+              arguments: --build-arg branch=$(branch) --build-arg commit=$(commitShort) --build-arg version=$(version_full)$(tag)
+              repository: cccs/hogwarts/howler-api-public
+              dockerfile: $(dockerfilePath)
+              containerRegistry: uchimera
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(branch)
+                $(version)_$(branch)
+                $(version)_$(branch)_$(commitshort)
+          - task: Docker@2
+            displayName: Push howler-api-public image to the uchimera registry.
+            inputs:
+              command: "push"
+              repository: cccs/hogwarts/howler-api-public
+              dockerfile: $(dockerfilePath)
+              containerRegistry: uchimera
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(branch)
+                $(version)_$(branch)
+                $(version)_$(branch)_$(commitshort)
