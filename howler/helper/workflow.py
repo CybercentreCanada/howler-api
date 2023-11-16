@@ -21,11 +21,11 @@ def validate_transition(transition: Transition):
         transition
         # We want to check if a source is provided. If it is, it must have a value
         # If it isn't, we'll allow this transition from any status
-        and ("source" not in transition or transition["source"])
+        and ("source" in transition)
         and transition["transition"]
         # We want to check if a destination is provided. If it is, it must have a value
         # If it isn't, we won't change the status of the hit
-        and ("dest" not in transition or transition["dest"])
+        and ("dest" in transition)
         and isinstance(transition["actions"], list)
         and all(callable(a) for a in transition["actions"])
     )
@@ -117,7 +117,7 @@ class Workflow:
                 [
                     t["transition"]
                     for t in self.transitions.values()
-                    if current_status in t.get("source", current_status)
+                    if t["source"] and current_status in t["source"]
                 ]
             )
         )

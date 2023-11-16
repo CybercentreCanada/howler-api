@@ -4,6 +4,7 @@ import re
 from typing import Any, Optional
 
 from prometheus_client import Counter
+from howler.odm.models.ecs.event import Event
 from howler.services import action_service
 
 import howler.services.event_service as event_service
@@ -196,10 +197,20 @@ def get_hit_workflow() -> Workflow:
                 }
             ),
             Transition(
-                {"transition": HitStatusTransition.PROMOTE, "actions": [promote_hit]}
+                {
+                    "source": None,
+                    "transition": HitStatusTransition.PROMOTE,
+                    "dest": None,
+                    "actions": [promote_hit],
+                }
             ),
             Transition(
-                {"transition": HitStatusTransition.DEMOTE, "actions": [demote_hit]}
+                {
+                    "source": None,
+                    "transition": HitStatusTransition.DEMOTE,
+                    "actions": [demote_hit],
+                    "dest": None,
+                }
             ),
         ],
     )
@@ -332,7 +343,7 @@ def convert_hit(
         if not odm.event.created:
             odm.event.created = "NOW"
     else:
-        odm.event = {"created": "NOW", "id": odm.howler.id}
+        odm.event = Event({"created": "NOW", "id": odm.howler.id})
 
     if unique and does_hit_exist(odm.howler.id):
         raise ResourceExists("Resource with id %s already exists" % odm.howler.id)
@@ -551,7 +562,9 @@ def transition_hit(
         )
 
         for _hit in [hit] + child_hits:
-            data, _version = datastore().hit.get(_hit["howler"]["id"], as_obj=False, version=True)
+            data, _version = datastore().hit.get(
+                _hit["howler"]["id"], as_obj=False, version=True
+            )
             event_service.emit("hits", {"hit": data, "version": _version})
 
 

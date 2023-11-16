@@ -72,6 +72,41 @@ def test_get_operations(datastore: HowlerDatastore, login_session):
                 assert isinstance(options, dict) or isinstance(options, list)
 
 
+def test_execute_bogus_action(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    req = {
+        "request_id": str(uuid4()),
+        "query": "howler.id:*",
+        "operations": [
+            {
+                "operation_id": "bogus_action_that_doesntexist",
+                "data": {},
+            },
+        ],
+    }
+
+    resp = get_api_data(
+        session,
+        f"{host}/api/v1/action/execute",
+        method="POST",
+        data=json.dumps(req),
+    )
+
+    for report in resp.values():
+        assert len(report) == 1
+        report = report[0]
+
+        assert "query" in report
+        assert report["query"] == "howler.id:*"
+
+        assert "outcome" in report
+        assert report["outcome"] == "error"
+
+        assert "message" in report
+        assert "bogus_action_that_doesntexist" in report["message"]
+
+
 def test_execute_action_labels(datastore: HowlerDatastore, login_session):
     session, host = login_session
 

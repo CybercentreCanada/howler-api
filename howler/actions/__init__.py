@@ -1,29 +1,11 @@
+import importlib
+from pathlib import Path
 import re
 from typing import Any, Optional
 
-import howler.actions.add_label as add_label
-import howler.actions.change_field as change_field
-import howler.actions.add_to_bundle as add_to_bundle
-import howler.actions.change_field as change_field
-import howler.actions.prioritization as prioritization
-import howler.actions.remove_from_bundle as remove_from_bundle
-import howler.actions.remove_label as remove_label
-import howler.actions.spellbook as spellbook
-import howler.actions.transition as transition
-from howler.config import config
+from howler.common.logging import get_logger
 
-OPERATIONS = {
-    add_label.OPERATION_ID: add_label,
-    remove_label.OPERATION_ID: remove_label,
-    transition.OPERATION_ID: transition,
-    prioritization.OPERATION_ID: prioritization,
-    change_field.OPERATION_ID: change_field,
-    add_to_bundle.OPERATION_ID: add_to_bundle,
-    remove_from_bundle.OPERATION_ID: remove_from_bundle,
-}
-
-if config.core.spellbook.enabled:
-    OPERATIONS[spellbook.OPERATION_ID] = spellbook
+logger = get_logger(__file__)
 
 
 def __sanitize_specification(spec: dict[str, Any]) -> dict[str, Any]:
@@ -105,9 +87,11 @@ def execute(
     Returns:
         list[dict[str, Any]]: A report on the execution
     """
-    automation = OPERATIONS.get(operation_id, None)
+    try:
+        automation = importlib.import_module(f"howler.actions.{operation_id}")
+    except Exception as e:
+        logger.critical("Error when importing %s - %s", operation_id, e)
 
-    if automation is None:
         return [
             {
                 "query": query,
@@ -142,7 +126,21 @@ def specifications() -> list[dict[str, Any]]:
     Returns:
         list[dict[str, Any]]: A list of specifications
     """
-    return [
-        __sanitize_specification(automation.specification())
-        for automation in OPERATIONS.values()
-    ]
+    specifications = []
+
+    module_path = Path(__file__).parent
+
+    for module in (
+        _file
+        for _file in module_path.iterdir()
+        if _file.suffix == "py" and _file.name != "__init__.py"
+    ):
+        try:
+            automation = importlib.import_module(f"howler.actions.{module.stem}")
+
+            specifications.append(__sanitize_specification(automation.specification()))
+
+        except Exception as e:
+            logger.critical("Error when initializing %s - %s", module, e)
+
+    return specifications

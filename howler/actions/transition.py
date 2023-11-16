@@ -5,12 +5,14 @@ from howler.common.exceptions import InvalidDataException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.helper.workflow import Workflow
+from howler.odm.models.action import VALID_TRIGGERS
 from howler.odm.models.howler_data import (
     Assessment,
     HitStatus,
     HitStatusTransition,
     Vote,
 )
+from howler.odm.models.user import User
 from howler.services import event_service, hit_service
 from howler.utils.list_utils import flatten_list
 
@@ -56,7 +58,7 @@ def execute(
     query: str,
     status: str,
     transition: str,
-    user: dict[str, Any],
+    user: User,
     request_id: Optional[str] = None,
     **kwargs,
 ):
@@ -71,8 +73,9 @@ def execute(
         status (str): The status from which to transition.
         transition (str): The transition to attempt to execute.
     """
+    rows = 1000 if "automation_advanced" in user.type else 10
     hits = datastore().hit.search(
-        f"({query}) AND howler.status:{status}", rows=10000, fl="howler.id"
+        f"({query}) AND howler.status:{status}", rows=rows, fl="howler.id"
     )
 
     ids = [hit.howler.id for hit in hits["items"]]
@@ -88,6 +91,16 @@ def execute(
         ]
 
     report = []
+
+    if rows < hits["total"]:
+        report.append(
+            {
+                "query": query,
+                "outcome": "skipped",
+                "title": "Too Many Hits",
+                "message": f"A maximum of {rows} hits can be processed at once, but {hits['total']} matched the query.",
+            }
+        )
 
     num_skipped = datastore().hit.search(
         f"({query}) AND -howler.status:{status}", rows=1
@@ -168,7 +181,7 @@ def specification():
             "short": "Transition a hit",
             "long": execute.__doc__,
         },
-        "roles": ["automation_basic", "automation_advanced"],
+        "roles": ["automation_basic"],
         "steps": [
             {
                 "args": {"status": []},
@@ -189,5 +202,5 @@ def specification():
                 "options": {"vote": Vote.list(), "assessment": Assessment.list()},
             },
         ],
-        "triggers": [],
+        "triggers": [trigger for trigger in VALID_TRIGGERS if trigger != "create"],
     }

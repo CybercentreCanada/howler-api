@@ -114,6 +114,8 @@ def add_action(user: User, **_) -> Response:
         )
 
     try:
+        new_action["owner_id"] = user.uname
+
         action_obj = Action(new_action)
 
         # migration from data as mapping to data as json string

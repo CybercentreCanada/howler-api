@@ -18,7 +18,7 @@ def execute():
 
     cutoff = (datetime.now() - timedelta(**delta_kwargs)).strftime("%Y-%m-%d")
 
-    logger.info("Removing hits older than %s", cutoff)
+    logger.debug("Removing hits older than %s", cutoff)
 
     ds = datastore()
 
@@ -37,7 +37,7 @@ def setup_job(sched: BaseScheduler):
 
         return
 
-    logger.info(
+    logger.debug(
         f"Initializing retention cronjob with cron {config.system.retention.crontab}"
     )
 
@@ -47,7 +47,7 @@ def setup_job(sched: BaseScheduler):
         _kwargs = {}
 
     if sched.get_job("retention"):
-        logger.info("Retention job already running!")
+        logger.debug("Retention job already running!")
         return
 
     sched.add_job(

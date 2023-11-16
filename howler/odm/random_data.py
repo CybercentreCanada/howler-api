@@ -1,13 +1,13 @@
+import importlib
 import json
 import os
+from pathlib import Path
 import random
 import sys
 from datetime import datetime
 from random import choice, randint, sample
-import time
 from typing import Callable
 
-from howler.actions import OPERATIONS
 from howler.common import loader
 from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
@@ -418,6 +418,16 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
     fields = Hit.flat_fields()
     key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
     users = ds.user.search("*:*")["items"]
+
+    module_path = Path(__file__).parents[1] / "actions"
+    OPERATIONS = {
+        operation.OPERATION_ID: operation
+        for operation in (
+            importlib.import_module(f"howler.actions.{module.stem}")
+            for module in module_path.iterdir()
+            if module.suffix == ".py" and module.name != "__init__.py"
+        )
+    }
 
     operation_options = list(OPERATIONS.keys())
     if "transition" in operation_options:
