@@ -52,9 +52,9 @@ class Workflow:
                     self.transitions[f'{s}{t["transition"]}'] = t
                     identifiers.append(f'{s}{t["transition"]}{t.get("dest", "")}')
             else:
-                self.transitions[f'{t.get("source", "")}{t["transition"]}'] = t
+                self.transitions[f'{t.get("source", "") or ""}{t["transition"]}'] = t
                 identifiers.append(
-                    f'{t.get("source", "")}{t["transition"]}{t.get("dest", "")}'
+                    f'{t.get("source", "") or ""}{t["transition"]}{t.get("dest", "") or ""}'
                 )
 
         if len(set(identifiers)) != len(identifiers):
