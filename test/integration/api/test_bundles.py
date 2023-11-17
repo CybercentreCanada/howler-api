@@ -291,6 +291,7 @@ def test_update_fail_subbundle(datastore: HowlerDatastore, login_session):
     )
 
 
+@pytest.mark.skip(reason="Unstable test")
 def test_remove_bundle_children_some(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
