@@ -40,8 +40,6 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     hit.timestamp = hit.event.created
     hit.organization.name, hit.organization.id = random_department()
 
-    hit.threat.technique.id = technique_id
-    hit.threat.technique.name = lookups["techniques"][technique_id]["name"]
     hit.howler.outline.threat = get_random_ip()
     hit.howler.outline.target = get_random_host()
     hit.howler.outline.indicators = []
