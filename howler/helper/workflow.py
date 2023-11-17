@@ -21,11 +21,11 @@ def validate_transition(transition: Transition):
         transition
         # We want to check if a source is provided. If it is, it must have a value
         # If it isn't, we'll allow this transition from any status
-        and ("source" not in transition or transition["source"])
+        and ("source" not in transition or transition["source"] != "")
         and transition["transition"]
         # We want to check if a destination is provided. If it is, it must have a value
         # If it isn't, we won't change the status of the hit
-        and ("dest" not in transition or transition["dest"])
+        and ("dest" not in transition or transition["dest"] != "")
         and isinstance(transition["actions"], list)
         and all(callable(a) for a in transition["actions"])
     )
