@@ -88,7 +88,7 @@ ARG version_tag=${version}
 # Get the updated local dir from builder
 COPY --chown=howler:howler --from=builder /var/lib/howler/.local /var/lib/howler/.local
 COPY --chown=howler:howler --from=builder /etc/howler/lookups /etc/howler/lookups
-COPY --chown=howler:howler ./static /etc/howler/static/
+# COPY --chown=howler:howler ./static /etc/howler/static/ Currently not necessary
 COPY --chown=howler:howler ./howler/common/classification.yml /var/lib/howler/.local/lib/python3.9/site-packages/howler/common/
 
 # Setup Environment
