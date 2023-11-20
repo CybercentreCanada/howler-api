@@ -85,7 +85,6 @@ if HWL_USE_REST_API or DEBUG:
     app.register_blueprint(tool_api)
     app.register_blueprint(user_api)
     app.register_blueprint(view_api)
-
 else:
     logger.info("Disabled REST API")
 

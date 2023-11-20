@@ -39,7 +39,6 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     hit.event.provider = choice(["HBS", "NBS", "CBS", "AssemblyLine"])
     hit.timestamp = hit.event.created
     hit.organization.name, hit.organization.id = random_department()
-
     hit.howler.outline.threat = get_random_ip()
     hit.howler.outline.target = get_random_host()
     hit.howler.outline.indicators = []
