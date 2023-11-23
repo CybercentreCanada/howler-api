@@ -50,7 +50,9 @@ class Workflow:
             if t.get("source", False) and isinstance(t["source"], list):
                 for s in t["source"]:
                     self.transitions[f'{s}{t["transition"]}'] = t
-                    identifiers.append(f'{s}{t["transition"]}{t.get("dest", "")}')
+                    identifiers.append(
+                        f'{s}{t["transition"]}{t.get("dest", None) or ""}'
+                    )
             else:
                 self.transitions[f'{t.get("source", "") or ""}{t["transition"]}'] = t
                 identifiers.append(

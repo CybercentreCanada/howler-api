@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from string import Template
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
 import yaml
 
@@ -100,7 +100,10 @@ def get_classification(yml_config: Optional[str] = None):
         raise InvalidDefinition("Could not find any classification definition to load.")
 
     _classification = Classification(classification_definition)
-    _CLASSIFICATIONS[yml_config] = _classification
+
+    if yml_config:
+        _CLASSIFICATIONS[yml_config] = _classification
+
     return _classification
 
 

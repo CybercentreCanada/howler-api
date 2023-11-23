@@ -30,7 +30,7 @@ def generate_random_secret(length=25) -> str:
     return base64.b32encode(os.urandom(length)).decode("UTF-8")
 
 
-def get_password_hash(password: Optional[str]) -> str:
+def get_password_hash(password: Optional[str]) -> Optional[str]:
     """Get a bcrypt hash of the password
 
     Args:

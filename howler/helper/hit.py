@@ -73,8 +73,8 @@ def assess_hit(
 
 
 def unassign_hit(
+    hit: dict[str, Any],
     user: Optional[User] = None,
-    hit: Optional[dict[str, Any]] = None,
     **kwargs,
 ) -> list[OdmUpdateOperation]:
     """Remove the assignment of a hit

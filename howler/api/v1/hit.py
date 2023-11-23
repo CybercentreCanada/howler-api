@@ -43,7 +43,7 @@ hit_helper = OdmHelper(Hit)
 
 @hit_api.route("/", methods=["POST"])
 @api_login(required_priv=["W"])
-def create_hits(user: dict[str, Any], **kwargs):
+def create_hits(user: User, **kwargs):
     """
     Create hits.
 
@@ -241,7 +241,7 @@ def validate_hits(**kwargs):
     if hits is None:
         return bad_request(err="No hits were sent.")
 
-    validation = {"valid": [], "invalid": []}
+    validation: dict[str, list[dict[str, Any]]] = {"valid": [], "invalid": []}
 
     for hit in hits:
         try:
@@ -256,7 +256,7 @@ def validate_hits(**kwargs):
 @hit_api.route("/<id>", methods=["GET"])
 @api_login(audit=False, required_priv=["R"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def get_hit(id: str, **kwargs):
+def get_hit(id: str, server_version: str, **kwargs):
     """
     Get a hit.
 
@@ -271,12 +271,11 @@ def get_hit(id: str, **kwargs):
     """
 
     hit: Optional[Hit] = kwargs.get("cached_hit")
-    version: str = kwargs.get("server_version")
 
     if not hit:
         return not_found(err="Hit %s does not exist" % id)
 
-    return ok(hit.as_primitives()), version
+    return ok(hit.as_primitives()), server_version
 
 
 @hit_api.route("/user", methods=["GET"])
@@ -312,8 +311,8 @@ def get_assigned_hits(user, **kwargs):
     hits = hit_service.search(
         query=f"howler.assignment:{sanitize_lucene_query(uname)}",
         deep_paging_id=request.args.get("deep_paging_id", None),
-        offset=request.args.get("offset", 0),
-        rows=request.args.get("rows", None),
+        offset=request.args.get("offset", 0, type=int), # type: ignore[union-attr]
+        rows=request.args.get("rows", None, type=int), # type: ignore[union-attr]
         sort=request.args.get("sort", None),
         fl=request.args.get("fl", None),
         timeout=request.args.get("timeout", None),
@@ -351,11 +350,15 @@ def add_label(id, label_set, user, **kwargs):
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
-    existing_hit: Hit = hit_service.get_hit(id, as_obj=True)
+    existing_hit: Hit = hit_service.get_hit(id, as_odm=True)
     if f"howler.labels.{label_set}" not in existing_hit.flat_fields():
         return not_found(err=f"Label set {label_set} does not exist")
 
-    labels: list[str] = request.json["value"]
+    label_data = request.json
+    if not isinstance(label_data, dict):
+        return bad_request("Invalid data format")
+
+    labels: list[str] = label_data["value"]
 
     if not labels or len(labels) == 0:
         return bad_request(err="Labels were not provided")
@@ -408,11 +411,15 @@ def remove_labels(id, label_set, user, **kwargs):
 
     if (
         f"howler.labels.{label_set}"
-        not in hit_service.get_hit(id, as_obj=True).flat_fields()
+        not in hit_service.get_hit(id, as_odm=True).flat_fields()
     ):
         return not_found(err=f"Label set {label_set} does not exist")
 
-    labels = request.json["value"]
+    label_data = request.json
+    if not isinstance(label_data, dict):
+        return bad_request("Invalid data format")
+
+    labels: list[str] = label_data["value"]
 
     if not labels or len(labels) == 0:
         return bad_request(err="Labels were not provided")
@@ -458,7 +465,11 @@ def transition(id, user: User, **kwargs):
     if not kwargs.get("cached_hit"):
         return not_found(err="Hit %s does not exist" % id)
 
-    transition = request.json["transition"]
+    transition_data = request.json
+    if not isinstance(transition_data, dict):
+        return bad_request(err="Invalid data format")
+
+    transition = transition_data["transition"]
     if "If-Match" in request.headers:
         version = request.headers["If-Match"]
     else:
@@ -474,8 +485,9 @@ def transition(id, user: User, **kwargs):
                     f"{HitStatusTransition.list()}"
                 )
             )
+
         hit_service.transition_hit(
-            id, transition, user, version, **kwargs, **request.json.get("data", {})
+            id, transition, user, version, **kwargs, **transition_data.get("data", {})
         )
     except (WorkflowException, DataStoreException, InvalidDataException) as e:
         return bad_request(err=str(e))
@@ -542,11 +554,16 @@ def add_comment(id, user: dict[str, Any], **kwargs):
         ...hit            # The new data for the hit
     }
     """
-    comment_data = request.json.get("value")
-    if not comment_data:
+    comment_data = request.json
+    if not isinstance(comment_data, dict):
+        return bad_request(err="Invalid data format")
+
+    comment_value = comment_data.get("value", None)
+
+    if not comment_value:
         return bad_request(err="Value cannot be empty.")
 
-    if len(comment_data) > MAX_COMMENT_LEN:
+    if len(comment_value) > MAX_COMMENT_LEN:
         return bad_request(err="Comment is too long.")
 
     if not kwargs.get("cached_hit"):
@@ -558,8 +575,8 @@ def add_comment(id, user: dict[str, Any], **kwargs):
             [
                 hit_helper.list_add(
                     "howler.comment",
-                    Comment({"user": user["uname"], "value": comment_data}),
-                    explanation=f"Added a comment:\n\n{request.json['value']}",
+                    Comment({"user": user["uname"], "value": comment_value}),
+                    explanation=f"Added a comment:\n\n{comment_value}",
                     if_missing=True,
                 ),
             ],
@@ -597,16 +614,22 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         ...hit            # The new data for the hit
     }
     """
-    comment_data: Optional[str] = request.json.get("value")
-    if not comment_data:
+    comment_data = request.json
+    if not isinstance(comment_data, dict):
+        return bad_request(err="Invalid data format")
+
+    comment_value = comment_data.get("value", None)
+
+    if not comment_value:
         return bad_request(err="Value cannot be empty.")
 
-    if len(comment_data) > MAX_COMMENT_LEN:
+    if len(comment_value) > MAX_COMMENT_LEN:
         return bad_request(err="Comment is too long.")
 
-    hit: Optional[Hit] = kwargs.get("cached_hit")
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
+
+    hit: Hit = kwargs["cached_hit"]
 
     comment: Optional[Comment] = next(
         (c for c in hit.howler.comment if c.id == comment_id), None
@@ -619,7 +642,7 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         return forbidden(err="Cannot edit comment that wasn't made by you.")
 
     new_comment = comment.as_primitives()
-    new_comment["value"] = comment_data
+    new_comment["value"] = comment_value
     new_comment["modified"] = "NOW"
 
     diff = []
@@ -670,7 +693,6 @@ def delete_comments(id, user: User, **kwargs):
     }
     """
 
-    hit: Optional[Hit] = kwargs.get("cached_hit")
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
@@ -679,6 +701,7 @@ def delete_comments(id, user: User, **kwargs):
     if len(comment_ids) == 0:
         return bad_request(err="Supply at least one comment to delete.")
 
+    hit: Hit = kwargs["cached_hit"]
     comments = [comment for comment in hit.howler.comment if comment.id in comment_ids]
 
     if ("admin" not in user["type"]) and any(
@@ -738,11 +761,16 @@ def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         ...hit            # The new data for the hit
     }
     """
-    react_data: Optional[str] = request.json.get("type")
-    if not react_data:
+    react_data: Optional[str] = request.json
+    if not isinstance(react_data, dict):
+        return bad_request(err="Invalid data format")
+
+    react_value = react_data.get("type", None)
+
+    if not react_value:
         return bad_request(err="Type cannot be empty.")
 
-    hit: Hit = kwargs.get("cached_hit")
+    hit: Optional[Hit] = kwargs.get("cached_hit")
     if not hit:
         return not_found(err=f"Hit {id} does not exist")
 
@@ -750,7 +778,7 @@ def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         if comment.id == comment_id:
             comment["reactions"] = {
                 **comment.get("reactions", {}),
-                user["uname"]: react_data,
+                user["uname"]: react_value,
             }
 
     new_hit, version = hit_service.save_hit(hit, version=kwargs.get("server_version"))
@@ -777,7 +805,7 @@ def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         ...hit            # The new data for the hit
     }
     """
-    hit: Hit = kwargs.get("cached_hit")
+    hit: Optional[Hit] = kwargs.get("cached_hit")
     if not hit:
         return not_found(err=f"Hit {id} does not exist")
 
@@ -818,8 +846,10 @@ def create_bundle(user: dict[str, Any], **kwargs):
     }
     """
     data = request.json
+    if not isinstance(data, dict):
+        return bad_request(err="Invalid data format")
 
-    bundle_hit = data.get("bundle")
+    bundle_hit: Optional[dict[str, Any]] = data.get("bundle")
 
     if bundle_hit is None:
         return bad_request(err="You did not provide a bundle hit.")
@@ -841,7 +871,7 @@ def create_bundle(user: dict[str, Any], **kwargs):
         analytic_service.save_from_hit(odm)
 
         for hit_id in odm.howler.hits:
-            child_hit: Hit = hit_service.get_hit(hit_id, as_obj=True)
+            child_hit: Hit = hit_service.get_hit(hit_id, as_odm=True)
 
             if child_hit.howler.is_bundle:
                 return bad_request(
@@ -887,6 +917,8 @@ def update_bundle(id, **kwargs):
         return not_found(err="This bundle does not exist.")
 
     hit_ids = request.json
+    if not isinstance(hit_ids, list):
+        return bad_request(err="Invalid data format")
 
     new_hit_list = bundle_hit.howler.as_primitives().get("hits", [])
     if bundle_hit.howler.is_bundle:
@@ -905,7 +937,7 @@ def update_bundle(id, **kwargs):
 
     try:
         for hit_id in new_hit_list:
-            child_hit: Hit = hit_service.get_hit(hit_id, as_obj=True)
+            child_hit: Hit = hit_service.get_hit(hit_id, as_odm=True)
 
             if child_hit.howler.is_bundle:
                 return bad_request(
@@ -954,6 +986,8 @@ def remove_bundle_children(id, **kwargs):
         return not_found(err="This bundle does not exist.")
 
     hit_ids = request.json
+    if not isinstance(hit_ids, list):
+        return bad_request(err="Invalid data format")
 
     new_hit_list = bundle_hit.howler.get("hits", [])
     if bundle_hit.howler.is_bundle:
@@ -961,7 +995,7 @@ def remove_bundle_children(id, **kwargs):
             hit_ids = new_hit_list
             new_hit_list = []
         else:
-            new_hit_list = list(filter(lambda _id: _id not in hit_ids, new_hit_list))
+            new_hit_list = [_id for _id in new_hit_list if _id not in hit_ids]
     else:
         return bad_request(err="The specified hit must be a bundle.")
 
@@ -970,7 +1004,7 @@ def remove_bundle_children(id, **kwargs):
 
     try:
         for hit_id in hit_ids:
-            child_hit: Hit = hit_service.get_hit(hit_id, as_obj=True)
+            child_hit: Hit = hit_service.get_hit(hit_id, as_odm=True)
 
             new_bundle_list = child_hit.howler.get("bundles", [])
             try:

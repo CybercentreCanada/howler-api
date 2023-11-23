@@ -9,7 +9,9 @@ import pytest
 from conftest import APIError, get_api_data
 
 from howler.datastore.howler_store import HowlerDatastore
+from howler.odm.models.howler_data import Assessment, HitStatusTransition
 from howler.odm.random_data import create_actions, create_hits, wipe_actions, wipe_hits
+from howler.services import hit_service
 
 
 @pytest.fixture(scope="module")
@@ -237,9 +239,21 @@ def test_execute_transition_basic(datastore: HowlerDatastore, login_session):
 def test_execute_transition_skipped(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
+    if datastore.hit.search("-howler.status:open")["total"] < 1:
+        hit = datastore.hit.search(
+            "howler.status:open AND -howler.assignment:goose", rows=1
+        )["items"][0]
+
+        hit_service.transition_hit(
+            hit["howler"]["id"],
+            HitStatusTransition.ASSESS,
+            datastore.user.search("*:*", rows=1)["items"][0],
+            assessment=Assessment.ATTEMPT,
+        )
+
     req = {
         "request_id": str(uuid4()),
-        "query": "howler.id:*",
+        "query": "-howler.assignment:goose",
         "operations": [
             {
                 "operation_id": "transition",

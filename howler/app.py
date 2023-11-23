@@ -1,5 +1,6 @@
 import logging
 import os.path
+from typing import Any
 
 from authlib.integrations.flask_client import OAuth
 from elasticapm.contrib.flask import ElasticAPM
@@ -53,7 +54,7 @@ app = Flask(
 app.url_map.strict_slashes = False
 app.config["JSON_SORT_KEYS"] = False
 
-app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})  # type: ignore[method-assign]
 
 cache.init_app(app)
 
@@ -102,7 +103,7 @@ if HWL_USE_JOB_SYSTEM or DEBUG:
 if config.auth.oauth.enabled:
     providers = []
     for name, p in config.auth.oauth.providers.items():
-        p = p.as_primitives()
+        p: dict[str, Any] = p.as_primitives()
 
         # Set provider name
         p["name"] = name
@@ -150,8 +151,9 @@ if config.core.metrics.apm_server.server_url is not None:
 def main():
     wlog = logging.getLogger("werkzeug")
     wlog.setLevel(logging.WARNING)
-    for h in logger.parent.handlers:
-        wlog.addHandler(h)
+    if logger.parent:
+        for h in logger.parent.handlers:
+            wlog.addHandler(h)
 
     app.jinja_env.cache = {}
     app.run(

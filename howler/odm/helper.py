@@ -9,7 +9,7 @@ from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
 from howler.helper.discover import get_apps_list
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Escalation
+from howler.odm.models.howler_data import Escalation, Link
 from howler.odm.models.user import User
 from howler.odm.randomizer import (
     get_random_filename,
@@ -176,22 +176,26 @@ def generate_useful_hit(lookups, users, prune_hit=False):
 
     try:
         hit.howler.links = [
-            {
-                "title": get_random_word(),
-                "href": app["route"],
-                "icon": app["name"],
-            }
+            Link(
+                {
+                    "title": get_random_word(),
+                    "href": app["route"],
+                    "icon": app["name"],
+                }
+            )
             for app in random.choices(APPS, k=5)
         ]
         hit.howler.links.append(
-            {
-                "title": "Goose",
-                "href": "https://en.wikipedia.org/wiki/Canada_goose",
-                "icon": (
-                    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Canada_goose_on_Seedskadee_NWR"
-                    "_%2827826185489%29.jpg/788px-Canada_goose_on_Seedskadee_NWR_%2827826185489%29.jpg"
-                ),
-            }
+            Link(
+                {
+                    "title": "Goose",
+                    "href": "https://en.wikipedia.org/wiki/Canada_goose",
+                    "icon": (
+                        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Canada_goose_on_Seedskadee_NWR"
+                        "_%2827826185489%29.jpg/788px-Canada_goose_on_Seedskadee_NWR_%2827826185489%29.jpg"
+                    ),
+                }
+            )
         )
     except IndexError:
         pass

@@ -1,10 +1,10 @@
 import inspect
 from typing import Any, Optional
 
-from howler.common.exceptions import InvalidDataException
+from howler.common.exceptions import InvalidDataException, NotFoundException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
-from howler.helper.workflow import Workflow
+from howler.helper.workflow import Workflow, WorkflowException
 from howler.odm.models.action import VALID_TRIGGERS
 from howler.odm.models.howler_data import (
     Assessment,
@@ -127,7 +127,7 @@ def execute(
                 **kwargs,
             )
             success_ids.add(hit_id)
-        except InvalidDataException as e:
+        except (InvalidDataException, NotFoundException, WorkflowException) as e:
             report.append(
                 {
                     "query": f"howler.id:{hit_id}",

@@ -21,7 +21,7 @@ class Mitre(odm.Model):
     technique: list[ALRecord] = odm.List(odm.Compound(ALRecord), default=[])
 
 
-DEFAULT_MITRE = {"tactic": [], "technique": []}
+DEFAULT_MITRE: dict[str, list[ALRecord]] = {"tactic": [], "technique": []}
 
 
 @odm.model(

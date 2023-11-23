@@ -4,8 +4,16 @@ import selectors
 from time import time
 
 from wsproto import ConnectionType, WSConnection
-from wsproto.events import (AcceptConnection, BytesMessage, CloseConnection,
-                            Message, Ping, Pong, Request, TextMessage)
+from wsproto.events import (
+    AcceptConnection,
+    BytesMessage,
+    CloseConnection,
+    Message,
+    Ping,
+    Pong,
+    Request,
+    TextMessage,
+)
 from wsproto.extensions import PerMessageDeflate
 from wsproto.frame_protocol import CloseReason
 from wsproto.utilities import LocalProtocolError
@@ -196,7 +204,7 @@ class Base:
                 elif isinstance(event, CloseConnection):
                     if self.is_server:
                         out_data += self.ws.send(event.response())
-                    self.close_reason = event.code
+                    self.close_reason = event.code  # type: ignore
                     self.close_message = event.reason
                     self.connected = False
                     self.event.set()
@@ -244,7 +252,7 @@ class Base:
                         else:
                             # append to bytearray
                             self.incoming_message += event.data
-                    if not event.message_finished:
+                    if not event.message_finished:  # type: ignore
                         continue
                     if isinstance(self.incoming_message, (str, bytes)):
                         # single part message

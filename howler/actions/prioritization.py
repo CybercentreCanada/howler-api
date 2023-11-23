@@ -35,7 +35,7 @@ def execute(query: str, field="score", value: str = "0.0", **kwargs):
     report = []
 
     try:
-        value = float(value)
+        value: float = float(value)
 
         datastore().hit.update_by_query(
             query,

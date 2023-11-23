@@ -80,6 +80,8 @@ def create_view(**kwargs):
     """
 
     view_data = request.json
+    if not isinstance(view_data, dict):
+        return bad_request(err="Invalid data format")
 
     if "title" not in view_data:
         return bad_request(err="You must specify a title when creating a view.")
@@ -186,6 +188,9 @@ def update_view(id, user: User, **kwargs):
     storage = datastore()
 
     new_data = request.json
+    if not isinstance(new_data, dict):
+        return bad_request(err="Invalid data format")
+
     if set(new_data.keys()) - {"title", "query"}:
         return bad_request(err="Only title and query can be updated.")
 

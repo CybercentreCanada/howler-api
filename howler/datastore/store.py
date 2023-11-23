@@ -52,7 +52,7 @@ class ESStore(object):
     }
     ID = "id"
 
-    def __init__(self, config: "Config" = None, archive_access=True):
+    def __init__(self, config: typing.Optional["Config"] = None, archive_access=True):
         if not config:
             config = loader.get_config()
 
@@ -73,8 +73,8 @@ class ESStore(object):
                 )
 
         self._closed = False
-        self._collections = {}
-        self._models = {}
+        self._collections: dict[str, ESCollection] = {}
+        self._models: dict[str, typing.Any] = {}
         self.ilm_config = ilm_config
         self.validate = True
 
@@ -82,7 +82,7 @@ class ESStore(object):
         tracer.setLevel(logging.CRITICAL)
 
         self.client = elasticsearch.Elasticsearch(
-            hosts=self._hosts,
+            hosts=self._hosts,  # type: ignore
             api_key=self._apikey,
             max_retries=0,
             request_timeout=TRANSPORT_TIMEOUT,
@@ -162,7 +162,7 @@ class ESStore(object):
 
     def connection_reset(self):
         self.client = elasticsearch.Elasticsearch(
-            hosts=self._hosts,
+            hosts=self._hosts,  # type: ignore
             api_key=self._apikey,
             max_retries=0,
             request_timeout=TRANSPORT_TIMEOUT,

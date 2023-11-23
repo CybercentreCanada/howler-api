@@ -477,6 +477,38 @@ def test_create_valid_hits(datastore, login_session):
         assert data[i]["howler"]["outline"] is not None
 
 
+def test_create_bad_name_hits(datastore, login_session):
+    """Test that /api/v1/hit creates hits using valid data with a bad anayltic name"""
+    session, host = login_session
+
+    data = [
+        {
+            "howler": {
+                "analytic": "bad.analytic.name",
+                "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+                "score": "0.8",
+                "outline": {
+                    "threat": "10.0.0.1",
+                    "target": "asdf123",
+                    "indicators": ["me.ps1"],
+                    "summary": "This is a summary",
+                },
+            },
+        }
+    ]
+
+    # POST hit
+    response = session.post(
+        url=f"{host}/api/v1/hit/",
+        data=json.dumps(data),
+        headers={"content-type": "application/json"},
+    ).json()
+
+    assert len(response["api_warning"]) == 1
+
+    assert response["api_warning"][0].startswith("The value bad.analytic.name")
+
+
 def test_create_invalid_hits(datastore: HowlerDatastore, login_session):
     """Test that /api/v1/hit fails when it receives invalid data"""
     session, host = login_session

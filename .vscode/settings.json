@@ -21,6 +21,7 @@
         "**/.idea": true,
         "**/__pycache__": true,
         "**/howler_api.egg-info": true,
+        "**/.mypy_cache": true,
     },
     "npm.packageManager": "yarn",
     "python.terminal.activateEnvironment": false,
@@ -59,6 +60,9 @@
     },
     "python.defaultInterpreterPath": "${workspaceFolder}/env/bin/python",
     "python.analysis.autoImportCompletions": true,
+    "python.analysis.exclude": [
+        "**/build"
+    ],
     "python.analysis.autoFormatStrings": true,
     "python.analysis.completeFunctionParens": true
 }

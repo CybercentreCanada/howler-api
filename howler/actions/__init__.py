@@ -4,6 +4,7 @@ import re
 from typing import Any, Optional
 
 from howler.common.logging import get_logger
+from howler.odm.models.user import User
 
 logger = get_logger(__file__)
 
@@ -72,7 +73,7 @@ def __sanitize_report(report: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def execute(
     operation_id: str,
     query: str,
-    user: dict[str, Any],
+    user: User,
     request_id: Optional[str] = None,
     **kwargs,
 ) -> list[dict[str, Any]]:

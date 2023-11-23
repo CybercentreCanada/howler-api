@@ -63,4 +63,4 @@ class EventWatcher(Generic[MessageType]):
 
     def stop(self):
         if self.worker is not None:
-            self.worker.stop()
+            self.worker.stop()  # type: ignore

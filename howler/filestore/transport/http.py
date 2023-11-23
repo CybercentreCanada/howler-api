@@ -1,6 +1,7 @@
 import logging
 import os
 import posixpath
+from typing import Optional
 
 import requests
 from howler.common.exceptions import ChainAll, HowlerNotImplementedError
@@ -43,7 +44,7 @@ class TransportHTTP(Transport):
         self.port = port
 
         if user and password:
-            self.auth = (user, password)
+            self.auth: Optional[tuple[str, str]] = (user, password)
         else:
             self.auth = None
 

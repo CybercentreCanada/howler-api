@@ -19,4 +19,4 @@ class SearchResult(TypedDict):
 class HitSearchResult(SearchResult):
     """Hit specific typing for Elastic search query"""
 
-    items: list[Union[Hit, dict[str, Any]]]
+    items: list[Union[Hit, dict[str, Any]]]  # type: ignore[misc]

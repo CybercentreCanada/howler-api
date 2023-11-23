@@ -3,7 +3,11 @@ from typing import Any, Optional, Union
 import elasticapm
 from flask import current_app
 
-from howler.common.exceptions import AccessDeniedException, InvalidDataException
+from howler.common.exceptions import (
+    AccessDeniedException,
+    HowlerValueError,
+    InvalidDataException,
+)
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.config import CLASSIFICATION as Classification
@@ -20,11 +24,11 @@ logger = get_logger(__file__)
 
 def get_user(
     id: str,
-    as_obj: bool = False,
+    as_odm: bool = False,
     version: bool = False,
 ) -> Union[User, dict[str, Any]]:
     """Return hit object as either an ODM or Dict"""
-    return datastore().user.get_if_exists(key=id, as_obj=as_obj, version=version)
+    return datastore().user.get_if_exists(key=id, as_obj=as_odm, version=version)
 
 
 def convert_user(user: User) -> dict[str, Any]:
@@ -68,7 +72,10 @@ def convert_user(user: User) -> dict[str, Any]:
 
 @elasticapm.capture_span(span_type="authentication")
 def parse_user_data(
-    data: dict, oauth_provider: str, skip_setup: bool = True, access_token: str = None
+    data: dict,
+    oauth_provider: str,
+    skip_setup: bool = True,
+    access_token: Optional[str] = None,
 ) -> User:
     """Convert a JSON Web Token into a Howler User
 
@@ -92,6 +99,9 @@ def parse_user_data(
         raise InvalidDataException("Both the JWT and OAuth provider must be supplied")
 
     oauth = current_app.extensions.get("authlib.integrations.flask_client")
+    if not oauth:
+        logger.critical("Authlib integration missing!")
+        raise HowlerValueError()
     provider = oauth.create_client(oauth_provider)
 
     if "id_token" in data:

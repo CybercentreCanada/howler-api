@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import datetime
 from os import environ
 from random import random
-from typing import Any, Dict, Generic, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, TypeVar, Union
 
 import elasticsearch
 import elasticsearch.helpers
@@ -21,16 +21,32 @@ from howler import odm
 from howler.common.exceptions import HowlerRuntimeError, HowlerValueError
 from howler.common.loader import APP_NAME
 from howler.datastore.bulk import ElasticBulkPlan
-from howler.datastore.exceptions import (DataStoreException, HowlerScanError,
-                                         ILMException, MultiKeyError,
-                                         SearchException, SearchRetryException,
-                                         VersionConflictException)
+from howler.datastore.exceptions import (
+    DataStoreException,
+    HowlerScanError,
+    ILMException,
+    MultiKeyError,
+    SearchException,
+    SearchRetryException,
+    VersionConflictException,
+)
 from howler.datastore.support.build import back_mapping, build_mapping
-from howler.datastore.support.schemas import (default_dynamic_strings,
-                                              default_dynamic_templates,
-                                              default_index, default_mapping)
-from howler.odm.base import (BANNED_FIELDS, ClassificationObject, Integer,
-                             Keyword, List, Mapping, Model, _Field)
+from howler.datastore.support.schemas import (
+    default_dynamic_strings,
+    default_dynamic_templates,
+    default_index,
+    default_mapping,
+)
+from howler.odm.base import (
+    BANNED_FIELDS,
+    ClassificationObject,
+    Integer,
+    Keyword,
+    List,
+    Mapping,
+    Model,
+    _Field,
+)
 from howler.utils.dict_utils import recursive_update
 
 if typing.TYPE_CHECKING:
@@ -295,16 +311,8 @@ class ESCollection(Generic[ModelType]):
 
                 # check if we have any errors
                 if (shards_successful + shards_skipped) < shards_total:
-                    shards_message = "Scroll request has only succeeded on %d (+%d skipped) shards out of %d."
-                    raise HowlerScanError(
-                        scroll_id,
-                        shards_message
-                        % (
-                            shards_successful,
-                            shards_skipped,
-                            shards_total,
-                        ),
-                    )
+                    shards_message = f"{scroll_id}: Scroll request has only succeeded on {shards_successful} (+{shards_skipped} skipped) shards out of {shards_total}."
+                    raise HowlerScanError(shards_message)
                 resp = self.with_retries(
                     self.datastore.client.scroll, scroll_id=scroll_id, scroll=scroll
                 )
@@ -547,7 +555,7 @@ class ESCollection(Generic[ModelType]):
         if not self.archive_access:
             return False
 
-        reindex_body = {
+        reindex_body: dict[str, Any] = {
             "source": {
                 "index": self.index_name,
                 "query": {"bool": {"must": {"query_string": {"query": query}}}},
@@ -1072,14 +1080,15 @@ class ESCollection(Generic[ModelType]):
                 if as_dictionary:
                     out[data_id] = data_output["__non_doc_raw__"]
                 else:
-                    out.append(data_output["__non_doc_raw__"])
+                    out.append(data_output["__non_doc_raw__"])  # type: ignore
             else:
                 data_output.pop("id", None)
                 if as_dictionary:
                     out[data_id] = self.normalize(data_output, as_obj=as_obj)
                 else:
-                    out.append(self.normalize(data_output, as_obj=as_obj))
+                    out.append(self.normalize(data_output, as_obj=as_obj))  # type: ignore
 
+        out: Union[dict[str, Any], list[Any]]
         if as_dictionary:
             out = {}
         else:
@@ -1274,7 +1283,10 @@ class ESCollection(Generic[ModelType]):
 
     def require(
         self, key, as_obj=True, archive_access=None, version=False
-    ) -> Union[dict[str, Any], ModelType]:
+    ) -> Union[
+        tuple[Optional[Union[dict[str, Any], ModelType]], str],
+        Optional[Union[dict[str, Any], ModelType]],
+    ]:
         """
         Get a document from the datastore and retry forever because we know for sure
         that this document should exist. If it does not right now, this will wait for the
@@ -1443,12 +1455,11 @@ class ESCollection(Generic[ModelType]):
 
         joined_sources = """;\n""".join(op_sources)
 
-        script = {
+        return {
             "lang": "painless",
             "source": joined_sources.replace("};\n", "}\n"),
             "params": op_params,
         }
-        return script
 
     def _validate_operations(self, operations):
         """
@@ -1837,9 +1848,10 @@ class ESCollection(Generic[ModelType]):
 
         except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
             try:
-                err_msg = e.info["error"]["root_cause"][0]["reason"]
+                err_msg = e.info["error"]["root_cause"][0]["reason"] # type: ignore
             except (ValueError, KeyError, IndexError):
                 err_msg = str(e)
+
             raise SearchException(err_msg)
 
         except Exception as error:
@@ -1943,7 +1955,7 @@ class ESCollection(Generic[ModelType]):
             track_total_hits=track_total_hits,
         )
 
-        ret_data = {
+        ret_data: dict[str, Any] = {
             "offset": int(offset),
             "rows": int(rows),
             "total": int(result["hits"]["total"]["value"]),
@@ -2075,7 +2087,7 @@ class ESCollection(Generic[ModelType]):
             warnings.simplefilter("ignore")
 
             gaps_count = None
-            ret_type = None
+            ret_type: Optional[type] = None
 
             try:
                 start = int(start)
@@ -2391,7 +2403,9 @@ class ESCollection(Generic[ModelType]):
                 ):
                     if parent_p_name not in collection_data:
                         field_model = model_fields.get(parent_p_name, None)
-                        f_type = self._get_odm_type(p_val.get("analyzer", None) or p_val["type"])
+                        f_type = self._get_odm_type(
+                            p_val.get("analyzer", None) or p_val["type"]
+                        )
                         collection_data[parent_p_name] = {
                             "default": self.DEFAULT_SEARCH_FIELD
                             in p_val.get("copy_to", []),
@@ -2415,7 +2429,9 @@ class ESCollection(Generic[ModelType]):
                 "deprecated": field_model.deprecated if field_model else False,
                 "type": f_type,
                 "description": field_model.description if field_model else "",
-                "deprecated_description": field_model.deprecated_description if field_model else "",
+                "deprecated_description": field_model.deprecated_description
+                if field_model
+                else "",
             }
 
         collection_data.pop("id", None)

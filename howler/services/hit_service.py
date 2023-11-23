@@ -2,14 +2,17 @@ import json
 from hashlib import sha256
 import re
 from typing import Any, Optional
+import typing
 
 from prometheus_client import Counter
 from howler.odm.models.ecs.event import Event
+from howler.odm.models.user import User
 from howler.services import action_service
 
 import howler.services.event_service as event_service
 from howler.common.exceptions import (
     HowlerValueError,
+    NotFoundException,
     ResourceExists,
 )
 from howler.common.loader import APP_NAME, datastore
@@ -357,11 +360,11 @@ def exists(id: str):
 
 def get_hit(
     id: str,
-    as_obj: bool = False,
+    as_odm: bool = False,
     version: bool = False,
 ):
     """Return hit object as either an ODM or Dict"""
-    return datastore().hit.get_if_exists(key=id, as_obj=as_obj, version=version)
+    return datastore().hit.get_if_exists(key=id, as_obj=as_odm, version=version)
 
 
 CREATED_HITS = Counter(
@@ -406,6 +409,7 @@ def update_hit(
     return _update_hit(hit_id, operations, user, version=version)
 
 
+@typing.no_type_check
 def save_hit(hit: Hit, version: Optional[str] = None) -> tuple[Hit, str]:
     datastore().hit.save(hit.howler.id, hit, version=version)
     data, _version = datastore().hit.get(hit.howler.id, as_obj=False, version=True)
@@ -426,7 +430,7 @@ def _update_hit(
     if user and not isinstance(user, str):
         raise HowlerValueError("User must be of type string")
 
-    current_hit, saved_version = get_hit(hit_id, as_obj=True, version=True)
+    current_hit, saved_version = get_hit(hit_id, as_odm=True, version=True)
 
     for operation in operations:
         if not operation:
@@ -506,7 +510,7 @@ def get_transitions(status: HitStatus) -> list[str]:
 def transition_hit(
     id: str,
     transition: HitStatusTransition,
-    user: dict[str, Any],
+    user: User,
     version: Optional[str] = None,
     **kwargs,
 ):
@@ -519,10 +523,13 @@ def transition_hit(
         version (str): A version to validate against. The transition will not run if the version doesn't match.
     """
     hit: Hit = (
-        get_hit(id, as_obj=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
+        get_hit(id, as_odm=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
     )
 
     workflow: Workflow = get_hit_workflow()
+
+    if not hit:
+        raise NotFoundException("Hit does not exist")
 
     child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
 

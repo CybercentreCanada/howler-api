@@ -1347,7 +1347,7 @@ class Model:
         # attribute assignment
         self.__frozen = True
 
-    def as_primitives(self, hidden_fields=False, strip_null=False):
+    def as_primitives(self, hidden_fields=False, strip_null=False) -> dict[str, typing.Any]:
         """Convert the object back into primitives that can be json serialized."""
         out = {}
 

@@ -135,7 +135,7 @@ class Link(odm.Model):
     href = odm.Keyword(description="Timestamp at which the comment was last edited.")
     title = odm.Text(description="The title to use for the link.", optional=True)
     icon = odm.Keyword(
-        description="The icon to show. Either an ID corresponding to a hogwarts application, or an external link."
+        description="The icon to show. Either an ID corresponding to an analytical platform application, or an external link."
     )
 
 

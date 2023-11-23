@@ -530,7 +530,7 @@ DEFAULT_UI = {
 
 DEFAULT_SPELLBOOK = {
     "enabled": False,
-    "url": "http://spellbook-rest.spellbook.svc.cluster.local:8080/api",
+    "url": "http://spellbook-server.spellbook.svc.cluster.local:8080/api",
 }
 
 DEFAULT_NOTEBOOK = {

@@ -127,8 +127,6 @@ def add_action(user: User, **_) -> Response:
 
                 op.data = None
 
-        action_obj.owner_id = user.uname
-
         ds = datastore()
         ds.action.save(action_obj.action_id, action_obj)
         ds.action.commit()

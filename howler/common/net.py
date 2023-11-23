@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import sys
+from typing import Optional
 import uuid
 from ipaddress import IPv4Network, ip_address
 
@@ -77,26 +78,3 @@ def get_mac_address() -> str:
             ::-1
         ]
     ).upper()
-
-
-def get_route_to(dst: str) -> str:
-    ret_val = None
-    try:
-        with iproute.IPRoute() as ipr:
-            for k, v in ipr.route("get", dst=dst)[0]["attrs"]:
-                if k == "RTA_PREFSRC":
-                    ret_val = v
-                    break
-    except (ImportError, KeyError, ValueError):
-        if sys.platform.startswith("linux"):
-            cmdline = 'ip route get to {dst} | sed -e "s/.*src //" | head -n 1 | sed -e "s/ .*//"'.format(
-                dst=dst
-            )
-            p = subprocess.Popen(
-                cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-            )
-            stdout, stderr = p.communicate()
-            if stdout:
-                ret_val = stdout.strip()
-    finally:
-        return ret_val

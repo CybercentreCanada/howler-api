@@ -8,7 +8,7 @@ import jwt
 import requests
 from jwt.api_jwk import PyJWK
 
-from howler.common.exceptions import HowlerValueError
+from howler.common.exceptions import HowlerKeyError, HowlerValueError
 from howler.common.logging import get_logger
 from howler.config import cache, config
 
@@ -30,7 +30,7 @@ def get_jwk(access_token: str) -> PyJWK:
             JWKS, _ = get_jwks()
             key = JWKS[kid]
         except KeyError:
-            raise HowlerValueError()
+            raise HowlerKeyError()
 
     return key
 
@@ -108,9 +108,9 @@ def get_audience(oauth_provider: str) -> str:
     """
     audience: str = "howler"
     provider_data = config.auth.oauth.providers[oauth_provider]
-    if "audience" in config.auth.oauth.providers[oauth_provider]:
+    if "audience" in provider_data and provider_data.audience:
         audience = provider_data.audience
-    elif "client_id" in config.auth.oauth.providers[oauth_provider]:
+    elif "client_id" in provider_data and provider_data.client_id:
         audience = provider_data.client_id
 
     if oauth_provider == "azure" and not (
@@ -152,5 +152,5 @@ def decode(
         audience = get_audience(get_provider(access_token))
 
     return jwt.decode(
-        jwt=access_token, key=key, algorithms=algorithms, audience=audience
+        jwt=access_token, key=key, algorithms=algorithms, audience=audience  # type: ignore
     )

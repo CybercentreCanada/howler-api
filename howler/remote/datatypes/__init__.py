@@ -23,7 +23,7 @@ if parse(redis.__version__) <= parse("2.10.0"):
 
 
 log = logging.getLogger(f"{loader.APP_NAME}.queue")
-pool = {}
+pool: dict[tuple[str, str], redis.BlockingConnectionPool] = {}
 
 
 def now_as_iso():

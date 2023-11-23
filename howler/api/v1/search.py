@@ -1,11 +1,16 @@
+from typing import Any, Union
 from flask import request
 from werkzeug.exceptions import BadRequest
 
 from howler.api import bad_request, make_subapi_blueprint, ok
 from howler.common.loader import datastore
 from howler.datastore.exceptions import SearchException
-from howler.helper.search import (get_collection, get_default_sort,
-                                  has_access_control, list_all_fields)
+from howler.helper.search import (
+    get_collection,
+    get_default_sort,
+    has_access_control,
+    list_all_fields,
+)
 from howler.security import api_login
 
 SUB_API = "search"
@@ -331,6 +336,7 @@ def histogram(index, field, **kwargs):
 
     # Get fields default values
     field_info = collection().fields().get(field, None)
+    params: dict[str, Union[str, int]] = {}
     if field_info is None:
         return bad_request(
             err=f"Field '{field}' is not a valid field in index: {index}"

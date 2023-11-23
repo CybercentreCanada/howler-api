@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+from typing import Any
 from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
@@ -73,6 +74,8 @@ def add_apikey(**kwargs):
     storage = datastore()
     user_data = storage.user.get_if_exists(user["uname"])
     apikey_data = request.json
+    if not isinstance(apikey_data, dict):
+        return bad_request(err="Invalid data format")
 
     if apikey_data["name"] in user_data.apikeys:
         return bad_request(err=f"APIKey '{apikey_data['name']}' already exists")
@@ -182,8 +185,9 @@ def login(**_):
         "access_token": "<JWT>",
     }
     """
+    data: dict[str, Any]
     if request.is_json and len(request.data) > 0:
-        data = request.json
+        data = request.json  # type: ignore
     else:
         data = request.values
 
@@ -210,6 +214,10 @@ def login(**_):
                 raise InvalidDataException("OAuth is disabled.")
 
             oauth = current_app.extensions.get("authlib.integrations.flask_client")
+            if not oauth:
+                logger.critical("Authlib integration missing!")
+                raise HowlerValueError()
+
             provider = oauth.create_client(oauth_provider)
 
             if not provider:

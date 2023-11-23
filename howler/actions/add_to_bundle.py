@@ -20,7 +20,7 @@ def execute(query: str, bundle_id=None, **kwargs):
 
     report = []
 
-    bundle_hit = hit_service.get_hit(bundle_id)
+    bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
     if not bundle_hit or not bundle_hit.howler.is_bundle:
         report.append(
             {
@@ -67,6 +67,18 @@ def execute(query: str, bundle_id=None, **kwargs):
     try:
         safe_query = f"({query}) AND (-howler.bundles:({sanitize_lucene_query(bundle_id)}) AND howler.is_bundle:false)"
 
+        matching_hits = ds.hit.search(safe_query)["items"]
+        if len(matching_hits) < 1:
+            report.append(
+                {
+                    "query": safe_query,
+                    "outcome": "skipped",
+                    "title": "No Matching Hits",
+                    "message": f"There were no hits matching this query.",
+                }
+            )
+            return report
+
         ds.hit.update_by_query(
             safe_query,
             [
@@ -80,7 +92,7 @@ def execute(query: str, bundle_id=None, **kwargs):
             bundle_id,
             [
                 hit_helper.list_add(f"howler.hits", h["howler"]["id"], if_missing=True)
-                for h in ds.hit.search(safe_query)["items"]
+                for h in matching_hits
             ],
         )
 

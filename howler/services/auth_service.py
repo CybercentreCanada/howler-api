@@ -1,7 +1,7 @@
 import base64
 from datetime import datetime
 import hashlib
-from typing import Optional
+from typing import Optional, Union
 
 import elasticapm
 from flask import request
@@ -11,6 +11,7 @@ import howler.services.user_service as user_service
 from howler.common.exceptions import (
     AccessDeniedException,
     AuthenticationException,
+    HowlerException,
     InvalidDataException,
 )
 from howler.common.loader import datastore
@@ -20,11 +21,10 @@ from howler.odm.models.user import User
 from howler.remote.datatypes.queues.named import NamedQueue
 from howler.remote.datatypes.set import ExpiringSet
 from howler.security.utils import generate_random_secret, verify_password
-from howler.utils.isotime import ISO_FMT
 
 logger = get_logger(__file__)
 
-nonpersistent_config = {
+nonpersistent_config: dict[str, Union[str, int]] = {
     "host": config.core.redis.nonpersistent.host,
     "port": config.core.redis.nonpersistent.port,
     "ttl": config.auth.internal.failure_ttl,
@@ -140,7 +140,13 @@ def bearer_auth(
     """
     if "." in data:
         if not skip_jwt:
-            jwt_data = jwt_service.decode(data, validate_audience=True)
+            try:
+                jwt_data = jwt_service.decode(data, validate_audience=True)
+            except HowlerException as e:
+                raise AuthenticationException(
+                    "Something went wrong when decoding your key. Please reauthenticate.",
+                    cause=e,
+                )
 
             cur_user = user_service.parse_user_data(
                 jwt_data, jwt_service.get_provider(data)
@@ -306,7 +312,7 @@ def basic_auth(
 
     # Bruteforce protection
     auth_fail_queue: NamedQueue = NamedQueue(
-        f"ui-failed-{username}", **nonpersistent_config
+        f"ui-failed-{username}", **nonpersistent_config  # type: ignore
     )
     if auth_fail_queue.length() >= config.auth.internal.max_failures:
         # Failed 'max_failures' times, stop trying... This will timeout in 'failure_ttl' seconds

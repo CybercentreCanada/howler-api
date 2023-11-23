@@ -1,6 +1,6 @@
 import re
 from hashlib import sha256
-from typing import Optional
+from typing import Any, Optional
 
 from flask import request
 
@@ -17,6 +17,7 @@ from howler.api import (
 from howler.api.v1.utils.etag import add_etag
 from howler.common.exceptions import (
     AccessDeniedException,
+    AuthenticationException,
     HowlerException,
     HowlerValueError,
     InvalidDataException,
@@ -113,6 +114,8 @@ def add_user_account(username, **_):
     """
 
     data = request.json
+    if not isinstance(data, dict):
+        return bad_request(err="Invalid data format")
 
     if "{" in username or "}" in username:
         return bad_request(err="You can't use '{}' in the username")
@@ -186,7 +189,7 @@ def get_user_account(username: str, server_version=None, **kwargs):
     if not user:
         return not_found(err=f"User {username} does not exist")
 
-    user = user.as_primitives()
+    user: dict[str, Any] = user.as_primitives()
     user["apikeys"] = [(k, []) for k in user.get("apikeys", {}).keys()]
     user["has_password"] = user.pop("password", "") != ""
     user["roles"] = user.pop("type", [])
@@ -261,12 +264,16 @@ def set_user_account(username, **kwargs):
     }
     """
     try:
+        new_data = request.json
+        if not isinstance(new_data, dict):
+            return bad_request(err="Invalid data format")
+
         storage = datastore()
         old_user = storage.user.get_if_exists(username, as_obj=False)
         if not old_user:
             return not_found(err=f"User {username} does not exist")
 
-        data = {**old_user, **request.json}
+        data = {**old_user, **new_data}
         new_pass = data.pop("new_pass", None)
 
         # Don't allow the overwriting of api keys
@@ -370,7 +377,7 @@ def set_user_avatar(username, **kwargs):
     data = request.data
     storage = datastore()
     if data:
-        data = data.decode("utf-8")
+        data: str = data.decode("utf-8")
         if not isinstance(data, str) or not storage.user_avatar.save(username, data):
             bad_request(
                 err="Data block should be a base64 encoded image that starts with 'data:image/<format>;base64,'"
@@ -404,6 +411,9 @@ def get_user_groups(**kwargs):
     """
 
     auth_header = request.headers.get("Authorization", None)
+
+    if not auth_header:
+        raise AuthenticationException("No Authorization header present")
 
     type, token = auth_header.split(" ")
 

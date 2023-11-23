@@ -15,7 +15,7 @@ class NamedQueue(Generic[T]):
         self.c = get_client(host, port, private)
         self.name: str = name
         self.ttl: int = ttl
-        self.last_expire_time = 0
+        self.last_expire_time: float = 0
 
     def __enter__(self):
         return self

@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from howler import actions
 from howler.common.exceptions import HowlerValueError
 from howler.common.loader import datastore
@@ -11,7 +12,7 @@ from howler.utils.str_utils import sanitize_lucene_query
 logger = get_logger(__file__)
 
 
-def bulk_execute_on_query(query: str, trigger="create", user: User = None):
+def bulk_execute_on_query(query: str, trigger="create", user: Optional[User] = None):
     storage = datastore()
 
     if trigger not in VALID_TRIGGERS:
@@ -46,6 +47,11 @@ def bulk_execute_on_query(query: str, trigger="create", user: User = None):
                 bulk_execute_on_query,
             )
 
+            if not user:
+                raise NotImplementedError(
+                    "Running actions without a user object is not currently supported"
+                )
+
             report = actions.execute(
                 operation_id=operation.operation_id,
                 query=intersected_query,
@@ -55,9 +61,9 @@ def bulk_execute_on_query(query: str, trigger="create", user: User = None):
 
             for entry in report:
                 logger.info(
-                    "\t%s (%s): %s",
+                    "%s (%s): %s",
                     operation.operation_id,
                     entry["outcome"],
                     entry["message"],
                 )
-                logger.debug("\t\t%s", entry["query"])
+                logger.debug("\t%s", entry["query"])

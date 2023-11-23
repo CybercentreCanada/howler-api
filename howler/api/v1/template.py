@@ -84,6 +84,8 @@ def create_template(**kwargs):
     """
 
     template_data = request.json
+    if not isinstance(template_data, dict):
+        return bad_request(err="Invalid data format")
 
     if "keys" not in template_data:
         return bad_request(

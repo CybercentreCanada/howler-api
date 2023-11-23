@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from flask import request
 
@@ -7,7 +7,9 @@ from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.datastore.operations import OdmHelper
+from howler.odm.base import _Field
 from howler.odm.models.hit import Hit
+from howler.odm.models.user import User
 from howler.security import api_login
 from howler.services import action_service, analytic_service, hit_service
 from howler.utils.dict_utils import flatten
@@ -28,7 +30,7 @@ hit_helper = OdmHelper(Hit)
 
 @tool_api.route("/<tool_name>/hits", methods=["POST", "PUT"])
 @api_login(required_priv=["W"])
-def create_one_or_many_hits(tool_name, user: dict[str, Any], **kwargs):
+def create_one_or_many_hits(tool_name, user: User, **kwargs):
     """
     Create one or many hits for a tool using field mapping.
 
@@ -60,6 +62,9 @@ def create_one_or_many_hits(tool_name, user: dict[str, Any], **kwargs):
     }
     """
     data = request.json
+    if not isinstance(data, dict):
+        return bad_request(err="Invalid data format")
+
     field_map = data.pop("map", None)
     hits = data.pop("hits", None)
     ignore_extra_values: bool = bool(
@@ -93,9 +98,9 @@ def create_one_or_many_hits(tool_name, user: dict[str, Any], **kwargs):
                 else:
                     return bad_request(err=warning)
 
-    out = []
+    out: list[dict[str, Any]] = []
     odms = []
-    bundle_hit: Hit = None
+    bundle_hit: Optional[Hit] = None
     for hit in hits:
         cur_id = get_random_id()
         cur_time = now_as_iso()
@@ -114,7 +119,7 @@ def create_one_or_many_hits(tool_name, user: dict[str, Any], **kwargs):
                 for target in targets:
                     _val = val
                     try:
-                        field_data = FIELDS[target]
+                        field_data: Optional[_Field] = FIELDS[target]
                     except KeyError:
                         logger.debug(f"`{target}` not in FIELDS")
                         field_data = next(
@@ -162,7 +167,6 @@ def create_one_or_many_hits(tool_name, user: dict[str, Any], **kwargs):
         except HowlerException as e:
             logger.warning(f"{type(e).__name__} when saving {cur_id}!")
             logger.warn(e)
-            cur_id = None
 
             out.append({"id": None, "error": str(e)})
     # If there are any errors...

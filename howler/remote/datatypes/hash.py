@@ -50,10 +50,10 @@ class HashIterator(Generic[T]):
     def __init__(self, hash_object: Hash[T]):
         self.hash_object = hash_object
         self.cursor = 0
-        self.buffer: list[T] = []
+        self.buffer: list[tuple[str, T]] = []
         self._load_next()
 
-    def __next__(self) -> T:
+    def __next__(self) -> tuple[str, T]:
         while True:
             if self.buffer:
                 return self.buffer.pop(0)
@@ -70,7 +70,12 @@ class HashIterator(Generic[T]):
 
 
 class Hash(Generic[T]):
-    def __init__(self, name: str, host: Union[str, Redis] = None, port: int = None):
+    def __init__(
+        self,
+        name: str,
+        host: Optional[Union[str, Redis]] = None,
+        port: Optional[int] = None,
+    ):
         self.c = get_client(host, port, False)
         self.name = name
         self._pop = self.c.register_script(h_pop_script)
@@ -168,7 +173,7 @@ class ExpiringHash(Hash):
     def __init__(self, name, ttl=86400, host=None, port=None):
         super(ExpiringHash, self).__init__(name, host, port)
         self.ttl = ttl
-        self.last_expire_time = 0
+        self.last_expire_time: float = 0
 
     def _conditional_expire(self):
         if self.ttl:
