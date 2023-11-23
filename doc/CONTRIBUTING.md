@@ -1,10 +1,6 @@
-# Howler API
+# Installation instructions
 
-This repo contains the API server for Howler
-
-## Installation instructions
-
-### Dependencies
+## Dependencies
 
 In order to run howler, you need:
 
@@ -13,7 +9,7 @@ In order to run howler, you need:
 - Docker Compose
 - Recommended: Visual Studio Code
 
-### Setup Howler Folders
+## Setup Howler Folders
 
 ```bash
 sudo mkdir -p /etc/howler/conf
@@ -27,7 +23,7 @@ sudo chown $USER /var/lib/howler
 sudo chown $USER /var/log/howler
 ```
 
-### Setup APT dependencies
+## Setup APT dependencies
 
 ```bash
 sudo apt update
@@ -37,7 +33,7 @@ sudo apt install -yy python3-venv python3.9 python3.9-dev python3.9-venv
 sudo apt install -yy libsasl2-2 build-essential libsasl2-dev libssl-dev zip
 ```
 
-### Create your virtualenv
+## Create your virtualenv
 
 ```bash
 cd ~/repos/howler-api
@@ -49,7 +45,7 @@ pip install python-dotenv
 pip install -e .
 ```
 
-### Setup default configuration files
+## Setup default configuration files
 
 Create default classification.yml and config.yml files:
 
