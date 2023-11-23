@@ -18,4 +18,4 @@ Howler est une application qui permet aux analystes de trier les hits et les ale
 
 ## Contribuer
 
-Voir [CONTRIBUTING.md](doc/CONTRIBUTING.fr.md).
+Voir [CONTRIBUTING.fr.md](doc/CONTRIBUTING.fr.md).
