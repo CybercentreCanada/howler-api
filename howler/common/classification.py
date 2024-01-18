@@ -78,7 +78,7 @@ class Classification(object):
         self.levels_map_stl[self.NULL_CLASSIFICATION] = self.NULL_CLASSIFICATION
         self.levels_map_lts[self.NULL_CLASSIFICATION] = self.NULL_CLASSIFICATION
 
-        log.info("Beginning classification parsing")
+        log.debug("Beginning classification parsing")
         try:
             self.enforce = classification_definition.get("enforce", None)
             if self.enforce is None:

@@ -20,51 +20,51 @@ def execute(query: str, bundle_id=None, **kwargs):
 
     report = []
 
-    bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
-    if not bundle_hit or not bundle_hit.howler.is_bundle:
-        report.append(
-            {
-                "query": query,
-                "outcome": "error",
-                "title": "Invalid Bundle",
-                "message": f"Either a hit with ID {bundle_id} does not exist, or it is not a bundle.",
-            }
-        )
-        return report
-
-    ds = datastore()
-
-    skipped_hits_bundles = ds.hit.search(
-        f"({query}) AND howler.is_bundle:true",
-        fl="howler.id",
-    )["items"]
-
-    if len(skipped_hits_bundles) > 0:
-        report.append(
-            {
-                "query": f"({query}) AND howler.is_bundle:true",
-                "outcome": "skipped",
-                "title": "Skipped Bundles",
-                "message": "Bundles cannot be added to a bundle.",
-            }
-        )
-
-    skipped_hits_already_added = ds.hit.search(
-        f"({query}) AND (howler.bundles:{sanitize_lucene_query(bundle_id)})",
-        fl="howler.id",
-    )["items"]
-
-    if len(skipped_hits_already_added) > 0:
-        report.append(
-            {
-                "query": f"({query}) AND (howler.bundles:{sanitize_lucene_query(bundle_id)})",
-                "outcome": "skipped",
-                "title": "Skipped Hits",
-                "message": f"These hits have already been added to the specified bundle.",
-            }
-        )
-
     try:
+        bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
+        if not bundle_hit or not bundle_hit.howler.is_bundle:
+            report.append(
+                {
+                    "query": query,
+                    "outcome": "error",
+                    "title": "Invalid Bundle",
+                    "message": f"Either a hit with ID {bundle_id} does not exist, or it is not a bundle.",
+                }
+            )
+            return report
+
+        ds = datastore()
+
+        skipped_hits_bundles = ds.hit.search(
+            f"({query}) AND howler.is_bundle:true",
+            fl="howler.id",
+        )["items"]
+
+        if len(skipped_hits_bundles) > 0:
+            report.append(
+                {
+                    "query": f"({query}) AND howler.is_bundle:true",
+                    "outcome": "skipped",
+                    "title": "Skipped Bundles",
+                    "message": "Bundles cannot be added to a bundle.",
+                }
+            )
+
+        skipped_hits_already_added = ds.hit.search(
+            f"({query}) AND (howler.bundles:{sanitize_lucene_query(bundle_id)})",
+            fl="howler.id",
+        )["items"]
+
+        if len(skipped_hits_already_added) > 0:
+            report.append(
+                {
+                    "query": f"({query}) AND (howler.bundles:{sanitize_lucene_query(bundle_id)})",
+                    "outcome": "skipped",
+                    "title": "Skipped Hits",
+                    "message": f"These hits have already been added to the specified bundle.",
+                }
+            )
+
         safe_query = f"({query}) AND (-howler.bundles:({sanitize_lucene_query(bundle_id)}) AND howler.is_bundle:false)"
 
         matching_hits = ds.hit.search(safe_query)["items"]

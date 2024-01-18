@@ -37,6 +37,7 @@ from howler.datastore.support.schemas import (
     default_index,
     default_mapping,
 )
+from howler.filestore.exceptions import HowlerConnectionError
 from howler.odm.base import (
     BANNED_FIELDS,
     ClassificationObject,
@@ -47,7 +48,7 @@ from howler.odm.base import (
     Model,
     _Field,
 )
-from howler.utils.dict_utils import recursive_update
+from howler.utils.dict_utils import flatten, recursive_update, unflatten
 
 if typing.TYPE_CHECKING:
     from .store import ESStore
@@ -1569,7 +1570,7 @@ class ESCollection(Generic[ModelType]):
                 script=script,
                 if_seq_no=seq_no,
                 if_primary_term=primary_term,
-                raise_conflicts=True,
+                raise_conflicts=seq_no and primary_term,
             )
             return (
                 res["result"] == "updated",
@@ -1652,8 +1653,11 @@ class ESCollection(Generic[ModelType]):
         # Getting search document data
         extra_fields = result.get("fields", {})
         source_data = result.pop("_source", None)
-        for f in BANNED_FIELDS:
-            source_data.pop(f, None)
+
+        if source_data is not None:
+            for f in BANNED_FIELDS:
+                source_data.pop(f, None)
+
         item_id = result["_id"]
 
         if self.model_class:
@@ -1673,12 +1677,13 @@ class ESCollection(Generic[ModelType]):
                     source_data, mask=fields, docid=item_id, extra_fields=extra_fields
                 )
             else:
-                source_data = recursive_update(source_data, extra_fields)
+                source_data = recursive_update(
+                    source_data, extra_fields, allow_recursion=False
+                )
                 if "id" in fields:
                     source_data["id"] = item_id
                 if "_index" in fields and "_index" in result:
                     source_data["_index"] = result["_index"]
-                return source_data
 
         if isinstance(fields, str):
             fields = fields
@@ -1689,7 +1694,12 @@ class ESCollection(Generic[ModelType]):
         if fields is None or "*" in fields:
             return source_data
 
-        return {key: val for key, val in source_data.items() if key in fields}
+        pruned_data = {}
+        for key, val in flatten(source_data).items():
+            if key in fields:
+                pruned_data[key] = val
+
+        return unflatten(pruned_data)
 
     def _search(
         self, args=None, deep_paging_id=None, use_archive=False, track_total_hits=None
@@ -1848,7 +1858,7 @@ class ESCollection(Generic[ModelType]):
 
         except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
             try:
-                err_msg = e.info["error"]["root_cause"][0]["reason"] # type: ignore
+                err_msg = e.info["error"]["root_cause"][0]["reason"]  # type: ignore
             except (ValueError, KeyError, IndexError):
                 err_msg = str(e)
 
@@ -2063,6 +2073,76 @@ class ESCollection(Generic[ModelType]):
         ):
             # Unpack the results, ensure the id is always set
             yield self._format_output(value, fl, as_obj=as_obj)
+
+    def raw_eql_search(
+        self,
+        eql_query: str,
+        fl: Optional[str] = None,
+        filters: Optional[Union[list[str], str]] = None,
+        rows: Optional[int] = None,
+        timeout: Optional[int] = None,
+        as_obj=True,
+    ):
+        if filters is None:
+            filters = []
+        elif isinstance(filters, str):
+            filters = [filters]
+
+        parsed_filters = {
+            "bool": {
+                "must": {"query_string": {"query": "*:*"}},
+                "filter": [{"query_string": {"query": ff}} for ff in filters],
+            }
+        }
+
+        if not fl:
+            fl = "howler.id"
+
+        if rows is None:
+            rows = 5
+
+        fields = [{"field": f} for f in fl.split(",")]
+
+        try:
+            result = self.with_retries(
+                self.datastore.eql.search,
+                index=self.name,
+                timestamp_field="timestamp",
+                query=eql_query,
+                fields=fields,
+                filter=parsed_filters,
+                size=rows,
+                wait_for_completion_timeout=f"{timeout}ms"
+                if timeout is not None
+                else None,
+            )
+
+            ret_data: dict[str, Any] = {
+                "rows": int(rows),
+                "total": int(result["hits"]["total"]["value"]),
+                "items": [
+                    self._format_output(doc, fl.split(","), as_obj=as_obj)
+                    for doc in result["hits"].get("events", [])
+                ],
+                "sequences": [
+                    [
+                        self._format_output(doc, fl.split(","), as_obj=as_obj)
+                        for doc in sequence.get("events", [])
+                    ]
+                    for sequence in result["hits"].get("sequences", [])
+                ],
+            }
+
+            return ret_data
+        except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
+            try:
+                err_msg = e.info["error"]["root_cause"][0]["reason"]  # type: ignore
+            except (ValueError, KeyError, IndexError):
+                err_msg = str(e)
+
+            raise SearchException(err_msg)
+        except Exception as error:
+            raise SearchException(f"collection: {self.name}, error: {str(error)}")
 
     def keys(self, access_control=None):
         """

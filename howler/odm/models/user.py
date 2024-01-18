@@ -7,6 +7,8 @@ from howler.config import CLASSIFICATION
 
 ACL = {"R", "W", "E", "I"}
 
+DASHBOARD_TYPES = {"view", "analytic"}
+
 
 @odm.model(index=False, store=False, description="Model for API keys")
 class ApiKey(odm.Model):
@@ -23,6 +25,17 @@ class ApiKey(odm.Model):
     )
     expiry_date: Optional[datetime] = odm.Optional(
         odm.Date(description="Expiry date for the apikey")
+    )
+
+
+@odm.model(index=False, store=False, description="Model for user dashboard settings")
+class DashboardEntry(odm.Model):
+    entry_id: str = odm.Keyword(description="A unique id for this entry")
+    type: str = odm.Enum(
+        DASHBOARD_TYPES, description="The type of dashboard entry to render."
+    )
+    config: str = odm.Keyword(
+        description="A stringified JSON object containing additional configuration data"
     )
 
 
@@ -70,4 +83,9 @@ class User(odm.Model):
         odm.Keyword(),
         default=[],
         description="List of favourite views of the user",
+    )
+    dashboard: list[DashboardEntry] = odm.List(
+        odm.Compound(DashboardEntry),
+        default=[],
+        description="A list of dashboard entries to render on the UI.",
     )

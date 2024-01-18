@@ -70,7 +70,7 @@ def get_classification(yml_config: Optional[str] = None):
     else:
         yml_config_path = Path(yml_config)
 
-    log.info("Loading classification definition from %s", yml_config_path)
+    log.debug("Loading classification definition from %s", yml_config_path)
 
     classification_definition = None
     # Load modifiers from the yaml config

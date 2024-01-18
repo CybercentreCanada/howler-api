@@ -26,6 +26,10 @@ HWL_USE_WEBSOCKET_API = (
     os.environ.get("HWL_USE_WEBSOCKET_API", "false").lower() == "true"
 )
 HWL_USE_JOB_SYSTEM = os.environ.get("HWL_USE_JOB_SYSTEM", "false").lower() == "true"
+HWL_ENABLE_CORRELATIONS = (
+    os.environ.get("HWL_ENABLE_CORRELATIONS", "false").lower() == "true"
+)
+HWL_ENABLE_COVERAGE = os.environ.get("HWL_ENABLE_COVERAGE", "false").lower() == "true"
 
 
 def get_version() -> str:

@@ -99,7 +99,33 @@ stages:
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
               . ./venv/bin/activate
-              python -m howler.app &
-              pytest -rsx -vv test
+              ./build_scripts/type_check.sh
+            displayName: Run type checking
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              . ./venv/bin/activate
+              python build_scripts/run_tests.py
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
+          - script: |
+              . ./venv/bin/activate
+              GIT_BRANCH=$(branch) python build_scripts/coverage_reports.py
+            workingDirectory: $(Pipeline.Workspace)/s
+            displayName: Coverage Results
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: "$(Pipeline.Workspace)/s/**/test-*.xml"
+              testRunTitle: "Publish test results for Python $(python.version)"
+          - task: PublishCodeCoverageResults@1
+            condition: succeededOrFailed()
+            inputs:
+              codeCoverageTool: Cobertura
+              summaryFileLocation: "$(Pipeline.Workspace)/s/**/coverage.xml"
+              reportDirectory: "$(Pipeline.Workspace)/s/**/htmlcov"
+          - task: GithubComment@0
+            condition: and(eq(variables.isPrBranch, true), succeeded())
+            inputs:
+              githubConnection: CybercentreCanada (3)
+              repositoryName: "$(Build.Repository.Name)"
+              comment: $(coverage_result)

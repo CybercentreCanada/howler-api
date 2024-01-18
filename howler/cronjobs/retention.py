@@ -56,5 +56,4 @@ def setup_job(sched: BaseScheduler):
         trigger=CronTrigger.from_crontab(config.system.retention.crontab),
         **_kwargs,
     )
-    sched.start()
     logger.debug("Initialization complete")

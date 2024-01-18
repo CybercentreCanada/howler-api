@@ -129,6 +129,7 @@ def decode(
     algorithms: Optional[list[str]] = None,
     audience: Optional[str] = None,
     validate_audience: bool = False,
+    **kwargs,
 ) -> dict[str, Any]:
     """Decode an access token into a JSON Web Token dict
 
@@ -152,5 +153,5 @@ def decode(
         audience = get_audience(get_provider(access_token))
 
     return jwt.decode(
-        jwt=access_token, key=key, algorithms=algorithms, audience=audience  # type: ignore
+        jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs  # type: ignore
     )

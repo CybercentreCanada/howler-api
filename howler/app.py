@@ -147,14 +147,14 @@ if config.core.metrics.apm_server.server_url is not None:
         service_name="howler_api",
     )
 
+wlog = logging.getLogger("werkzeug")
+wlog.setLevel(logging.WARNING)
+if logger.parent:  # pragma: no cover
+    for h in logger.parent.handlers:
+        wlog.addHandler(h)
+
 
 def main():
-    wlog = logging.getLogger("werkzeug")
-    wlog.setLevel(logging.WARNING)
-    if logger.parent:
-        for h in logger.parent.handlers:
-            wlog.addHandler(h)
-
     app.jinja_env.cache = {}
     app.run(
         host="0.0.0.0",

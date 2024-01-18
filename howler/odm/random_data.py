@@ -6,9 +6,13 @@ import random
 import sys
 from datetime import datetime
 from random import choice, randint, sample
+import textwrap
 from typing import Callable
 
+import yaml
+
 from howler.common import loader
+from howler.common.exceptions import HowlerValueError
 from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
 from howler.helper.oauth import VALID_CHARS
@@ -16,8 +20,14 @@ from howler.odm.base import Keyword
 from howler.odm.helper import generate_useful_hit
 from howler.odm.models.action import Action
 from howler.odm.models.analytic import Analytic, Comment, Notebook
+from howler.odm.models.ecs.event import EVENT_CATEGORIES
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Assessment, HitStatusTransition
+from howler.odm.models.howler_data import (
+    Assessment,
+    Escalation,
+    HitStatusTransition,
+    Scrutiny,
+)
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -314,7 +324,7 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
             hit.howler.detection = None
 
         ds.hit.save(hit.howler.id, hit)
-        analytic_service.save_from_hit(hit)
+        analytic_service.save_from_hit(hit, random.choice(users))
         ds.analytic.commit()
 
         if choice([True, False, False]):
@@ -353,7 +363,9 @@ def create_bundles(ds: HowlerDatastore):
             bundle_hit.howler.hits.append(hit.howler.id)
             hits[hit.howler.id].howler.bundles.append(bundle_hit.howler.id)
 
-        analytic_service.save_from_hit(bundle_hit)
+        analytic_service.save_from_hit(
+            bundle_hit, random.choice(ds.user.search("*:*")["items"])
+        )
         ds.hit.save(bundle_hit.howler.id, bundle_hit)
 
     for hit in hits.values():
@@ -366,7 +378,7 @@ def wipe_hits(ds):
     ds.hit.wipe()
 
 
-def create_analytics(ds: HowlerDatastore, num_analytics=30):
+def create_analytics(ds: HowlerDatastore, num_analytics=10):
     users = [user.uname for user in ds.user.search("*:*")["items"]]
 
     for analytic in ds.analytic.search("*:*")["items"]:
@@ -402,8 +414,57 @@ def create_analytics(ds: HowlerDatastore, num_analytics=30):
 
         ds.analytic.save(analytic.analytic_id, analytic)
 
+    fields = Hit.flat_fields()
+    key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
     for _ in range(num_analytics):
-        a = random_model_obj(Analytic)
+        a: Analytic = random_model_obj(Analytic)
+        a.name = " ".join(
+            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
+        )
+        a.detections = list(set(a.detections))
+        a.owner = random.choice(users)
+        a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
+        a.correlation = None
+        a.correlation_crontab = None
+        a.correlation_type = None
+
+        ds.analytic.save(a.analytic_id, a)
+
+    for correlation_type in ["lucene", "eql", "sigma"]:
+        a: Analytic = random_model_obj(Analytic)
+        a.correlation_type = correlation_type
+        a.name = " ".join(
+            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
+        )
+        a.detections = ["Correlation"]
+        a.owner = random.choice(users)
+        a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
+        a.correlation_crontab = f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(8, 45)))])} * * * *"
+
+        if a.correlation_type == "lucene":
+            a.correlation = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
+        elif a.correlation_type == "eql":
+            a.correlation = textwrap.dedent(
+                f"""
+            sequence
+                [ {random.choice(EVENT_CATEGORIES)} where howler.escalation in ({", ".join([f'"{item}"' for item in random.sample(Escalation.list(), k=random.randint(1, len(Escalation.list())))])}) ]
+                [ {random.choice(EVENT_CATEGORIES)} where howler.scrutiny in ({", ".join([f'"{item}"' for item in random.sample(Scrutiny.list(), k=random.randint(1, len(Scrutiny.list())))])}) ]
+            """
+            ).strip()
+        elif a.correlation_type == "sigma":
+            sigma_dir = Path(__file__).parent / "sigma"
+            if sigma_dir.exists():
+                file_name = random.choice(list(sigma_dir.glob("*.yml")))
+                file_data = file_name.read_text("utf-8")
+                data = yaml.safe_load(file_data)
+                a.name = data["title"]
+                a.description = data["description"]
+                a.correlation = file_data
+            else:
+                logger.warning(
+                    "For better test data using sigma correlations, execute howler/external/generate_sigma_rules.py."
+                )
+
         ds.analytic.save(a.analytic_id, a)
 
     ds.analytic.commit()

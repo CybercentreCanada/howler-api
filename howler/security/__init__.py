@@ -165,12 +165,14 @@ class api_login(object):
 
                     if auth_type == "Basic":
                         try:
+                            username, apikey = auth_service.decode_b64(data).split(
+                                ":", 1
+                            )
+
                             (
                                 impersonated_user,
                                 impersonated_priv,
-                            ) = auth_service.validate_apikey(
-                                *auth_service.decode_b64(data).split(":", 1), user
-                            )
+                            ) = auth_service.validate_apikey(username, apikey, user)
                         except AuthenticationException:
                             impersonated_user = None
                     else:
@@ -192,7 +194,7 @@ class api_login(object):
                     user, priv = impersonated_user, impersonated_priv
 
                 # Ensure that the provided api key allows access to this API
-                if not set(self.required_priv) & set(priv):
+                if not priv or not set(self.required_priv) & set(priv):
                     raise AccessDeniedException("You do not have access to this API.")
 
                 # Make sure the user has the correct type for this endpoint

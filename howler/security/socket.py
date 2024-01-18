@@ -42,14 +42,14 @@ def websocket_auth(
         @functools.wraps(f)
         def auth(*args, **kwargs):
             try:
-                ws = Server(request.environ, ping_interval=5)
                 ws_id = str(uuid.uuid4())
+                ws = Server(request.environ, ping_interval=5)
 
                 auth_header = ws.receive()
 
                 user, privs = auth_service.bearer_auth(auth_header)
 
-                if not user:
+                if not user or not privs:
                     raise AuthenticationException()
 
                 if not set(required_priv) & set(privs):

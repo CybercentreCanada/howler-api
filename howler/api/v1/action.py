@@ -244,16 +244,17 @@ def update_action(id, user: User, **_) -> Response:
 @action_api.route("/<id>", methods=["DELETE"])
 @api_login(audit=True, check_xsrf_token=False, required_type=["automation_basic"])
 def delete_action(id: str, user: User, **kwargs) -> Response:
-    """Delete an existing action
+    """
+    Delete an existing action
 
     Variables:
     id  => The id of the action to delete
 
     Optional Arguments:
-        None
+    None
 
     Result Example:
-        None
+    None
     """
 
     ds = datastore()

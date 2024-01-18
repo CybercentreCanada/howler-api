@@ -54,6 +54,7 @@ def convert_user(user: User) -> dict[str, Any]:
             "uname",
             "api_quota",
             "favourite_views",
+            "dashboard",
         ]
     }
 
@@ -171,18 +172,18 @@ def parse_user_data(
             # Update the current user
             current_user.update(user_data)
 
-            id = current_user.pop("id", None)
+            user_id = current_user.pop("id", None)
             avatar = current_user.pop("avatar", None)
 
             # Save updated user if there are changes to sync or it doesn't exist
             if old_user != current_user:
-                if id:
-                    logger.info("Updating %s with new data", id)
+                if user_id:
+                    logger.info("Updating %s with new data", user_id)
                 else:
                     logger.info("Creating new user %s", username)
 
-                if id:
-                    current_user["id"] = id
+                if user_id:
+                    current_user["id"] = user_id
 
                 if avatar:
                     current_user["avatar"] = avatar

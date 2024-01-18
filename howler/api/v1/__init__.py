@@ -1,3 +1,4 @@
+from textwrap import dedent
 from flask import Blueprint, current_app, request
 
 from howler.api import ok
@@ -83,9 +84,7 @@ def get_api_documentation(**kwargs):
                         api_blueprints[blueprint] = doc
 
                     if doc_string:
-                        description = "\n".join(
-                            [x.strip() for x in doc_string.splitlines()]
-                        )
+                        description = dedent(doc_string)
                     else:
                         description = (
                             "[INCOMPLETE]\n\nTHIS API HAS NOT BEEN DOCUMENTED YET!"

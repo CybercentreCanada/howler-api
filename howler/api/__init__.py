@@ -35,7 +35,7 @@ def _make_api_response(
     if quota_user and quota_set:
         QUOTA_TRACKER.end(quota_user)
 
-    if type(err) is Exception:
+    if type(err) is Exception:  # pragma: no cover
         trace = exc_info()[2]
         err = "".join(
             ["\n"]

@@ -1,9 +1,12 @@
 auth:
+  allow_apikeys: true
+  max_apikey_duration_amount: 180
+  max_apikey_duration_unit: days
   internal:
     enabled: true
   oauth:
     enabled: true
-
+    strict_apikeys: true
 
 datastore:
   ilm:
@@ -20,5 +23,6 @@ system:
 ui:
   audit: false
   debug: true
-  enforce_quota: false
+  enforce_quota: true
   validate_session_useragent: false
+  static_folder: /etc/howler/static

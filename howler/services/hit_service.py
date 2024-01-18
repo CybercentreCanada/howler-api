@@ -535,10 +535,12 @@ def transition_hit(
 
     log.debug(
         "Transitioning (%s)",
-        ", ".join([h["howler"]["id"] for h in ([hit] + child_hits)]),
+        ", ".join(
+            [h["howler"]["id"] for h in ([hit] + [ch for ch in child_hits if ch])]
+        ),
     )
 
-    for _hit in [hit] + child_hits:
+    for _hit in [hit] + [ch for ch in child_hits if ch]:
         hit_status = _hit["howler"]["status"]
         hit_id = _hit["howler"]["id"]
 

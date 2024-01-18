@@ -3,6 +3,7 @@ from howler.common.logging import get_logger
 from howler.datastore.operations import OdmUpdateOperation
 from howler.odm.models.analytic import Analytic
 from howler.odm.models.hit import Hit
+from howler.odm.models.user import User
 from howler.utils.str_utils import sanitize_lucene_query
 
 logger = get_logger(__file__)
@@ -34,7 +35,7 @@ def update_analytic(
     return result
 
 
-def save_from_hit(hit: Hit):
+def save_from_hit(hit: Hit, user: User):
     """Save updates to an analytic based on a new hit that has been created
 
     Args:
@@ -48,6 +49,9 @@ def save_from_hit(hit: Hit):
     )["items"]
     if len(existing_analytics) > 0:
         analytic: Analytic = existing_analytics[0]
+
+        if user["uname"] not in analytic.contributors:
+            analytic.contributors.append(user["uname"])
 
         if hit.howler.detection:
             new_detections = [
@@ -74,6 +78,8 @@ def save_from_hit(hit: Hit):
         analytic = Analytic(
             {
                 "name": hit.howler.analytic,
+                "owner": user["uname"],
+                "contributors": [user["uname"]],
                 "detections": [hit.howler.detection] if hit.howler.detection else [],
                 "description": "Placeholder Description - Défaut Description",
             }

@@ -180,12 +180,12 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
 
             hit_service.create_hit(odm.howler.id, odm, user=user["uname"])
 
-            analytic_service.save_from_hit(odm)
+            analytic_service.save_from_hit(odm, user)
 
         if bundle_hit:
             hit_service.create_hit(bundle_hit.howler.id, bundle_hit, user=user["uname"])
 
-            analytic_service.save_from_hit(bundle_hit)
+            analytic_service.save_from_hit(bundle_hit, user)
 
         datastore().hit.commit()
 

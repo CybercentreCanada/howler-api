@@ -1,4 +1,9 @@
 from datetime import datetime
+from math import ceil
+from typing import Optional
+
+from flask import request
+from howler.services import jwt_service
 import howler.services.hit_service as hit_service
 from howler.common.loader import get_lookups
 from howler.config import CLASSIFICATION, config, get_branch, get_commit, get_version
@@ -21,6 +26,30 @@ def get_configuration(user: User):
         user (User): The user making the request
     """
 
+    amount, unit = (
+        config.auth.max_apikey_duration_amount,
+        config.auth.max_apikey_duration_unit,
+    )
+
+    if config.auth.oauth.strict_apikeys:
+        auth_header: Optional[str] = request.headers.get("Authorization", None)
+
+        if auth_header and auth_header.startswith("Bearer") and "." in auth_header:
+            oauth_token = auth_header.split(" ")[1]
+            data = jwt_service.decode(
+                oauth_token,
+                validate_audience=False,
+                options={"verify_signature": False},
+            )
+            amount, unit = (
+                ceil(
+                    (
+                        datetime.fromtimestamp(data["exp"]) - datetime.now()
+                    ).total_seconds()
+                ),
+                "seconds",
+            )
+
     return {
         "lookups": {
             "howler.status": HitStatus.list(),
@@ -37,6 +66,8 @@ def get_configuration(user: User):
             "auth": {
                 "allow_apikeys": config.auth.allow_apikeys,
                 "allow_extended_apikeys": config.auth.allow_extended_apikeys,
+                "max_apikey_duration_amount": amount,
+                "max_apikey_duration_unit": unit,
                 "oauth_providers": [
                     name
                     for name, p in config.auth.oauth.providers.items()

@@ -1,4 +1,5 @@
 # mypy: ignore-errors
+import logging
 import os
 from sched import scheduler
 from typing import Optional
@@ -371,10 +372,15 @@ class OAuth(odm.Model):
         default=DEFAULT_OAUTH_PROVIDERS,
         description="OAuth provider configuration",
     )
+    strict_apikeys: bool = odm.Boolean(
+        description="Only allow apikeys that last as long as the access token used to log in",
+        default=False,
+    )
 
 
 DEFAULT_OAUTH = {
     "enabled": False,
+    "strict_apikeys": False,
     "gravatar_enabled": True,
     "providers": DEFAULT_OAUTH_PROVIDERS,
 }
@@ -384,6 +390,14 @@ DEFAULT_OAUTH = {
 class Auth(odm.Model):
     allow_apikeys: bool = odm.Boolean(description="Allow API keys?")
     allow_extended_apikeys: bool = odm.Boolean(description="Allow extended API keys?")
+    max_apikey_duration_amount: Optional[int] = odm.Integer(
+        description="Amount of unit of maximum duration for API keys", optional=True
+    )
+    max_apikey_duration_unit: Optional[str] = odm.Enum(
+        values=["seconds", "minutes", "hours", "days", "weeks"],
+        description="Unit of maximum duration for API keys",
+        optional=True,
+    )
     internal: Internal = odm.Compound(
         Internal,
         default=DEFAULT_INTERNAL,
@@ -627,4 +641,4 @@ if __name__ == "__main__":
     # When executed, the config model will print the default values of the configuration
     import yaml
 
-    print(yaml.safe_dump(Config(DEFAULT_CONFIG).as_primitives()))
+    logging.info(yaml.safe_dump(Config(DEFAULT_CONFIG).as_primitives()))

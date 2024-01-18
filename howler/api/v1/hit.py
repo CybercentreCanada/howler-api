@@ -121,7 +121,7 @@ def create_hits(user: User, **kwargs):
             if odm.event is not None:
                 odm.event.id = odm.howler.id
             hit_service.create_hit(odm.howler.id, odm, user=user["uname"])
-            analytic_service.save_from_hit(odm)
+            analytic_service.save_from_hit(odm, user)
 
         datastore().hit.commit()
 
@@ -311,8 +311,8 @@ def get_assigned_hits(user, **kwargs):
     hits = hit_service.search(
         query=f"howler.assignment:{sanitize_lucene_query(uname)}",
         deep_paging_id=request.args.get("deep_paging_id", None),
-        offset=request.args.get("offset", 0, type=int), # type: ignore[union-attr]
-        rows=request.args.get("rows", None, type=int), # type: ignore[union-attr]
+        offset=request.args.get("offset", 0, type=int),  # type: ignore[union-attr]
+        rows=request.args.get("rows", None, type=int),  # type: ignore[union-attr]
         sort=request.args.get("sort", None),
         fl=request.args.get("fl", None),
         timeout=request.args.get("timeout", None),
@@ -822,7 +822,7 @@ def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
 
 @hit_api.route("/bundle", methods=["POST"])
 @api_login(audit=False, required_priv=["W"])
-def create_bundle(user: dict[str, Any], **kwargs):
+def create_bundle(user: User, **kwargs):
     """
     Create a new bundle
 
@@ -868,7 +868,7 @@ def create_bundle(user: dict[str, Any], **kwargs):
                 odm.howler.hits.append(hit_id)
 
         hit_service.create_hit(odm.howler.id, odm, user=user["uname"])
-        analytic_service.save_from_hit(odm)
+        analytic_service.save_from_hit(odm, user)
 
         for hit_id in odm.howler.hits:
             child_hit: Hit = hit_service.get_hit(hit_id, as_odm=True)

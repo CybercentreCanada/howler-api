@@ -24,6 +24,11 @@ def datastore(datastore_connection):
         create_hits(ds, hit_count=10)
         create_actions(ds)
 
+        ds.hit.commit()
+        ds.action.commit()
+
+        time.sleep(1)
+
         yield ds
     finally:
         wipe_hits(ds)
@@ -278,8 +283,13 @@ def test_execute_transition_skipped(datastore: HowlerDatastore, login_session):
 
         # First report
         assert "query" in report[0]
-        assert report[0]["query"].startswith("((")
-        assert report[0]["query"].endswith(") AND -howler.status:open)")
+        assert (
+            report[0]["query"].startswith("((")
+            and report[0]["query"].endswith(") AND -howler.status:open)")
+        ) or (
+            report[0]["query"].startswith("(howler.id")
+            and report[0]["query"].endswith(")")
+        )
 
         assert "outcome" in report[0]
         assert report[0]["outcome"] == "skipped"

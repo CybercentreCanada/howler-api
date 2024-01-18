@@ -47,6 +47,14 @@ class Analytic(odm.Model):
         description="A list of useful notebooks for the analytic",
     )
     name: str = odm.Keyword(description="The name of the analytic.")
+    owner: str = odm.Keyword(
+        description="The username of the user who owns this analytic."
+    )
+    contributors: list[str] = odm.List(
+        odm.Keyword(),
+        description="A list of users who have contributed to this analytic.",
+        default=[],
+    )
     description: Optional[str] = odm.Text(
         description="A markdown description of the analytic", optional=True
     )
@@ -59,4 +67,13 @@ class Analytic(odm.Model):
         odm.Compound(Comment),
         default=[],
         description="A list of comments with timestamps and attribution.",
+    )
+    correlation: Optional[str] = odm.Keyword(
+        description="A correlation query", optional=True
+    )
+    correlation_type: Optional[str] = odm.Optional(
+        odm.Enum(values=["lucene", "eql", "sigma"], description="Type of correlation")
+    )
+    correlation_crontab: Optional[str] = odm.Keyword(
+        description="The interval for the correlation to run at", optional=True
     )

@@ -134,14 +134,14 @@ def specifications() -> list[dict[str, Any]]:
     for module in (
         _file
         for _file in module_path.iterdir()
-        if _file.suffix == "py" and _file.name != "__init__.py"
+        if _file.suffix == ".py" and _file.name != "__init__.py"
     ):
         try:
             automation = importlib.import_module(f"howler.actions.{module.stem}")
 
             specifications.append(__sanitize_specification(automation.specification()))
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.critical("Error when initializing %s - %s", module, e)
 
     return specifications

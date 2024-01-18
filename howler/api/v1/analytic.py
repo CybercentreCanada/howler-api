@@ -13,9 +13,11 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.cronjobs.correlations import register_correlations
 from howler.datastore.exceptions import DataStoreException
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.analytic import Analytic, Comment, Notebook
+from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.security import api_login
 from howler.services import analytic_service
@@ -118,9 +120,106 @@ def update_analytic(id, user: User, **kwargs):
             "description", existing_analytic.description
         )
 
+        updated_correlation = False
+        if existing_analytic.correlation_type:
+            updated_correlation = existing_analytic.correlation != new_data.get(
+                "correlation", existing_analytic.correlation
+            )
+            existing_analytic.correlation = new_data.get(
+                "correlation", existing_analytic.correlation
+            )
+
         storage.analytic.save(existing_analytic.analytic_id, existing_analytic)
 
+        if updated_correlation:
+            # The registration process automatically deletes and resets the correlation cronjob
+            register_correlations(existing_analytic)
+
         return ok(existing_analytic.as_primitives())
+    except HowlerException as e:
+        return bad_request(err=str(e))
+
+
+@analytic_api.route("/correlations", methods=["POST"])
+@api_login(required_priv=["R", "W"])
+def create_correlation(user: User, **kwargs):
+    """
+    Create a correlation analytic
+
+    Variables:
+    None
+
+    Optional Arguments:
+    None
+
+    Data Block:
+    {
+        "name": "Correlation Name",
+        "description": "*markdown* _description_"
+    }
+
+    Result Example:
+    {
+        ...analytic     # The created analytic correlation
+    }
+    """
+
+    storage = datastore()
+
+    new_data: Optional[dict[str, Any]] = request.json
+
+    if not new_data:
+        return bad_request(err="You must provide correlation data.")
+
+    required_keys = {
+        "name",
+        "description",
+        "correlation",
+        "correlation_type",
+        "correlation_crontab",
+    }
+
+    for key in required_keys:
+        if key not in new_data or not new_data[key]:
+            return bad_request(err=f"You must provide a {key} for your correlation.")
+
+    extra_keys = set(new_data.keys()) - required_keys
+
+    if len(extra_keys) > 0:
+        return bad_request(
+            err=f"Additional fields ({', '.join(extra_keys)}) are not permitted."
+        )
+
+    new_analytic = Analytic(
+        {
+            **new_data,
+            "tags": ["correlation"],
+            "owner": user["uname"],
+            "contributors": [user["uname"]],
+            "detections": ["Correlation"],
+        }
+    )
+
+    new_template = Template(
+        {
+            "analytic": new_data["name"],
+            "detection": "Correlation",
+            "type": "global",
+            "owner": user["uname"],
+            # TODO: Allow custom keys
+            "keys": ["event.kind", "event.module", "event.reason", "event.type"],
+        }
+    )
+
+    try:
+        storage.analytic.save(new_analytic.analytic_id, new_analytic)
+        # Have to commit so the analytic is available during registration
+        storage.analytic.commit()
+        register_correlations(new_analytic)
+
+        storage.template.save(new_template.template_id, new_template)
+
+        return ok(new_analytic.as_primitives())
     except HowlerException as e:
         return bad_request(err=str(e))
 

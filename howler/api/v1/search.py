@@ -1,6 +1,9 @@
 from typing import Any, Union
 from flask import request
+from sigma.backends.elasticsearch import LuceneBackend
+from sigma.rule import SigmaRule
 from werkzeug.exceptions import BadRequest
+from yaml.scanner import ScannerError
 
 from howler.api import bad_request, make_subapi_blueprint, ok
 from howler.common.loader import datastore
@@ -133,6 +136,165 @@ def search(index, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@search_api.route("/<index>/eql", methods=["GET", "POST"])
+@api_login(required_priv=["R"])
+def eql_search(index, **kwargs):
+    """
+    Search through specified index for a given EQL query.
+    Uses EQL search syntax for query.
+
+    Variables:
+    index  =>   Index to search in (hit, user,...)
+
+    Arguments:
+    eql_query   =>   EQL Query to search for
+
+    Optional Arguments:
+    filters             =>   List of additional filter queries limit the data, written in lucene
+    fl                  =>   Comma-separated list of fields to return
+    rows                =>   Number of results per page
+    timeout             =>   Maximum execution time (ms)
+
+    Data Block:
+    # Note that the data block is for POST requests only!
+    {"eql_query": "query", # EQL Query to search for
+     "rows": 100,          # Max number of results
+     "fl": "id,score",     # List of fields to return
+     "timeout": 1000,      # Maximum execution time (ms)
+     "filters": ['fq']}    # List of additional filter queries limit the data
+
+
+    Result Example:
+    {"total": 201,                          # Total results found
+     "offset": 0,                           # Offset in the result list
+     "rows": 100,                           # Number of results returned
+     "items": []}                           # List of results
+    """
+    user = kwargs["user"]
+    collection = get_collection(index, user)
+
+    if collection is None:
+        return bad_request(err=f"Not a valid index to search in: {index}")
+
+    fields = [
+        "eql_query",
+        "fl",
+        "rows",
+        "timeout",
+    ]
+    multi_fields = ["filters"]
+
+    params, req_data = generate_params(request, fields, multi_fields)
+
+    if has_access_control(index):
+        params.update({"access_control": user["access_control"]})
+
+    params["as_obj"] = False
+
+    eql_query = req_data.get("eql_query", None)
+    if not eql_query:
+        return bad_request(err="There was no EQL search query.")
+
+    try:
+        return ok(collection().raw_eql_search(**params))
+    except SearchException as e:
+        return bad_request(err=f"SearchException: {e}")
+
+
+@search_api.route("/<index>/sigma", methods=["GET", "POST"])
+@api_login(required_priv=["R"])
+def sigma_search(index, **kwargs):
+    """
+    Search through specified index using a given sigma rule.
+    Uses sigma rule syntax for query.
+
+    Variables:
+    index  =>   Index to search in (hit, user,...)
+
+    Arguments:
+    sigma   =>   Sigma rule to search on
+
+    Optional Arguments:
+    filters             =>   List of additional filter queries limit the data, written in lucene
+    fl                  =>   Comma-separated list of fields to return
+    rows                =>   Number of results per page
+    timeout             =>   Maximum execution time (ms)
+
+    Data Block:
+    # Note that the data block is for POST requests only!
+    {"sigma": "sigma yaml", # Sigma Rule to search for
+     "rows": 100,           # Max number of results
+     "fl": "id,score",      # List of fields to return
+     "timeout": 1000,       # Maximum execution time (ms)
+     "filters": ['fq']}     # List of additional filter queries limit the data
+
+
+    Result Example:
+    {"total": 201,                          # Total results found
+     "offset": 0,                           # Offset in the result list
+     "rows": 100,                           # Number of results returned
+     "items": []}                           # List of results
+    """
+    user = kwargs["user"]
+    collection = get_collection(index, user)
+    default_sort = get_default_sort(index, user)
+
+    if collection is None or default_sort is None:
+        return bad_request(err=f"Not a valid index to search in: {index}")
+
+    fields = [
+        "offset",
+        "rows",
+        "sort",
+        "fl",
+        "timeout",
+        "deep_paging_id",
+        "track_total_hits",
+    ]
+    multi_fields = ["filters"]
+    boolean_fields = ["use_archive"]
+
+    params, req_data = generate_params(request, fields, multi_fields)
+
+    params.update(
+        {
+            k: str(req_data.get(k, "false")).lower() in ["true", ""]
+            for k in boolean_fields
+            if req_data.get(k, None) is not None
+        }
+    )
+
+    if has_access_control(index):
+        params.update({"access_control": user["access_control"]})
+
+    params["as_obj"] = False
+    params.update({"sort": (params.get("sort", None) or default_sort).split(",")})
+
+    sigma = req_data.get("sigma", None)
+    if not sigma:
+        return bad_request(err="There was no sigma rule.")
+
+    try:
+        rule = SigmaRule.from_yaml(sigma)
+    except ScannerError as e:
+        return bad_request(err=f"Error when parsing yaml: {e.problem} {e.problem_mark}")
+
+    es_collection = collection()
+
+    lucene_queries = LuceneBackend(index_names=[es_collection.index_name]).convert_rule(
+        rule
+    )
+
+    try:
+        return ok(
+            es_collection.search(
+                "*:*", **params, filters=[*params.get("filters", []), *lucene_queries]
+            )
+        )
+    except SearchException as e:
+        return bad_request(err=f"SearchException: {e}")
+
+
 @search_api.route("/grouped/<index>/<group_field>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def group_search(index, group_field, **kwargs):
@@ -168,10 +330,13 @@ def group_search(index, group_field, **kwargs):
 
 
     Result Example:
-    {"total": 201,       # Total results found
+    {
+     "total": 201,       # Total results found
      "offset": 0,        # Offset in the result list
      "rows": 100,        # Number of results returned
-     "items": []}        # List of results
+     "items": [],        # List of results
+     "sequences": [],    # List of matching sequences
+    }
     """
     user = kwargs["user"]
     collection = get_collection(index, user)

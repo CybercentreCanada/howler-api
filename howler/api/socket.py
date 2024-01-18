@@ -96,9 +96,10 @@ def connect(ws: Server, *args, ws_id, **kwargs):
                             "error",
                             error=True,
                             status=400,
-                            message="Authentication header is invalid.",
+                            message="Sent data is invalid.",
                         ),
                     )
+                    return
 
                 outstanding_actions = check_action(
                     obj["id"],

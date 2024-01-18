@@ -1,6 +1,6 @@
 import base64
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlsplit
 
 import pytest
@@ -370,7 +370,7 @@ def test_read_api_key(login_session):
             {
                 "name": key_name,
                 "priv": "R",
-                "expiry_date": datetime.now().replace(year=3000).isoformat(),
+                "expiry_date": (datetime.now() + timedelta(days=1)).isoformat(),
             }
         ),
         method="POST",
@@ -387,7 +387,7 @@ def test_read_api_key(login_session):
                 {
                     "name": key_name,
                     "priv": "RW",
-                    "expiry_date": datetime.now().replace(year=3000).isoformat(),
+                    "expiry_date": (datetime.now() + timedelta(days=1)).isoformat(),
                 }
             ),
             method="POST",
@@ -420,7 +420,7 @@ def test_read_write_api_key(login_session):
             {
                 "name": key_name,
                 "priv": "RW",
-                "expiry_date": datetime.now().replace(year=3000).isoformat(),
+                "expiry_date": (datetime.now() + timedelta(days=1)).isoformat(),
             }
         ),
         method="POST",
@@ -454,7 +454,7 @@ def test_write_api_key(login_session):
             {
                 "name": key_name,
                 "priv": "W",
-                "expiry_date": datetime.now().replace(year=3000).isoformat(),
+                "expiry_date": (datetime.now() + timedelta(days=1)).isoformat(),
             }
         ),
         method="POST",
@@ -488,7 +488,7 @@ def test_impersonate_key(login_session):
                 "name": key_name,
                 "priv": "RI",
                 "agents": ["admin", "goose"],
-                "expiry_date": datetime.now().replace(year=3000).isoformat(),
+                "expiry_date": (datetime.now() + timedelta(days=1)).isoformat(),
             }
         ),
         headers={
