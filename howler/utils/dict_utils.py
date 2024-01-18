@@ -110,7 +110,7 @@ def flatten(data: _Mapping, parent_key: Optional[str] = None) -> dict[str, Any]:
 
 
 def unflatten(data: Dict) -> Dict:
-    out = dict()
+    out: dict[str, Any] = dict()
     for k, v in data.items():
         parts = k.split(".")
         d = out

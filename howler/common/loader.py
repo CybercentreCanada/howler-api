@@ -2,8 +2,8 @@ import logging
 import os
 from pathlib import Path
 from string import Template
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
-
+from typing import TYPE_CHECKING, Any, Optional, Union
+import typing
 import yaml
 
 from howler.utils.dict_utils import recursive_update
@@ -161,7 +161,7 @@ def _get_config(yml_config: Optional[str] = None):
         with yml_config_path.open() as yml_fh:
             yml_data = yaml.safe_load(env_substitute(yml_fh.read()))
             if yml_data:
-                config = recursive_update(config, yml_data)
+                config = typing.cast(dict[str, Any], recursive_update(config, yml_data))
 
     # Override log level from environment variable
     config["logging"]["log_level"] = os.environ.get(
