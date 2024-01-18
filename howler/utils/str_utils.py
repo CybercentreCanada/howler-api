@@ -1,7 +1,7 @@
 import os
 import re
 from copy import copy
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import chardet
 
@@ -139,7 +139,7 @@ def is_safe_str(s) -> bool:
 
 
 # noinspection PyBroadException
-def translate_str(s, min_confidence=0.7) -> dict:
+def translate_str(s: Union[str, bytes], min_confidence=0.7) -> dict:
     if not isinstance(s, (str, bytes)):
         raise HowlerTypeError(f"Expected str or bytes got {type(s)}")
 
@@ -147,13 +147,13 @@ def translate_str(s, min_confidence=0.7) -> dict:
         s = s.encode("utf-8")
 
     try:
-        r = chardet.detect(s)
+        r: Any = chardet.detect(s)
     except Exception:
         r = {"confidence": 0.0, "encoding": None, "language": None}
 
     if r["confidence"] > 0 and r["confidence"] >= min_confidence:
         try:
-            t = s.decode(r["encoding"])
+            t: Union[str, bytes] = s.decode(r["encoding"] or "utf-8")
         except Exception:
             t = s
     else:
@@ -163,7 +163,7 @@ def translate_str(s, min_confidence=0.7) -> dict:
     r["encoding"] = r["encoding"] or "unknown"
     r["language"] = r["language"] or "unknown"
 
-    return r
+    return r  # type: ignore
 
 
 # This method not really necessary. More to stop people from rolling their own.

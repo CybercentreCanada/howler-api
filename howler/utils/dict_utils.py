@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import AnyStr, Dict, List
+from typing import Any, AnyStr, Dict, List
 from typing import Mapping as _Mapping
 from typing import Optional, Union
 
@@ -97,8 +97,8 @@ def get_dict_fingerprint_hash(data: Dict):
     return get_id_from_data(str(get_recursive_sorted_tuples(data)))
 
 
-def flatten(data: Dict, parent_key: Optional[str] = None) -> Dict:
-    items = []
+def flatten(data: _Mapping, parent_key: Optional[str] = None) -> dict[str, Any]:
+    items: list[tuple[str, Any]] = []
     for k, v in data.items():
         cur_key = f"{parent_key}.{k}" if parent_key is not None else k
         if isinstance(v, dict):
