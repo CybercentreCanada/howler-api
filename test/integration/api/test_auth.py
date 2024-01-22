@@ -205,7 +205,7 @@ def test_impersonation(host):
     assert res.status_code == 200
     assert res.json()["api_response"]["username"] == "user"
 
-    token = get_token()
+    token = get_token(user="admin")
     if token:
         res = requests.get(
             f"{host}/api/v1/user/whoami",
@@ -511,7 +511,7 @@ def test_impersonate_key(login_session):
     assert data.ok
     assert data.json()["api_response"]["username"] == "user"
 
-    token = get_token()
+    token = get_token(user="admin")
     if token:
         data = requests.get(
             f"{host}/api/v1/user/whoami",

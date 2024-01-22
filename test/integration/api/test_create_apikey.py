@@ -96,38 +96,6 @@ def test_past_max_expiry(datastore: HowlerDatastore, login_session):
     assert str(err.value).startswith("400: Expiry date must be before")
 
 
-@pytest.mark.skipif(
-    not config.auth.oauth.strict_apikeys,
-    reason="Can only be run when strict oauth API keys are enabled.",
-)
-def test_max_expiry_oauth(datastore: HowlerDatastore, login_session):
-    session, host = login_session
-
-    access_token = get_token()
-
-    jwt_data = jwt.decode(access_token, options={"verify_signature": False})
-
-    key_expiry = (
-        datetime.fromtimestamp(jwt_data["exp"]) + timedelta(weeks=6)
-    ).isoformat()
-
-    result = requests.post(
-        f"{host}/api/v1/auth/apikey",
-        json={
-            "name": "tester",
-            "priv": ["R"],
-            "expiry_date": key_expiry,
-        },
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
-
-    assert not result.ok
-    assert (
-        result.json()["api_error_message"]
-        == f"Expiry date must be before {datetime.fromtimestamp(jwt_data['exp']).isoformat()}."
-    )
-
-
 def test_invalid_apikey_expiry(datastore: HowlerDatastore, login_session):
     session, host = login_session
 

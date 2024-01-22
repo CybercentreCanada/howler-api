@@ -7,13 +7,12 @@ import requests
 from requests.auth import HTTPBasicAuth
 from websocket import create_connection, WebSocket
 from howler.api.socket import HWL_INTERPOD_COMMS_SECRET
-from howler.helper import ws
 
 from utils.oauth_credentials import get_token
 
 
 @pytest.fixture(scope="module")
-def ws_client(host):
+def ws_client(host, datastore_connection):
     ws = create_connection(f'{host.replace("http", "ws")}/socket/v1/connect')
 
     app_token = get_token(user="goose")

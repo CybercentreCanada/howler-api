@@ -44,6 +44,8 @@ def create_users(ds):
     admin_pass = os.getenv("DEV_ADMIN_PASS", "admin") or "admin"
     user_pass = os.getenv("DEV_USER_PASS", "user") or "user"
     shawnh_pass = "shawn-h"
+    goose_pass = "goose"
+    huey_pass = "huey"
 
     admin_hash = get_password_hash(admin_pass)
 
@@ -153,6 +155,49 @@ def create_users(ds):
     if "pytest" not in sys.modules:
         logger.info(f"\t{user_data.uname}:{user_pass}")
 
+    huey_hash = get_password_hash(huey_pass)
+
+    huey_view = View(
+        {
+            "title": "view.assigned_to_me",
+            "query": "howler.assignment:huey",
+            "type": "readonly",
+            "owner": "huey",
+        }
+    )
+
+    huey_data = User(
+        {
+            "name": "Huey Guy",
+            "email": "huey@howler.cyber.gc.ca",
+            "apikeys": {
+                "devkey": {"acl": ["R", "W"], "password": huey_hash},
+                "impersonate_admin": {
+                    "acl": ["R", "W", "I"],
+                    "agents": ["admin", "goose"],
+                    "password": huey_hash,
+                },
+                "impersonate_potato": {
+                    "acl": ["R", "W", "I"],
+                    "agents": ["potato"],
+                    "password": huey_hash,
+                },
+            },
+            "password": huey_hash,
+            "uname": "huey",
+            "favourite_views": [huey_view.view_id],
+        }
+    )
+    ds.user.save("huey", huey_data)
+    ds.user_avatar.save(
+        "huey",
+        "https://static.wikia.nocookie.net/theoffice/images/c/c5/Dwight_.jpg",
+    )
+    ds.view.save(huey_view.view_id, huey_view)
+
+    if "pytest" not in sys.modules:
+        logger.info(f"\t{huey_data.uname}:{huey_pass}")
+
     shawnh_view = View(
         {
             "title": "view.assigned_to_me",
@@ -180,6 +225,34 @@ def create_users(ds):
 
     if "pytest" not in sys.modules:
         logger.info(f"\t{shawn_data.uname}:{shawnh_pass}")
+
+    goose_view = View(
+        {
+            "title": "view.assigned_to_me",
+            "query": "howler.assignment:goose",
+            "type": "readonly",
+            "owner": "goose",
+        }
+    )
+    goose_data = User(
+        {
+            "name": "Mister Goose",
+            "email": "mister.goose@howler.com",
+            "apikeys": {},
+            "type": ["admin", "user"],
+            "groups": ["group1", "group2"],
+            "password": get_password_hash(goose_pass),
+            "uname": "goose",
+            "favourite_views": [goose_view.view_id],
+        }
+    )
+
+    goose_data.favourite_views.append(goose_view.view_id)
+    ds.user.save("goose", goose_data)
+    ds.view.save(goose_view.view_id, goose_view)
+
+    if "pytest" not in sys.modules:
+        logger.info(f"\t{goose_data.uname}:{goose_pass}")
 
     ds.user.commit()
     ds.user_avatar.commit()

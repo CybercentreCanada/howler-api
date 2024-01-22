@@ -50,4 +50,7 @@ try:
 
 except subprocess.CalledProcessError as e:
     print("Error occurred while running script:", e)
+    print("Shutting down background server")
+    background_server.send_signal(2)
+    background_server.wait()
     sys.exit(e.returncode)
