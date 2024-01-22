@@ -209,7 +209,7 @@ def create_users(ds):
     shawn_data = User(
         {
             "name": "Shawn Hannigans",
-            "email": "shawn.hannigans@howler.com",
+            "email": "shawn.hannigans@howler.cyber.gc.ca",
             "apikeys": {},
             "type": ["admin", "user"],
             "groups": ["group1", "group2"],
@@ -237,7 +237,7 @@ def create_users(ds):
     goose_data = User(
         {
             "name": "Mister Goose",
-            "email": "mister.goose@howler.com",
+            "email": "goose@howler.cyber.gc.ca",
             "apikeys": {},
             "type": ["admin", "user"],
             "groups": ["group1", "group2"],
