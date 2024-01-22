@@ -128,6 +128,6 @@ stages:
           - task: GithubComment@0
             condition: and(eq(variables.isPrBranch, true), succeeded())
             inputs:
-              githubConnection: CybercentreCanada (3)
+              githubConnection: Howler Github PAT
               repositoryName: "$(Build.Repository.Name)"
               comment: $(coverage_result)
