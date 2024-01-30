@@ -17,7 +17,7 @@ from howler.odm.models.user import User
 from howler.odm.models.view import View
 from howler.utils.str_utils import safe_str
 
-ACCOUNT_USER_MODIFIABLE = ["name", "email", "avatar", "password"]
+ACCOUNT_USER_MODIFIABLE = ["name", "email", "avatar", "password", "dashboard"]
 
 logger = get_logger(__file__)
 
