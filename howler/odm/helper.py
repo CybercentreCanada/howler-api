@@ -174,8 +174,21 @@ def generate_useful_hit(lookups, users, prune_hit=True):
         ),
     ]
 
+    hit.howler.links = [
+        Link(
+            {
+                "title": "Goose",
+                "href": "https://en.wikipedia.org/wiki/Canada_goose",
+                "icon": (
+                    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Canada_goose_on_Seedskadee_NWR"
+                    "_%2827826185489%29.jpg/788px-Canada_goose_on_Seedskadee_NWR_%2827826185489%29.jpg"
+                ),
+            }
+        )
+    ]
+
     try:
-        hit.howler.links = [
+        hit.howler.links.extend(
             Link(
                 {
                     "title": get_random_word(),
@@ -184,18 +197,6 @@ def generate_useful_hit(lookups, users, prune_hit=True):
                 }
             )
             for app in random.choices(APPS, k=5)
-        ]
-        hit.howler.links.append(
-            Link(
-                {
-                    "title": "Goose",
-                    "href": "https://en.wikipedia.org/wiki/Canada_goose",
-                    "icon": (
-                        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Canada_goose_on_Seedskadee_NWR"
-                        "_%2827826185489%29.jpg/788px-Canada_goose_on_Seedskadee_NWR_%2827826185489%29.jpg"
-                    ),
-                }
-            )
         )
     except IndexError:
         pass

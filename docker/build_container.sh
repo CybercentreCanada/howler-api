@@ -10,4 +10,4 @@ version=$( (cd .. && python setup.py --version))
 (cd .. && python setup.py bdist_wheel)
 
 # Build container
-(cd .. && docker build --build-arg version=$version --no-cache -f Dockerfile -t cccs/howler-api:latest -t cccs/howler-api:$version .)
+(cd .. && docker build --build-arg version=$version --no-cache -f docker/Dockerfile -t cccs/howler-api:latest -t cccs/howler-api:$version .)
