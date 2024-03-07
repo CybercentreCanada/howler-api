@@ -80,8 +80,10 @@ stages:
           - script: |
               sudo mkdir -p /var/cache/howler/
               sudo mkdir -p /var/lib/howler/
+              sudo mkdir -p /var/log/howler/
               sudo chmod a+rw /var/cache/howler/
               sudo chmod a+rw /var/lib/howler/
+              sudo chmod a+rw /var/log/howler/
               sudo cp test/unit/config.yml /etc/howler/conf/config.yml
               sudo apt-get update
               sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libsasl2-dev wget
