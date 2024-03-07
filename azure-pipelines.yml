@@ -31,13 +31,13 @@ pool:
 resources:
   containers:
     - container: redis
-      image: uchimera.azurecr.io/bitnami/redis:7.0.5-debian-11-r7
+      image: bitnami/redis:7.0.5-debian-11-r7
       ports:
         - 6379:6379
       env:
         ALLOW_EMPTY_PASSWORD: yes
     - container: elasticsearch
-      image: uchimera.azurecr.io/elasticsearch/elasticsearch:8.5.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.5.2
       env:
         ES_JAVA_OPTS: "-Xms256m -Xmx512m"
         discovery.type: "single-node"
@@ -46,7 +46,7 @@ resources:
       ports:
         - 9200:9200
     - container: minio
-      image: uchimera.azurecr.io/bitnami/minio:2022.10.8-debian-11-r0
+      image: bitnami/minio:2022.10.8-debian-11-r0
       env:
         MINIO_ROOT_USER: hwl_storage_key
         MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
