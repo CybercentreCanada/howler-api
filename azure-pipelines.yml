@@ -25,7 +25,8 @@ variables:
   pythonVersion: "3.9"
   dockerfilePath: "$(Build.SourcesDirectory)/docker/Dockerfile"
 
-pool: "stratus-build-pool.u"
+pool:
+  vmImage: "ubuntu:latest"
 
 resources:
   containers:
