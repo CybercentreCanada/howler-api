@@ -37,7 +37,7 @@ resources:
       env:
         ALLOW_EMPTY_PASSWORD: yes
     - container: elasticsearch
-      image: elasticsearch/elasticsearch:8.5.2
+      image: elasticsearch:8.5.2
       env:
         ES_JAVA_OPTS: "-Xms256m -Xmx512m"
         discovery.type: "single-node"
@@ -53,7 +53,7 @@ resources:
       ports:
         - 9000:9000
     - container: keycloak
-      image: keycloak:1.0.0
+      image: quay.io/keycloak/keycloak:latest
       ports:
         - 9100:8080
 
