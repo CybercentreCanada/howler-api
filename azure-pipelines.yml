@@ -37,7 +37,7 @@ resources:
       env:
         ALLOW_EMPTY_PASSWORD: yes
     - container: elasticsearch
-      image: elasticsearch:8.5.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.5.2
       env:
         ES_JAVA_OPTS: "-Xms256m -Xmx512m"
         discovery.type: "single-node"
