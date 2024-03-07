@@ -26,7 +26,7 @@ variables:
   dockerfilePath: "$(Build.SourcesDirectory)/docker/Dockerfile"
 
 pool:
-  vmImage: "ubuntu:latest"
+  vmImage: "ubuntu-latest"
 
 resources:
   containers:
