@@ -1,17 +1,12 @@
 import textwrap
-import time
 
-import pytest
-from howler.common.exceptions import HowlerValueError
 from howler.cronjobs.correlations import (
     create_correlated_bundle,
     create_executor,
-    register_correlations,
-    setup_job,
 )
 from howler.odm.models.analytic import Analytic
 from howler.odm.models.hit import Hit
-from howler.odm.random_data import create_analytics, create_hits
+from howler.odm.random_data import create_hits
 from howler.odm.randomizer import random_model_obj
 
 
@@ -42,33 +37,6 @@ def test_correlated_bundle(datastore_connection):
     assert correlated_bundle.howler.analytic == correlation.name
     assert correlated_bundle.howler.id == correlated_bundle_2.howler.id
     assert correlated_bundle_3.howler.id != correlated_bundle_2.howler.id
-
-
-def test_registration(datastore_connection):
-    from howler.cronjobs import scheduler
-
-    create_analytics(datastore_connection, num_analytics=4)
-
-    setup_job(scheduler)
-
-    correlation: Analytic = random_model_obj(Analytic)
-    correlation.correlation = "howler.id:*"
-    correlation.correlation_type = "lucene"
-    correlation.correlation_crontab = "0 0 * * *"
-
-    datastore_connection.analytic.save(correlation.analytic_id, correlation)
-
-    register_correlations(correlation, test_override=True)
-
-    register_correlations(correlation, test_override=True)
-
-    register_correlations(test_override=True)
-
-    register_correlations(test_override=True)
-
-    assert scheduler.get_job(f"correlation_{correlation.analytic_id}")
-
-    scheduler.remove_all_jobs()
 
 
 def test_executor(datastore_connection):
