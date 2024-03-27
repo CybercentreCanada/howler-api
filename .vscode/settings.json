@@ -54,8 +54,8 @@
     "autoDocstring.docstringFormat": "google",
     "autoDocstring.guessTypes": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true,
-        "source.fixAll": true
+        "source.organizeImports": "explicit",
+        "source.fixAll": "explicit"
     },
     "python.defaultInterpreterPath": "${workspaceFolder}/env/bin/python",
     "python.analysis.autoImportCompletions": true,
