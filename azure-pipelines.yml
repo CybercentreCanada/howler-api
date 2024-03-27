@@ -105,7 +105,7 @@ stages:
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
               . ./venv/bin/activate
-              python build_scripts/run_tests.py
+              HWL_USE_WEBSOCKET_API=true HWL_ENABLE_RULES=true python build_scripts/run_tests.py
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
           - script: |
