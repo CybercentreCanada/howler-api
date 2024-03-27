@@ -38,9 +38,13 @@ def test_correlated_bundle(datastore_connection):
 
 
 def test_registration(datastore_connection):
-    from howler.cronjobs import scheduler
+    from howler.cronjobs import setup_jobs
 
     create_analytics(datastore_connection, num_analytics=4)
+
+    setup_jobs()
+
+    from howler.cronjobs import scheduler
 
     setup_job(scheduler)
 
