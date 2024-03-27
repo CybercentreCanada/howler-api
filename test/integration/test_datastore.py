@@ -228,6 +228,20 @@ def _test_update(c: ESCollection):
     assert c.get("to_update") == expected
 
 
+def _test_update_fails(c: ESCollection):
+    assert not c.update("to_update_doesnt_exist", [(c.UPDATE_SET, "map.b", 99)])
+    assert not c.update(
+        "to_update",
+        [(c.UPDATE_SET, "RTGE$%^Y#$Gavsdfvbkl", "dafgkjbsdfkgjsbdnfgjkhsdfg")],
+    )
+    val = c.get("to_update", version=True)[1]
+
+    with pytest.raises(VersionConflictException):
+        assert not c.update(
+            "to_update", [(c.UPDATE_SET, "map.b", 99)], version=val.replace("1", "2")
+        )
+
+
 def _test_update_by_query(c: ESCollection):
     # Test update_by_query
     expected = {
@@ -251,6 +265,8 @@ def _test_update_by_query(c: ESCollection):
     expected.update({})
     assert c.get("bulk_update") == expected
     assert c.get("bulk_update2") == expected
+
+    assert not c.update_by_query("bulk_b:false", [], filters=["bulk_b:true"])
 
 
 def _test_delete_by_query(c: ESCollection):
@@ -401,6 +417,7 @@ TEST_FUNCTIONS = [
     (_test_multiget, "multiget"),
     (_test_keys, "keys"),
     (_test_update, "update"),
+    (_test_update_fails, "update_fails"),
     (_test_update_by_query, "update_by_query"),
     (_test_delete_by_query, "delete_by_query"),
     (_test_fields, "fields"),

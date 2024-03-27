@@ -7,7 +7,7 @@ from howler.odm.models.user import User
 # List of indices where queries are protected with classification access control
 ACCESS_CONTROLLED_INDICES: dict[str, ESCollection] = {}
 
-ADMIN_INDEX_MAP: dict[str, ESCollection] = {}
+ADMIN_INDEX_MAP: dict[str, Callable[[], ESCollection]] = {}
 
 ADMIN_INDEX_ORDER_MAP: dict[str, str] = {}
 
@@ -34,7 +34,7 @@ INDEX_ORDER_MAP: dict[str, str] = {
 
 def get_collection(
     index: str, user: Union[User, dict[str, Any]]
-) -> Optional[ESCollection]:
+) -> Optional[Callable[[], ESCollection]]:
     """Get the ESCollection for a given index
 
     Args:
@@ -49,7 +49,7 @@ def get_collection(
     )
 
 
-def get_default_sort(index: str, user: Union[User, dict[str, Any]]) -> str:
+def get_default_sort(index: str, user: Union[User, dict[str, Any]]) -> Optional[str]:
     """Retrieve the default sorting for a given index
 
     Args:

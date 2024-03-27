@@ -5,6 +5,7 @@ import logging.handlers
 import os
 import re
 from traceback import format_exception
+from typing import Optional, Union
 
 from flask import request
 
@@ -45,7 +46,7 @@ class JsonFormatter(logging.Formatter):
         return "".join(format_exception(*exc_info))
 
 
-def init_logging(name: str, log_level: int = None):
+def init_logging(name: str, log_level: Optional[int] = None):
     from howler.config import config
 
     logger = logging.getLogger(loader.APP_NAME)
@@ -203,7 +204,7 @@ def get_traceback_info(tb):
 
 
 def dumb_log(log, msg, is_exception=False):
-    args = request.query_string
+    args: Union[str, bytes] = request.query_string
     if isinstance(args, bytes):
         args = args.decode()
 
@@ -225,9 +226,11 @@ def log_with_traceback(traceback, msg, is_exception=False, audit=False):
     tb_info = get_traceback_info(traceback)
     if tb_info:
         tb_user, tb_file, tb_function, tb_line_no = tb_info
-        args = request.query_string
+        args: Optional[Union[str, bytes]] = request.query_string
         if args:
-            args = "?%s" % args
+            args = f"?{args if isinstance(args, str) else args.decode()}"
+        else:
+            args = ""
 
         # noinspection PyBroadException
         try:

@@ -1,3 +1,4 @@
+from typing import Union
 from howler.odm import (
     Keyword,
     Text,
@@ -160,13 +161,13 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
 
         elif isinstance(field, Keyword):
             es_data_type = __type_mapping[field.__class__]
-            data = {"type": es_data_type}
+            data: dict[str, Union[str, int]] = {"type": es_data_type}
             if es_data_type == "keyword":
                 data[
                     "ignore_above"
                 ] = 8191  # The maximum always safe value in elasticsearch
             if field.__class__ in __normalizer_mapping:
-                data["normalizer"] = __normalizer_mapping[field.__class__]
+                data["normalizer"] = __normalizer_mapping[field.__class__]  # type: ignore
             mappings[name.strip(".")] = set_mapping(field, data)
 
         elif isinstance(field, Date):

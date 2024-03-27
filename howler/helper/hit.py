@@ -73,8 +73,8 @@ def assess_hit(
 
 
 def unassign_hit(
+    hit: dict[str, Any],
     user: Optional[User] = None,
-    hit: Optional[dict[str, Any]] = None,
     **kwargs,
 ) -> list[OdmUpdateOperation]:
     """Remove the assignment of a hit
@@ -175,7 +175,11 @@ def promote_hit(**kwargs) -> list[OdmUpdateOperation]:
     Returns:
         list[OdmUpdateOperation]: The update to run to promote
     """
-    return [odm_helper.update("howler.escalation", Escalation.ALERT)]
+    return [
+        odm_helper.update(
+            "howler.escalation", kwargs.get("escalation", Escalation.ALERT)
+        )
+    ]
 
 
 def demote_hit(**kwargs) -> list[OdmUpdateOperation]:
@@ -184,7 +188,9 @@ def demote_hit(**kwargs) -> list[OdmUpdateOperation]:
     Returns:
         list[OdmUpdateOperation]: The update to run to demote
     """
-    return [odm_helper.update("howler.escalation", Escalation.HIT)]
+    return [
+        odm_helper.update("howler.escalation", kwargs.get("escalation", Escalation.HIT))
+    ]
 
 
 def vote_hit(
@@ -222,11 +228,11 @@ def vote_hit(
     old_vote = (
         "benign"
         if email in hit["howler"]["votes"]["benign"]
-        else "obscure"
-        if email in hit["howler"]["votes"]["obscure"]
-        else "malicious"
-        if email in hit["howler"]["votes"]["malicious"]
-        else None
+        else (
+            "obscure"
+            if email in hit["howler"]["votes"]["obscure"]
+            else "malicious" if email in hit["howler"]["votes"]["malicious"] else None
+        )
     )
 
     if old_vote:

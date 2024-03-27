@@ -92,7 +92,7 @@ class ExpiringSet(Set):
     def __init__(self, name, ttl=86400, host=None, port=None):
         super(ExpiringSet, self).__init__(name, host, port)
         self.ttl = ttl
-        self.last_expire_time = 0
+        self.last_expire_time: float = 0
 
     def _conditional_expire(self):
         if self.ttl:

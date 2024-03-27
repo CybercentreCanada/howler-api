@@ -113,6 +113,9 @@ ENV/
 env.bak/
 venv.bak/
 
+#junit test results
+junit
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -134,8 +137,12 @@ dmypy.json
 # Old APIs
 howler/api/old/
 
+howler/odm/sigma/
+
 # Random script directory
 script/
+.pyvenv_venv_path
+diff-cover-report.md
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm

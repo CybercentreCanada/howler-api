@@ -8,7 +8,7 @@ class HowlerException(Exception):
     """Wrapper for all exceptions thrown in howler's code"""
 
     message: str
-    cause: Exception
+    cause: Optional[Exception]
 
     def __init__(
         self, message: str = "Something went wrong", cause: Optional[Exception] = None

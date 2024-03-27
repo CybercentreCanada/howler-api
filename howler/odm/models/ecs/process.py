@@ -1,5 +1,4 @@
 from howler import odm
-
 from howler.odm.models.ecs.user import ShortUser
 
 
@@ -132,7 +131,7 @@ class Process(odm.Model):
             "executable, and all arguments."
         )
     )
-    end = odm.Date(odm.Keyword(description="The time the process ended."))
+    end = odm.Optional(odm.Date(odm.Keyword(description="The time the process ended.")))
     entity_id = odm.Optional(
         odm.Keyword(description="Unique identifier for the process.")
     )

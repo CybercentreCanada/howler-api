@@ -1,6 +1,6 @@
 # mypy: ignore-errors
+import logging
 import os
-from sched import scheduler
 from typing import Optional
 
 from howler import odm
@@ -371,10 +371,15 @@ class OAuth(odm.Model):
         default=DEFAULT_OAUTH_PROVIDERS,
         description="OAuth provider configuration",
     )
+    strict_apikeys: bool = odm.Boolean(
+        description="Only allow apikeys that last as long as the access token used to log in",
+        default=False,
+    )
 
 
 DEFAULT_OAUTH = {
     "enabled": False,
+    "strict_apikeys": False,
     "gravatar_enabled": True,
     "providers": DEFAULT_OAUTH_PROVIDERS,
 }
@@ -384,6 +389,14 @@ DEFAULT_OAUTH = {
 class Auth(odm.Model):
     allow_apikeys: bool = odm.Boolean(description="Allow API keys?")
     allow_extended_apikeys: bool = odm.Boolean(description="Allow extended API keys?")
+    max_apikey_duration_amount: Optional[int] = odm.Integer(
+        description="Amount of unit of maximum duration for API keys", optional=True
+    )
+    max_apikey_duration_unit: Optional[str] = odm.Enum(
+        values=["seconds", "minutes", "hours", "days", "weeks"],
+        description="Unit of maximum duration for API keys",
+        optional=True,
+    )
     internal: Internal = odm.Compound(
         Internal,
         default=DEFAULT_INTERNAL,
@@ -528,35 +541,6 @@ DEFAULT_UI = {
     "static_folder": os.path.dirname(__file__) + "/../../../static",
 }
 
-DEFAULT_SPELLBOOK = {
-    "enabled": False,
-    "url": "http://spellbook-rest.spellbook.svc.cluster.local:8080/api",
-}
-
-DEFAULT_NOTEBOOK = {
-    "enabled": False,
-    "url": "http://nbgallery.nbgallery.svc.cluster.local:3000",
-}
-
-
-@odm.model(index=False, store=False, description="Howler Core Component Configuration")
-class Spellbook(odm.Model):
-    enabled: bool = odm.Boolean(default=DEFAULT_SPELLBOOK["enabled"])
-
-    scope: str = odm.Keyword(optional=True)
-
-    url: str = odm.Keyword(default=DEFAULT_SPELLBOOK["url"])
-
-
-@odm.model(index=False, store=False, description="Howler Core Component Configuration")
-class Notebook(odm.Model):
-    enabled: bool = odm.Boolean(default=DEFAULT_NOTEBOOK["enabled"])
-
-    scope: str = odm.Keyword(optional=True)
-
-    url: str = odm.Keyword(default=DEFAULT_NOTEBOOK["url"])
-
-
 @odm.model(index=False, store=False, description="Howler Core Component Configuration")
 class Core(odm.Model):
     metrics: Metrics = odm.Compound(
@@ -569,19 +553,6 @@ class Core(odm.Model):
         Redis, default=DEFAULT_REDIS, description="Configuration for Redis instances"
     )
 
-    spellbook: Spellbook = odm.Compound(
-        Spellbook,
-        default=DEFAULT_SPELLBOOK,
-        description="Configuration for spellbook integration",
-    )
-
-    notebook: Notebook = odm.Compound(
-        Notebook,
-        default=DEFAULT_NOTEBOOK,
-        description="Configuration for notebook integration",
-    )
-
-    vault_url: str = odm.Keyword(default="https://vault.vault.svc.cluster.local:8200")
 
 
 DEFAULT_CORE = {"metrics": DEFAULT_METRICS, "redis": DEFAULT_REDIS}
@@ -627,4 +598,4 @@ if __name__ == "__main__":
     # When executed, the config model will print the default values of the configuration
     import yaml
 
-    print(yaml.safe_dump(Config(DEFAULT_CONFIG).as_primitives()))
+    logging.info(yaml.safe_dump(Config(DEFAULT_CONFIG).as_primitives()))

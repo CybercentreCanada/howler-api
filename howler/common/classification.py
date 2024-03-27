@@ -39,22 +39,22 @@ class Classification(object):
             "description",
         ]
         self.original_definition = classification_definition
-        self.levels_map = {}
+        self.levels_map: dict[str, str] = {}
         self.levels_map_stl = {}
         self.levels_map_lts = {}
         self.levels_styles_map = {}
         self.levels_aliases = {}
         self.access_req_map_lts = {}
         self.access_req_map_stl = {}
-        self.access_req_aliases = {}
+        self.access_req_aliases: dict[str, Any] = {}
         self.groups_map_lts = {}
         self.groups_map_stl = {}
-        self.groups_aliases = {}
+        self.groups_aliases: dict[str, Any] = {}
         self.groups_auto_select = []
         self.groups_auto_select_short = []
         self.subgroups_map_lts = {}
         self.subgroups_map_stl = {}
-        self.subgroups_aliases = {}
+        self.subgroups_aliases: dict[str, Any] = {}
         self.subgroups_auto_select = []
         self.subgroups_auto_select_short = []
         self.params_map = {}
@@ -78,7 +78,7 @@ class Classification(object):
         self.levels_map_stl[self.NULL_CLASSIFICATION] = self.NULL_CLASSIFICATION
         self.levels_map_lts[self.NULL_CLASSIFICATION] = self.NULL_CLASSIFICATION
 
-        log.info("Beginning classification parsing")
+        log.debug("Beginning classification parsing")
         try:
             self.enforce = classification_definition.get("enforce", None)
             if self.enforce is None:
@@ -781,7 +781,7 @@ class Classification(object):
         subgroups = list(set(subgroups_1) & set(subgroups_2))
 
         return self._get_normalized_classification_text(
-            min(lvl_idx_1, lvl_idx_2),
+            min(lvl_idx_1, lvl_idx_2),  # type: ignore
             req,
             groups,
             subgroups,
@@ -973,7 +973,7 @@ class Classification(object):
         subgroups = self._max_groups(subgroups_1, subgroups_2)
 
         return self._get_normalized_classification_text(
-            max(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format
+            max(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
         )
 
     def min_classification(
@@ -1023,7 +1023,7 @@ class Classification(object):
             subgroups = []
 
         return self._get_normalized_classification_text(
-            min(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format
+            min(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
         )
 
     def normalize_classification(
@@ -1055,7 +1055,7 @@ class Classification(object):
             c12n, long_format=long_format
         )
         new_c12n = self._get_normalized_classification_text(
-            lvl_idx,
+            lvl_idx,  # type: ignore
             req,
             groups,
             subgroups,
@@ -1109,7 +1109,7 @@ class Classification(object):
         subgroups = list(set(subgroups_1) | set(subgroups_2))
 
         return self._get_normalized_classification_text(
-            max(lvl_idx_1, lvl_idx_2),
+            max(lvl_idx_1, lvl_idx_2),  # type: ignore
             req,
             groups,
             subgroups,

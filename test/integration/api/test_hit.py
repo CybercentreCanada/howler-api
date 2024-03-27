@@ -1,10 +1,11 @@
 import base64
 import json
-import os
+from typing import Any
 import uuid
 
 import pytest
 from conftest import APIError, get_api_data
+from howler.datastore.collection import ESCollection
 
 from howler.datastore.howler_store import HowlerDatastore
 from howler.odm.helper import create_users_with_username
@@ -15,6 +16,7 @@ from howler.odm.randomizer import (
     get_random_hash,
     get_random_ip,
     get_random_iso_date,
+    random_model_obj,
 )
 from howler.services import hit_service
 from howler.utils.dict_utils import flatten
@@ -419,7 +421,7 @@ def test_create_valid_hits(datastore, login_session):
     """Test that /api/v1/hit creates hits using valid data"""
     session, host = login_session
 
-    data = [
+    data: list[dict[str, Any]] = [
         {
             "howler": {
                 "analytic": "A test for creating a hit",
@@ -475,6 +477,38 @@ def test_create_valid_hits(datastore, login_session):
     for i in range(len(data)):
         assert data[i]["howler"]["hash"] == response["valid"][i]["howler"]["hash"]
         assert data[i]["howler"]["outline"] is not None
+
+
+def test_create_bad_name_hits(datastore, login_session):
+    """Test that /api/v1/hit creates hits using valid data with a bad anayltic name"""
+    session, host = login_session
+
+    data = [
+        {
+            "howler": {
+                "analytic": "bad.analytic.name",
+                "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+                "score": "0.8",
+                "outline": {
+                    "threat": "10.0.0.1",
+                    "target": "asdf123",
+                    "indicators": ["me.ps1"],
+                    "summary": "This is a summary",
+                },
+            },
+        }
+    ]
+
+    # POST hit
+    response = session.post(
+        url=f"{host}/api/v1/hit/",
+        data=json.dumps(data),
+        headers={"content-type": "application/json"},
+    ).json()
+
+    assert len(response["api_warning"]) == 1
+
+    assert response["api_warning"][0].startswith("The value bad.analytic.name")
 
 
 def test_create_invalid_hits(datastore: HowlerDatastore, login_session):
@@ -792,6 +826,138 @@ def test_add_labels_missing(datastore: HowlerDatastore, login_session):
         )
 
     assert err.value.args[0] == "404: Label set thisshouldneverexistlmao does not exist"
+
+
+def test_update_hit(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    hit_to_update: Hit = random_model_obj(Hit)
+    datastore.hit.save(hit_to_update.howler.id, hit_to_update)
+    datastore.hit.commit()
+
+    result = get_api_data(
+        session=session,
+        url=f"{host}/api/v1/hit/{hit_to_update.howler.id}/update",
+        data=json.dumps(
+            [
+                (
+                    ESCollection.UPDATE_SET,
+                    "howler.score",
+                    hit_to_update.howler.score + 100,
+                )
+            ]
+        ),
+        method="PUT",
+    )
+
+    assert result["howler"]["score"] == hit_to_update.howler.score + 100
+
+    result["howler"]["log"][len(result["howler"]["log"]) - 1][
+        "explanation"
+    ] == "Hit updated by admin"
+
+
+def test_update_hit_fails(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+    hit_to_update: Hit = datastore.hit.search("howler.id:*", rows=2)["items"][0]
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/doesntexist/update",
+            data=json.dumps([]),
+            method="PUT",
+        )
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/{hit_to_update.howler.id}/update",
+            data=json.dumps([("potato", "howler.score", True)]),
+            method="PUT",
+        )
+
+
+def test_update_by_query(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    hit_to_check: Hit = random_model_obj(Hit)
+    datastore.hit.save(hit_to_check.howler.id, hit_to_check)
+    datastore.hit.commit()
+
+    get_api_data(
+        session=session,
+        url=f"{host}/api/v1/hit/update",
+        data=json.dumps(
+            {
+                "query": "howler.id:*",
+                "operations": [
+                    (
+                        ESCollection.UPDATE_INC,
+                        "howler.score",
+                        100,
+                    )
+                ],
+            }
+        ),
+        method="PUT",
+    )
+
+    datastore.hit.commit()
+
+    hit_to_check_after: Hit = datastore.hit.get(hit_to_check.howler.id)
+
+    assert hit_to_check_after.howler.score == hit_to_check.howler.score + 100
+
+    hit_to_check_after.howler.log[
+        len(hit_to_check_after.howler.log) - 1
+    ].explanation == "Hit updated by admin"
+
+
+def test_update_by_query_fails(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/update",
+            data=json.dumps({"query": "howler.id:*"}),
+            method="PUT",
+        )
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/update",
+            data=json.dumps({"operations": []}),
+            method="PUT",
+        )
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/update",
+            data=json.dumps(
+                {
+                    "query": "askdljhaskjfbsdkjhbsdv",
+                    "operations": [("potato", "howler.score", True)],
+                }
+            ),
+            method="PUT",
+        )
+
+    with pytest.raises(APIError):
+        get_api_data(
+            session=session,
+            url=f"{host}/api/v1/hit/update",
+            data=json.dumps(
+                {
+                    "query": "howler.id:*",
+                    "operations": [("potato", "howler.score", True)],
+                }
+            ),
+            method="PUT",
+        )
 
 
 def test_delete_hit(datastore: HowlerDatastore, login_session):

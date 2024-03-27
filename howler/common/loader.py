@@ -2,7 +2,8 @@ import logging
 import os
 from pathlib import Path
 from string import Template
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+import typing
 
 import yaml
 
@@ -70,7 +71,7 @@ def get_classification(yml_config: Optional[str] = None):
     else:
         yml_config_path = Path(yml_config)
 
-    log.info("Loading classification definition from %s", yml_config_path)
+    log.debug("Loading classification definition from %s", yml_config_path)
 
     classification_definition = None
     # Load modifiers from the yaml config
@@ -100,7 +101,10 @@ def get_classification(yml_config: Optional[str] = None):
         raise InvalidDefinition("Could not find any classification definition to load.")
 
     _classification = Classification(classification_definition)
-    _CLASSIFICATIONS[yml_config] = _classification
+
+    if yml_config:
+        _CLASSIFICATIONS[yml_config] = _classification
+
     return _classification
 
 
@@ -158,7 +162,7 @@ def _get_config(yml_config: Optional[str] = None):
         with yml_config_path.open() as yml_fh:
             yml_data = yaml.safe_load(env_substitute(yml_fh.read()))
             if yml_data:
-                config = recursive_update(config, yml_data)
+                config = typing.cast(dict[str, Any], recursive_update(config, yml_data))
 
     # Override log level from environment variable
     config["logging"]["log_level"] = os.environ.get(

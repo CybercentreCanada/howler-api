@@ -1,10 +1,12 @@
-from json import JSONDecodeError
+from datetime import datetime, timedelta
+from typing import Any, Optional
+import typing
 from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
 from flask import current_app, request
 from passlib.hash import bcrypt
-from werkzeug.exceptions import BadRequest
+from howler.services import jwt_service
 
 import howler.services.auth_service as auth_service
 import howler.services.user_service as user_service
@@ -73,6 +75,8 @@ def add_apikey(**kwargs):
     storage = datastore()
     user_data = storage.user.get_if_exists(user["uname"])
     apikey_data = request.json
+    if not isinstance(apikey_data, dict):
+        return bad_request(err="Invalid data format")
 
     if apikey_data["name"] in user_data.apikeys:
         return bad_request(err=f"APIKey '{apikey_data['name']}' already exists")
@@ -84,10 +88,48 @@ def add_apikey(**kwargs):
             err="APIKey contains permissions that do not exist. Please provide a subset of [R, W, E, I]."
         )
 
+    if "E" in privs and not config.auth.allow_extended_apikeys:
+        return bad_request(err="Extended permissions are disabled.")
+
     if "E" in privs and "I" in privs:
         return bad_request(
             err="Extended permission is not allowed on impersonation keys."
         )
+
+    expiry_date = apikey_data.get("expiry_date", None)
+    max_expiry = None
+    if config.auth.max_apikey_duration_amount and config.auth.max_apikey_duration_unit:
+        if not expiry_date:
+            return bad_request(err="API keys must have an expiry date.")
+
+        max_expiry = datetime.now() + timedelta(
+            **{
+                config.auth.max_apikey_duration_unit: config.auth.max_apikey_duration_amount
+            }
+        )
+
+    if config.auth.oauth.strict_apikeys:
+        auth_header: Optional[str] = request.headers.get("Authorization", None)
+
+        if auth_header and auth_header.startswith("Bearer") and "." in auth_header:
+            oauth_token = auth_header.split(" ")[1]
+            data = jwt_service.decode(
+                oauth_token,
+                validate_audience=False,
+                options={"verify_signature": False},
+            )
+            max_expiry = datetime.fromtimestamp(data["exp"])
+
+    if expiry_date:
+        try:
+            expiry = datetime.fromisoformat(expiry_date.replace("Z", ""))
+        except (ValueError, TypeError):
+            return bad_request(err="Invalid expiry date format. Please use ISO format.")
+
+        if max_expiry and max_expiry < expiry:
+            return bad_request(
+                err=f"Expiry date must be before {max_expiry.isoformat()}."
+            )
 
     try:
         random_pass = generate_random_secret(length=50)
@@ -96,12 +138,17 @@ def add_apikey(**kwargs):
             if "I" not in privs
             else f"impersonate_{apikey_data['name']}"
         )
-        user_data.apikeys[key_name] = {
+
+        new_key = {
             "password": bcrypt.encrypt(random_pass),
             "agents": apikey_data.get("agents", []),
             "acl": privs,
-            "expiry_date": apikey_data.get("expiry_date", None),
         }
+
+        if expiry_date:
+            new_key["expiry_date"] = expiry.isoformat()
+
+        user_data.apikeys[key_name] = new_key
     except HowlerException as e:
         return bad_request(err=e.message)
 
@@ -182,8 +229,9 @@ def login(**_):
         "access_token": "<JWT>",
     }
     """
+    data: dict[str, Any]
     if request.is_json and len(request.data) > 0:
-        data = request.json
+        data = request.json  # type: ignore
     else:
         data = request.values
 
@@ -201,7 +249,7 @@ def login(**_):
     logged_in_uname = None
     access_token = None
     refresh_token = data.get("refresh_token", None)
-    priv = []
+    priv: Optional[list[str]] = []
 
     try:
         # First, we'll try oauth
@@ -210,6 +258,10 @@ def login(**_):
                 raise InvalidDataException("OAuth is disabled.")
 
             oauth = current_app.extensions.get("authlib.integrations.flask_client")
+            if not oauth:
+                logger.critical("Authlib integration missing!")
+                raise HowlerValueError()
+
             provider = oauth.create_client(oauth_provider)
 
             if not provider:
@@ -292,6 +344,11 @@ def login(**_):
                 skip_password=bool(apikey),
             )
 
+            if not user_data:
+                raise AuthenticationException(
+                    "User does not exist, or authentication was invalid"
+                )
+
             logged_in_uname = user_data["uname"]
 
         else:
@@ -327,9 +384,7 @@ def login(**_):
     if access_token:
         app_token = access_token
     else:
-        app_token = (
-            f"{logged_in_uname}:{auth_service.create_token(logged_in_uname, priv)}"
-        )
+        app_token = f"{logged_in_uname}:{auth_service.create_token(logged_in_uname, typing.cast(list[str], priv))}"
 
     return ok(
         {

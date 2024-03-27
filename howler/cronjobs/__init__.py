@@ -27,3 +27,5 @@ def setup_jobs():
             job.setup_job(scheduler)
         except Exception as e:
             logger.critical("Error when initializing %s - %s", module, e)
+
+    scheduler.start()

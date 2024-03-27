@@ -62,10 +62,12 @@ def site_map(**_):
     pages = []
     for rule in current_app.url_map.iter_rules():
         func = current_app.view_functions[rule.endpoint]
-        methods = []
-        for item in rule.methods:
-            if item != "OPTIONS" and item != "HEAD":
-                methods.append(item)
+        methods = [
+            item
+            for item in (rule.methods or [])
+            if item != "OPTIONS" and item != "HEAD"
+        ]
+
         protected = func.__dict__.get("protected", False)
         required_type = func.__dict__.get("required_type", ["user"])
         audit = func.__dict__.get("audit", False)

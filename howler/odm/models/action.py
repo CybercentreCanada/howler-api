@@ -8,16 +8,6 @@ VALID_TRIGGERS = ["create", "demote", "promote"]
 @odm.model(index=True, store=True, description="Model of action operations")
 class Operation(odm.Model):
     operation_id: str = odm.Keyword(description="The ID of the action.")
-    data: Optional[dict[str, str]] = odm.Optional(
-        odm.Mapping(
-            odm.Keyword(),
-            default={},
-            description="The data necessary to execute the action (DEPRECATED)",
-            deprecated=True,
-            deprecated_description="To allow a wider range of types to be used in the operation data, please serialize this object as JSON and store it in `operations.data_json` instead.",
-        )
-    )
-    # we store the raw data in JSON format, since it allows for any type, not just string.
     data_json: Optional[str] = odm.Keyword(
         optional=True,
         description="The data necessary to execute the action, in raw JSON format.",

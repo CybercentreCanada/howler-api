@@ -81,6 +81,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Remove Label",
+        "priority": 7,
         "i18nKey": "operations.remove_label",
         "description": {
             "short": "Remove a label from a hit",

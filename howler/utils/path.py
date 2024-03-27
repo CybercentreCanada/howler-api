@@ -21,25 +21,3 @@ ASCII_NUMBERS = list(range(48, 58))
 ASCII_UPPER_CASE_LETTERS = list(range(65, 91))
 ASCII_LOWER_CASE_LETTERS = list(range(97, 123))
 ASCII_OTHER = [45, 46, 92]  # "-", ".", and "\"
-
-# Create a set that contains all of the valid characters that
-# are allowed to appear in a Unified Naming Convention (UNC) path.
-VALID_UNC_CHARS = [
-    chr(x)
-    for x in ASCII_LOWER_CASE_LETTERS
-    + ASCII_UPPER_CASE_LETTERS
-    + ASCII_NUMBERS
-    + ASCII_OTHER
-]
-
-
-def is_unc_legal(path: str) -> bool:
-    """Determine whether or not a given string representing a Windows file path is legal
-    or not as per the Unified Naming Convention (UNC) specifications."""
-    if len(path) <= 0:
-        return False
-
-    for char in path:
-        if char not in VALID_UNC_CHARS:
-            return False
-    return True

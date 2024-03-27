@@ -3,7 +3,6 @@ from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Label
 from howler.services import hit_service
 from howler.utils.str_utils import sanitize_lucene_query
 
@@ -22,37 +21,49 @@ def execute(query: str, bundle_id=None, **kwargs):
 
     report = []
 
-    bundle_hit = hit_service.get_hit(bundle_id)
-    if not bundle_hit or not bundle_hit.howler.is_bundle:
-        report.append(
-            {
-                "query": query,
-                "outcome": "error",
-                "title": "Invalid Bundle",
-                "message": f"Either a hit with ID {bundle_id} does not exist, or it is not a bundle.",
-            }
-        )
-        return report
-
-    ds = datastore()
-
-    skipped_hits = ds.hit.search(
-        f"({query}) AND -howler.bundles:{sanitize_lucene_query(bundle_id)}",
-        fl="howler.id",
-    )["items"]
-
-    if len(skipped_hits) > 0:
-        report.append(
-            {
-                "query": f"howler.id:({' OR '.join(h.howler.id for h in skipped_hits)})",
-                "outcome": "skipped",
-                "title": "Skipped Hit not in Bundle",
-                "message": f"These hits already are not in the bundle.",
-            }
-        )
-
     try:
+        bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
+        if not bundle_hit or not bundle_hit.howler.is_bundle:
+            report.append(
+                {
+                    "query": query,
+                    "outcome": "error",
+                    "title": "Invalid Bundle",
+                    "message": f"Either a hit with ID {bundle_id} does not exist, or it is not a bundle.",
+                }
+            )
+            return report
+
+        ds = datastore()
+
+        skipped_hits = ds.hit.search(
+            f"({query}) AND -howler.bundles:{sanitize_lucene_query(bundle_id)}",
+            fl="howler.id",
+        )["items"]
+
+        if len(skipped_hits) > 0:
+            report.append(
+                {
+                    "query": f"howler.id:({' OR '.join(h.howler.id for h in skipped_hits)})",
+                    "outcome": "skipped",
+                    "title": "Skipped Hit not in Bundle",
+                    "message": f"These hits already are not in the bundle.",
+                }
+            )
+
         safe_query = f"{query} AND (howler.bundles:{bundle_id})"
+
+        matching_hits = ds.hit.search(safe_query)["items"]
+        if len(matching_hits) < 1:
+            report.append(
+                {
+                    "query": safe_query,
+                    "outcome": "skipped",
+                    "title": "No Matching Hits",
+                    "message": f"There were no hits matching this query.",
+                }
+            )
+            return report
 
         ds.hit.update_by_query(
             safe_query,
@@ -97,6 +108,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Remove from Bundle",
+        "priority": 5,
         "i18nKey": f"operations.{OPERATION_ID}",
         "description": {
             "short": "Remove a set of hits from a bundle",

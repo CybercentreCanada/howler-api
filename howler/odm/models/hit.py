@@ -1,4 +1,5 @@
 # mypy: ignore-errors
+from typing import Optional
 from howler import odm
 from howler.odm.models.assemblyline import AssemblyLine
 from howler.odm.models.aws import AWS
@@ -72,14 +73,14 @@ class Hit(odm.Model):
         reference="https://confluence.devtools.cse-cst.gc.ca/display/~jjgalar/Hit+Schema",
     )
 
-    # Field Sets
-    assemblyline: AssemblyLine = odm.Optional(
+    assemblyline: Optional[AssemblyLine] = odm.Optional(
         odm.Compound(
             AssemblyLine,
             description="AssemblyLine metadata associated with this alert.",
         )
     )
 
+    # Field Sets
     agent: Agent = odm.Optional(
         odm.Compound(
             Agent,

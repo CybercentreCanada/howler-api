@@ -10,7 +10,7 @@ from copy import deepcopy
 from datetime import datetime
 from os import environ
 from random import random
-from typing import Any, Dict, Generic, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, TypeVar, Union
 
 import elasticsearch
 import elasticsearch.helpers
@@ -21,17 +21,33 @@ from howler import odm
 from howler.common.exceptions import HowlerRuntimeError, HowlerValueError
 from howler.common.loader import APP_NAME
 from howler.datastore.bulk import ElasticBulkPlan
-from howler.datastore.exceptions import (DataStoreException, HowlerScanError,
-                                         ILMException, MultiKeyError,
-                                         SearchException, SearchRetryException,
-                                         VersionConflictException)
+from howler.datastore.exceptions import (
+    DataStoreException,
+    HowlerScanError,
+    ILMException,
+    MultiKeyError,
+    SearchException,
+    SearchRetryException,
+    VersionConflictException,
+)
 from howler.datastore.support.build import back_mapping, build_mapping
-from howler.datastore.support.schemas import (default_dynamic_strings,
-                                              default_dynamic_templates,
-                                              default_index, default_mapping)
-from howler.odm.base import (BANNED_FIELDS, ClassificationObject, Integer,
-                             Keyword, List, Mapping, Model, _Field)
-from howler.utils.dict_utils import recursive_update
+from howler.datastore.support.schemas import (
+    default_dynamic_strings,
+    default_dynamic_templates,
+    default_index,
+    default_mapping,
+)
+from howler.odm.base import (
+    BANNED_FIELDS,
+    ClassificationObject,
+    Integer,
+    Keyword,
+    List,
+    Mapping,
+    Model,
+    _Field,
+)
+from howler.utils.dict_utils import prune, recursive_update
 
 if typing.TYPE_CHECKING:
     from .store import ESStore
@@ -295,16 +311,8 @@ class ESCollection(Generic[ModelType]):
 
                 # check if we have any errors
                 if (shards_successful + shards_skipped) < shards_total:
-                    shards_message = "Scroll request has only succeeded on %d (+%d skipped) shards out of %d."
-                    raise HowlerScanError(
-                        scroll_id,
-                        shards_message
-                        % (
-                            shards_successful,
-                            shards_skipped,
-                            shards_total,
-                        ),
-                    )
+                    shards_message = f"{scroll_id}: Scroll request has only succeeded on {shards_successful} (+{shards_skipped} skipped) shards out of {shards_total}."
+                    raise HowlerScanError(shards_message)
                 resp = self.with_retries(
                     self.datastore.client.scroll, scroll_id=scroll_id, scroll=scroll
                 )
@@ -547,7 +555,7 @@ class ESCollection(Generic[ModelType]):
         if not self.archive_access:
             return False
 
-        reindex_body = {
+        reindex_body: dict[str, Any] = {
             "source": {
                 "index": self.index_name,
                 "query": {"bool": {"must": {"query_string": {"query": query}}}},
@@ -1072,14 +1080,15 @@ class ESCollection(Generic[ModelType]):
                 if as_dictionary:
                     out[data_id] = data_output["__non_doc_raw__"]
                 else:
-                    out.append(data_output["__non_doc_raw__"])
+                    out.append(data_output["__non_doc_raw__"])  # type: ignore
             else:
                 data_output.pop("id", None)
                 if as_dictionary:
                     out[data_id] = self.normalize(data_output, as_obj=as_obj)
                 else:
-                    out.append(self.normalize(data_output, as_obj=as_obj))
+                    out.append(self.normalize(data_output, as_obj=as_obj))  # type: ignore
 
+        out: Union[dict[str, Any], list[Any]]
         if as_dictionary:
             out = {}
         else:
@@ -1272,9 +1281,10 @@ class ESCollection(Generic[ModelType]):
             return self.normalize(data, as_obj=as_obj), version
         return self.normalize(data, as_obj=as_obj)
 
-    def require(
-        self, key, as_obj=True, archive_access=None, version=False
-    ) -> Union[dict[str, Any], ModelType]:
+    def require(self, key, as_obj=True, archive_access=None, version=False) -> Union[
+        tuple[Optional[Union[dict[str, Any], ModelType]], str],
+        Optional[Union[dict[str, Any], ModelType]],
+    ]:
         """
         Get a document from the datastore and retry forever because we know for sure
         that this document should exist. If it does not right now, this will wait for the
@@ -1443,12 +1453,11 @@ class ESCollection(Generic[ModelType]):
 
         joined_sources = """;\n""".join(op_sources)
 
-        script = {
+        return {
             "lang": "painless",
             "source": joined_sources.replace("};\n", "}\n"),
             "params": op_params,
         }
-        return script
 
     def _validate_operations(self, operations):
         """
@@ -1558,7 +1567,7 @@ class ESCollection(Generic[ModelType]):
                 script=script,
                 if_seq_no=seq_no,
                 if_primary_term=primary_term,
-                raise_conflicts=True,
+                raise_conflicts=seq_no and primary_term,
             )
             return (
                 res["result"] == "updated",
@@ -1641,8 +1650,11 @@ class ESCollection(Generic[ModelType]):
         # Getting search document data
         extra_fields = result.get("fields", {})
         source_data = result.pop("_source", None)
-        for f in BANNED_FIELDS:
-            source_data.pop(f, None)
+
+        if source_data is not None:
+            for f in BANNED_FIELDS:
+                source_data.pop(f, None)
+
         item_id = result["_id"]
 
         if self.model_class:
@@ -1662,15 +1674,16 @@ class ESCollection(Generic[ModelType]):
                     source_data, mask=fields, docid=item_id, extra_fields=extra_fields
                 )
             else:
-                source_data = recursive_update(source_data, extra_fields)
+                source_data = recursive_update(
+                    source_data, extra_fields, allow_recursion=False
+                )
                 if "id" in fields:
                     source_data["id"] = item_id
                 if "_index" in fields and "_index" in result:
                     source_data["_index"] = result["_index"]
-                return source_data
 
         if isinstance(fields, str):
-            fields = fields
+            fields = [fields]
 
         if fields is None or "*" in fields or "id" in fields:
             source_data["id"] = [item_id]
@@ -1678,7 +1691,7 @@ class ESCollection(Generic[ModelType]):
         if fields is None or "*" in fields:
             return source_data
 
-        return {key: val for key, val in source_data.items() if key in fields}
+        return prune(source_data, fields)
 
     def _search(
         self, args=None, deep_paging_id=None, use_archive=False, track_total_hits=None
@@ -1736,9 +1749,9 @@ class ESCollection(Generic[ModelType]):
             query_body["script_fields"] = fields
 
         if parsed_values["df"]:
-            query_body["query"]["bool"]["must"]["query_string"][
-                "default_field"
-            ] = parsed_values["df"]
+            query_body["query"]["bool"]["must"]["query_string"]["default_field"] = (
+                parsed_values["df"]
+            )
 
         # Time limit for the query
         if parsed_values["timeout"]:
@@ -1837,9 +1850,10 @@ class ESCollection(Generic[ModelType]):
 
         except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
             try:
-                err_msg = e.info["error"]["root_cause"][0]["reason"]
+                err_msg = e.info["error"]["root_cause"][0]["reason"]  # type: ignore
             except (ValueError, KeyError, IndexError):
                 err_msg = str(e)
+
             raise SearchException(err_msg)
 
         except Exception as error:
@@ -1943,7 +1957,7 @@ class ESCollection(Generic[ModelType]):
             track_total_hits=track_total_hits,
         )
 
-        ret_data = {
+        ret_data: dict[str, Any] = {
             "offset": int(offset),
             "rows": int(rows),
             "total": int(result["hits"]["total"]["value"]),
@@ -2052,6 +2066,76 @@ class ESCollection(Generic[ModelType]):
             # Unpack the results, ensure the id is always set
             yield self._format_output(value, fl, as_obj=as_obj)
 
+    def raw_eql_search(
+        self,
+        eql_query: str,
+        fl: Optional[str] = None,
+        filters: Optional[Union[list[str], str]] = None,
+        rows: Optional[int] = None,
+        timeout: Optional[int] = None,
+        as_obj=True,
+    ):
+        if filters is None:
+            filters = []
+        elif isinstance(filters, str):
+            filters = [filters]
+
+        parsed_filters = {
+            "bool": {
+                "must": {"query_string": {"query": "*:*"}},
+                "filter": [{"query_string": {"query": ff}} for ff in filters],
+            }
+        }
+
+        if not fl:
+            fl = "howler.id"
+
+        if rows is None:
+            rows = 5
+
+        fields = [{"field": f} for f in fl.split(",")]
+
+        try:
+            result = self.with_retries(
+                self.datastore.eql.search,
+                index=self.name,
+                timestamp_field="timestamp",
+                query=eql_query,
+                fields=fields,
+                filter=parsed_filters,
+                size=rows,
+                wait_for_completion_timeout=(
+                    f"{timeout}ms" if timeout is not None else None
+                ),
+            )
+
+            ret_data: dict[str, Any] = {
+                "rows": int(rows),
+                "total": int(result["hits"]["total"]["value"]),
+                "items": [
+                    self._format_output(doc, fl.split(","), as_obj=as_obj)
+                    for doc in result["hits"].get("events", [])
+                ],
+                "sequences": [
+                    [
+                        self._format_output(doc, fl.split(","), as_obj=as_obj)
+                        for doc in sequence.get("events", [])
+                    ]
+                    for sequence in result["hits"].get("sequences", [])
+                ],
+            }
+
+            return ret_data
+        except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
+            try:
+                err_msg = e.info["error"]["root_cause"][0]["reason"]  # type: ignore
+            except (ValueError, KeyError, IndexError):
+                err_msg = str(e)
+
+            raise SearchException(err_msg)
+        except Exception as error:
+            raise SearchException(f"collection: {self.name}, error: {str(error)}")
+
     def keys(self, access_control=None):
         """
         This function streams the keys of all the documents of this collection.
@@ -2075,7 +2159,7 @@ class ESCollection(Generic[ModelType]):
             warnings.simplefilter("ignore")
 
             gaps_count = None
-            ret_type = None
+            ret_type: Optional[type] = None
 
             try:
                 start = int(start)
@@ -2116,6 +2200,40 @@ class ESCollection(Generic[ModelType]):
                     f"Current settings would generate {gaps_count} steps"
                 )
             return ret_type
+
+    def count(
+        self,
+        query,
+        access_control=None,
+        use_archive=False,
+    ):
+        """
+        This function should perform a count operation through the datastore and return a
+        search result object that consists of the following:
+
+            {
+                "total": 123456,  # Total number of documents matching the query
+            }
+
+        :param use_archive: Query also the archive
+        :param query: lucene query to search for
+        :param access_control: access control parameters to limiti the scope of the query
+        :return: a count result object
+        """
+
+        index = self.name
+        if self.archive_access and use_archive:
+            index = f"{index},{self.name}-*"
+
+        result = self.with_retries(
+            self.datastore.client.count, index=index, q=query
+        )
+
+        ret_data: dict[str, Any] = {
+            "count": result['count'],
+        }
+
+        return ret_data
 
     def histogram(
         self,
@@ -2391,7 +2509,9 @@ class ESCollection(Generic[ModelType]):
                 ):
                     if parent_p_name not in collection_data:
                         field_model = model_fields.get(parent_p_name, None)
-                        f_type = self._get_odm_type(p_val.get("analyzer", None) or p_val["type"])
+                        f_type = self._get_odm_type(
+                            p_val.get("analyzer", None) or p_val["type"]
+                        )
                         collection_data[parent_p_name] = {
                             "default": self.DEFAULT_SEARCH_FIELD
                             in p_val.get("copy_to", []),
@@ -2399,9 +2519,9 @@ class ESCollection(Generic[ModelType]):
                             "list": field_model.multivalued if field_model else False,
                             "stored": field_model.store if field_model else False,
                             "type": f_type,
-                            "description": field_model.description
-                            if field_model
-                            else "",
+                            "description": (
+                                field_model.description if field_model else ""
+                            ),
                         }
                     else:
                         continue
@@ -2415,7 +2535,9 @@ class ESCollection(Generic[ModelType]):
                 "deprecated": field_model.deprecated if field_model else False,
                 "type": f_type,
                 "description": field_model.description if field_model else "",
-                "deprecated_description": field_model.deprecated_description if field_model else "",
+                "deprecated_description": (
+                    field_model.deprecated_description if field_model else ""
+                ),
             }
 
         collection_data.pop("id", None)

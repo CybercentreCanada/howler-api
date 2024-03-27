@@ -4,6 +4,7 @@ import pytest
 from conftest import APIError, get_api_data
 
 from howler.datastore.howler_store import HowlerDatastore
+from howler.odm.models.view import View
 from howler.odm.random_data import create_views, wipe_views
 
 
@@ -136,3 +137,40 @@ def test_set_view(datastore: HowlerDatastore, login_session):
 
     updated_view = datastore.view.get(id, as_obj=True)
     assert updated_view.title == "new title thing"
+
+
+def test_favourite(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")[
+        "username"
+    ]
+
+    view: View = datastore.view.search(f"type:global OR owner:{uname}")["items"][0]
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/view/{view.view_id}/favourite",
+        method="POST",
+        data={},
+    )
+
+    datastore.user.commit()
+
+    assert (
+        view.view_id
+        in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]
+    )
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/view/{view.view_id}/favourite",
+        method="DELETE",
+    )
+
+    datastore.user.commit()
+
+    assert (
+        view.view_id
+        not in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]
+    )

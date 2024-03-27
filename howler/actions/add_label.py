@@ -81,6 +81,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Add Label",
+        "priority": 8,
         "i18nKey": "operations.add_label",
         "description": {
             "short": "Add a label to a hit",

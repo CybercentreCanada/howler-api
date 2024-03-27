@@ -36,12 +36,6 @@ ui:
   enforce_quota: false
   validate_session_useragent: false
   static_folder: /etc/howler/static
-
-core:
-  spellbook:
-    enabled: false
-  notebook:
-    enabled: false
 "
 
   echo "Creating $HOWLER_CONF_PATH"

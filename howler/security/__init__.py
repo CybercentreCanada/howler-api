@@ -57,7 +57,7 @@ class api_login(object):
         username_key: str = "username",
         audit: bool = True,
         required_priv: Optional[list[str]] = None,
-        required_method: list[str] = None,
+        required_method: Optional[list[str]] = None,
         check_xsrf_token: bool = XSRF_ENABLED,
         enforce_quota: bool = True,
     ):
@@ -67,12 +67,13 @@ class api_login(object):
         if required_type is None:
             required_type = ["admin", "user"]
 
+        required_method_set: set[str]
         if required_method is None:
-            required_method = {"userpass", "apikey", "internal", "oauth"}
+            required_method_set = {"userpass", "apikey", "internal", "oauth"}
         else:
-            required_method = set(required_method)
+            required_method_set = set(required_method)
 
-        if len(required_method - {"userpass", "apikey", "internal", "oauth"}) > 0:
+        if len(required_method_set - {"userpass", "apikey", "internal", "oauth"}) > 0:
             raise HowlerAttributeError(
                 "required_method must be a subset of {userpass, apikey, internal, oauth}"
             )
@@ -80,7 +81,7 @@ class api_login(object):
         self.required_type = required_type
         self.audit = audit and AUDIT
         self.required_priv = required_priv
-        self.required_method = required_method
+        self.required_method = required_method_set
         self.username_key = username_key
         self.check_xsrf_token = check_xsrf_token
         self.enforce_quota = enforce_quota
@@ -164,12 +165,14 @@ class api_login(object):
 
                     if auth_type == "Basic":
                         try:
+                            username, apikey = auth_service.decode_b64(data).split(
+                                ":", 1
+                            )
+
                             (
                                 impersonated_user,
                                 impersonated_priv,
-                            ) = auth_service.validate_apikey(
-                                *auth_service.decode_b64(data).split(":", 1), user
-                            )
+                            ) = auth_service.validate_apikey(username, apikey, user)
                         except AuthenticationException:
                             impersonated_user = None
                     else:
@@ -191,7 +194,7 @@ class api_login(object):
                     user, priv = impersonated_user, impersonated_priv
 
                 # Ensure that the provided api key allows access to this API
-                if not set(self.required_priv) & set(priv):
+                if not priv or not set(self.required_priv) & set(priv):
                     raise AccessDeniedException("You do not have access to this API.")
 
                 # Make sure the user has the correct type for this endpoint

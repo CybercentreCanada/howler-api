@@ -17,6 +17,7 @@ from howler.datastore.operations import OdmHelper
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.security import api_login
+from howler.utils.str_utils import sanitize_lucene_query
 
 SUB_API = "template"
 template_api = make_subapi_blueprint(SUB_API, api_version=1)
@@ -84,6 +85,8 @@ def create_template(**kwargs):
     """
 
     template_data = request.json
+    if not isinstance(template_data, dict):
+        return bad_request(err="Invalid data format")
 
     if "keys" not in template_data:
         return bad_request(
@@ -100,7 +103,7 @@ def create_template(**kwargs):
         else:
             template.owner = None
 
-        query_str = f"analytic:{template.analytic} AND type:{template.type}"
+        query_str = f"analytic:{sanitize_lucene_query(template.analytic)} AND type:{template.type}"
 
         if template.type == "personal":
             query_str += f" AND owner:{template.owner}"
@@ -157,7 +160,11 @@ def delete_template(id, user: User, **kwargs):
             err="You cannot delete a global template unless you are an administrator."
         )
 
-    return no_content({"success": storage.template.delete(id)})
+    result = storage.template.delete(id)
+    if result:
+        return no_content()
+    else:
+        return not_found()
 
 
 @template_api.route("/<id>", methods=["PUT"])

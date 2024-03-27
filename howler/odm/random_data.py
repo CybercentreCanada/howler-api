@@ -6,34 +6,54 @@ import random
 import sys
 from datetime import datetime
 from random import choice, randint, sample
+import textwrap
 from typing import Callable
+
+import yaml
 
 from howler.common import loader
 from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
+from howler.datastore.operations import OdmHelper
+from howler.helper.hit import assess_hit
 from howler.helper.oauth import VALID_CHARS
 from howler.odm.base import Keyword
 from howler.odm.helper import generate_useful_hit
 from howler.odm.models.action import Action
-from howler.odm.models.analytic import Analytic, Comment, Notebook
+from howler.odm.models.analytic import Analytic, Comment
+from howler.odm.models.ecs.event import EVENT_CATEGORIES
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Assessment, HitStatusTransition
+from howler.odm.models.howler_data import (
+    Assessment,
+    Escalation,
+    HitStatus,
+    Scrutiny,
+)
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
-from howler.odm.randomizer import get_random_user, get_random_word, random_model_obj
+from howler.odm.randomizer import (
+    get_random_string,
+    get_random_user,
+    get_random_word,
+    random_model_obj,
+)
 from howler.security.utils import get_password_hash
-from howler.services import analytic_service, hit_service
+from howler.services import analytic_service
 
 classification = loader.get_classification()
 
 logger = get_logger(__file__)
+
+hit_helper = OdmHelper(Hit)
 
 
 def create_users(ds):
     admin_pass = os.getenv("DEV_ADMIN_PASS", "admin") or "admin"
     user_pass = os.getenv("DEV_USER_PASS", "user") or "user"
     shawnh_pass = "shawn-h"
+    goose_pass = "goose"
+    huey_pass = "huey"
 
     admin_hash = get_password_hash(admin_pass)
 
@@ -72,20 +92,13 @@ def create_users(ds):
             },
             "classification": classification.RESTRICTED,
             "name": "Michael Scott",
-            "email": "admin@howler.cyber.gc.ca",
+            "email": "admin@example.com",
             "password": admin_hash,
             "uname": "admin",
             "type": ["admin", "user", "automation_basic", "automation_advanced"],
             "groups": [
-                "USERS",
-                "DASI2B",
-                "APA2B",
-                "DASI2",
-                "APA2",
-                "APA",
-                "CDC",
-                "CCCS",
-                "Analytical_Platform_Users",
+                "group1",
+                "group2",
             ],
             "favourite_views": [admin_view.view_id],
         }
@@ -114,7 +127,7 @@ def create_users(ds):
     user_data = User(
         {
             "name": "Dwight Schrute",
-            "email": "user@howler.cyber.gc.ca",
+            "email": "user@example.com",
             "apikeys": {
                 "devkey": {"acl": ["R", "W"], "password": user_hash},
                 "impersonate_admin": {
@@ -142,6 +155,49 @@ def create_users(ds):
 
     if "pytest" not in sys.modules:
         logger.info(f"\t{user_data.uname}:{user_pass}")
+
+    huey_hash = get_password_hash(huey_pass)
+
+    huey_view = View(
+        {
+            "title": "view.assigned_to_me",
+            "query": "howler.assignment:huey",
+            "type": "readonly",
+            "owner": "huey",
+        }
+    )
+
+    huey_data = User(
+        {
+            "name": "Huey Guy",
+            "email": "huey@example.com",
+            "apikeys": {
+                "devkey": {"acl": ["R", "W"], "password": huey_hash},
+                "impersonate_admin": {
+                    "acl": ["R", "W", "I"],
+                    "agents": ["admin", "goose"],
+                    "password": huey_hash,
+                },
+                "impersonate_potato": {
+                    "acl": ["R", "W", "I"],
+                    "agents": ["potato"],
+                    "password": huey_hash,
+                },
+            },
+            "password": huey_hash,
+            "uname": "huey",
+            "favourite_views": [huey_view.view_id],
+        }
+    )
+    ds.user.save("huey", huey_data)
+    ds.user_avatar.save(
+        "huey",
+        "https://static.wikia.nocookie.net/theoffice/images/c/c5/Dwight_.jpg",
+    )
+    ds.view.save(huey_view.view_id, huey_view)
+
+    if "pytest" not in sys.modules:
+        logger.info(f"\t{huey_data.uname}:{huey_pass}")
 
     shawnh_view = View(
         {
@@ -171,6 +227,34 @@ def create_users(ds):
     if "pytest" not in sys.modules:
         logger.info(f"\t{shawn_data.uname}:{shawnh_pass}")
 
+    goose_view = View(
+        {
+            "title": "view.assigned_to_me",
+            "query": "howler.assignment:goose",
+            "type": "readonly",
+            "owner": "goose",
+        }
+    )
+    goose_data = User(
+        {
+            "name": "Mister Goose",
+            "email": "goose@example.com",
+            "apikeys": {},
+            "type": ["admin", "user"],
+            "groups": ["group1", "group2"],
+            "password": get_password_hash(goose_pass),
+            "uname": "goose",
+            "favourite_views": [goose_view.view_id],
+        }
+    )
+
+    goose_data.favourite_views.append(goose_view.view_id)
+    ds.user.save("goose", goose_data)
+    ds.view.save(goose_view.view_id, goose_view)
+
+    if "pytest" not in sys.modules:
+        logger.info(f"\t{goose_data.uname}:{goose_pass}")
+
     ds.user.commit()
     ds.user_avatar.commit()
     ds.view.commit()
@@ -182,13 +266,15 @@ def wipe_users(ds):
 
 
 def create_templates(ds: HowlerDatastore):
-    for _ in range(30):
+    for _ in range(2):
         keys = sample(list(Hit.flat_fields().keys()), 5)
 
-        for detection in ["Detection 1", "Detection 2", None]:
+        for detection in ["Detection 1", "Detection 2"]:
             template = Template(
                 {
-                    "analytic": choice(["COLISEUM", "HERETIC", "SecretAnalytic"]),
+                    "analytic": choice(
+                        ["Password Checker", "Bad Guy Finder", "SecretAnalytic"]
+                    ),
                     "detection": detection,
                     "type": "global",
                     "keys": keys,
@@ -200,7 +286,7 @@ def create_templates(ds: HowlerDatastore):
                 template,
             )
 
-    for analytic in ["COLISEUM", "HERETIC"]:
+    for analytic in ["Password Checker", "Bad Guy Finder"]:
         template = Template(
             {
                 "analytic": analytic,
@@ -307,26 +393,36 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
     lookups = loader.get_lookups()
     users = ds.user.search("*:*")["items"]
     for hit_idx in range(hit_count):
-        hit = generate_useful_hit(lookups, [user["uname"] for user in users])
+        hit = generate_useful_hit(
+            lookups, [user["uname"] for user in users], prune_hit=False
+        )
 
         if hit_idx + 1 == hit_count:
             hit.howler.analytic = "SecretAnalytic"
             hit.howler.detection = None
 
         ds.hit.save(hit.howler.id, hit)
-        analytic_service.save_from_hit(hit)
+        analytic_service.save_from_hit(hit, random.choice(users))
         ds.analytic.commit()
 
-        if choice([True, False, False]):
+        if choice([True, False, False, False]):
             user = choice(users)
-            hit_service.transition_hit(
+            ds.hit.update(
                 hit.howler.id,
-                HitStatusTransition.ASSESS,
-                user,
-                None,
-                hit=hit,
-                assessment=choice(Assessment.list()),
+                [
+                    *assess_hit(
+                        assessment=choice(Assessment.list()),
+                        rationale=get_random_string(),
+                        hit=hit,
+                    ),
+                    hit_helper.update(
+                        "howler.assignment",
+                        user.get("uname", user.get("username", None)),
+                    ),
+                    hit_helper.update("howler.status", HitStatus.RESOLVED),
+                ],
             )
+
         if hit_idx % 25 == 0 and "pytest" not in sys.modules:
             logger.info("\tCreated %s/%s", hit_idx, hit_count)
 
@@ -353,7 +449,9 @@ def create_bundles(ds: HowlerDatastore):
             bundle_hit.howler.hits.append(hit.howler.id)
             hits[hit.howler.id].howler.bundles.append(bundle_hit.howler.id)
 
-        analytic_service.save_from_hit(bundle_hit)
+        analytic_service.save_from_hit(
+            bundle_hit, random.choice(ds.user.search("*:*")["items"])
+        )
         ds.hit.save(bundle_hit.howler.id, bundle_hit)
 
     for hit in hits.values():
@@ -366,7 +464,7 @@ def wipe_hits(ds):
     ds.hit.wipe()
 
 
-def create_analytics(ds: HowlerDatastore, num_analytics=30):
+def create_analytics(ds: HowlerDatastore, num_analytics=10):
     users = [user.uname for user in ds.user.search("*:*")["items"]]
 
     for analytic in ds.analytic.search("*:*")["items"]:
@@ -390,20 +488,60 @@ def create_analytics(ds: HowlerDatastore, num_analytics=30):
             )
         )
 
-        analytic.notebooks.append(
-            Notebook(
-                {
-                    "value": "Link to super notebook",
-                    "name": "Super notebook",
-                    "user": random.choice(users),
-                }
-            )
-        )
 
         ds.analytic.save(analytic.analytic_id, analytic)
 
+    fields = Hit.flat_fields()
+    key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
     for _ in range(num_analytics):
-        a = random_model_obj(Analytic)
+        a: Analytic = random_model_obj(Analytic)
+        a.name = " ".join(
+            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
+        )
+        a.detections = list(set(a.detections))
+        a.owner = random.choice(users)
+        a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
+        a.rule = None
+        a.rule_crontab = None
+        a.rule_type = None
+
+        ds.analytic.save(a.analytic_id, a)
+
+    for rule_type in ["lucene", "eql", "sigma"]:
+        a: Analytic = random_model_obj(Analytic)
+        a.rule_type = rule_type
+        a.name = " ".join(
+            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
+        )
+        a.detections = ["Rule"]
+        a.owner = random.choice(users)
+        a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
+        a.rule_crontab = f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(2, 5)))])} * * * *"
+
+        if a.rule_type == "lucene":
+            a.rule = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
+        elif a.rule_type == "eql":
+            a.rule = textwrap.dedent(
+                f"""
+            sequence
+                [ {random.choice(EVENT_CATEGORIES)} where howler.escalation in ({", ".join([f'"{item}"' for item in random.sample(Escalation.list(), k=random.randint(1, len(Escalation.list())))])}) ]
+                [ {random.choice(EVENT_CATEGORIES)} where howler.scrutiny in ({", ".join([f'"{item}"' for item in random.sample(Scrutiny.list(), k=random.randint(1, len(Scrutiny.list())))])}) ]
+            """
+            ).strip()
+        elif a.rule_type == "sigma":
+            sigma_dir = Path(__file__).parent / "sigma"
+            if sigma_dir.exists():
+                file_name = random.choice(list(sigma_dir.glob("*.yml")))
+                file_data = file_name.read_text("utf-8")
+                data = yaml.safe_load(file_data)
+                a.name = data["title"]
+                a.description = data["description"]
+                a.rule = file_data
+            else:
+                logger.warning(
+                    "For better test data using sigma rules, execute howler/external/generate_sigma_rules.py."
+                )
+
         ds.analytic.save(a.analytic_id, a)
 
     ds.analytic.commit()
@@ -432,8 +570,6 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
     operation_options = list(OPERATIONS.keys())
     if "transition" in operation_options:
         operation_options.remove("transition")
-    if "spellbook" in operation_options:
-        operation_options.remove("spellbook")
 
     for _ in range(num_actions):
         operations = []
@@ -446,9 +582,14 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
                     potential_values = step["options"].get(key, None)
                     if potential_values:
                         if isinstance(potential_values, dict):
-                            action_data[key] = choice(
-                                potential_values[choice(list(potential_values.keys()))]
-                            )
+                            try:
+                                action_data[key] = choice(
+                                    potential_values[
+                                        choice(list(potential_values.keys()))
+                                    ]
+                                )
+                            except IndexError:
+                                continue
                         else:
                             action_data[key] = choice(potential_values)
                     else:
@@ -504,6 +645,8 @@ INDEXES: dict[str, tuple[Callable, list[Callable]]] = {
 
 
 if __name__ == "__main__":
+    # TODO: Implement a solid command line interface for running this
+
     args = [*sys.argv]
 
     # Remove the file path
@@ -517,12 +660,13 @@ if __name__ == "__main__":
 
     ds = loader.datastore(archive_access=False)
 
-    logger.info("Wiping existing data.")
+    if "--no-wipe" not in args:
+        logger.info("Wiping existing data.")
 
-    for index, operations in INDEXES.items():
-        if index in args:
-            # Wipe function
-            operations[0](ds)
+        for index, operations in INDEXES.items():
+            if index in args:
+                # Wipe function
+                operations[0](ds)
 
     logger.info("Running setup steps.")
     if "hits" in args:

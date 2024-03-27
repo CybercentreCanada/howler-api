@@ -21,6 +21,7 @@
         "**/.idea": true,
         "**/__pycache__": true,
         "**/howler_api.egg-info": true,
+        "**/.mypy_cache": true,
     },
     "npm.packageManager": "yarn",
     "python.terminal.activateEnvironment": false,
@@ -55,10 +56,17 @@
     "autoDocstring.guessTypes": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit",
-        "source.fixAll": "explicit"
+        "source.fixAll": "explicit",
+        "source.unusedImports": "explicit"
     },
     "python.defaultInterpreterPath": "${workspaceFolder}/env/bin/python",
     "python.analysis.autoImportCompletions": true,
+    "python.analysis.exclude": [
+        "**/build"
+    ],
     "python.analysis.autoFormatStrings": true,
-    "python.analysis.completeFunctionParens": true
+    "python.analysis.completeFunctionParens": true,
+    "mypy-type-checker.ignorePatterns": [
+        "test/**/*.py"
+    ]
 }

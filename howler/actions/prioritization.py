@@ -35,7 +35,7 @@ def execute(query: str, field="score", value: str = "0.0", **kwargs):
     report = []
 
     try:
-        value = float(value)
+        value: float = float(value)
 
         datastore().hit.update_by_query(
             query,
@@ -76,6 +76,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Change Prioritization",
+        "priority": 10,
         "i18nKey": f"operations.{OPERATION_ID}",
         "description": {
             "short": "Change one of the prioritization fields of a hit",

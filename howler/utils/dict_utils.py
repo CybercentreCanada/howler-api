@@ -1,7 +1,7 @@
 from collections.abc import Mapping
-from typing import AnyStr, Dict, List
+from typing import Any, AnyStr, List
 from typing import Mapping as _Mapping
-from typing import Optional, Union
+from typing import Optional
 
 from howler.utils.uid import get_id_from_data
 
@@ -14,8 +14,11 @@ def strip_nulls(d):
 
 
 def recursive_update(
-    d: Dict, u: _Mapping, stop_keys: list[AnyStr] = [], allow_recursion: bool = True
-) -> Union[Dict, _Mapping]:
+    d: dict[str, Any],
+    u: _Mapping[str, Any],
+    stop_keys: list[AnyStr] = [],
+    allow_recursion: bool = True,
+) -> dict[str, Any]:
     if d is None:
         return u
 
@@ -34,11 +37,11 @@ def recursive_update(
 
 
 def get_recursive_delta(
-    d1: Union[Dict, Mapping],
-    d2: Union[Dict, Mapping],
+    d1: _Mapping[str, Any],
+    d2: _Mapping[str, Any],
     stop_keys: list[AnyStr] = [],
     allow_recursion: bool = True,
-) -> Dict:
+) -> dict[str, Any]:
     if d1 is None:
         return d2
 
@@ -69,7 +72,7 @@ def get_recursive_delta(
     return out
 
 
-def get_recursive_sorted_tuples(data: Dict):
+def get_recursive_sorted_tuples(data: _Mapping):
     def sort_lists(ldata: List):
         new_list = []
         for i in ldata:
@@ -93,12 +96,12 @@ def get_recursive_sorted_tuples(data: Dict):
     return items
 
 
-def get_dict_fingerprint_hash(data: Dict):
+def get_dict_fingerprint_hash(data: _Mapping):
     return get_id_from_data(str(get_recursive_sorted_tuples(data)))
 
 
-def flatten(data: Dict, parent_key: Optional[str] = None) -> Dict:
-    items = []
+def flatten(data: _Mapping, parent_key: Optional[str] = None) -> dict[str, Any]:
+    items: list[tuple[str, Any]] = []
     for k, v in data.items():
         cur_key = f"{parent_key}.{k}" if parent_key is not None else k
         if isinstance(v, dict):
@@ -109,8 +112,8 @@ def flatten(data: Dict, parent_key: Optional[str] = None) -> Dict:
     return dict(items)
 
 
-def unflatten(data: Dict) -> Dict:
-    out = dict()
+def unflatten(data: _Mapping) -> _Mapping:
+    out: dict[str, Any] = dict()
     for k, v in data.items():
         parts = k.split(".")
         d = out
@@ -120,3 +123,39 @@ def unflatten(data: Dict) -> Dict:
             d = d[p]
         d[parts[-1]] = v
     return out
+
+
+def prune(
+    data: _Mapping, keys: list[str], parent_key: Optional[str] = None
+) -> dict[str, Any]:
+    pruned_items: list[tuple[str, Any]] = []
+
+    for key, val in data.items():
+        cur_key = f"{parent_key}.{key}" if parent_key else key
+
+        if isinstance(val, dict):
+            child_keys = [_key for _key in keys if _key.startswith(cur_key)]
+
+            if len(child_keys) > 0:
+                pruned_items.append((key, prune(val, child_keys, cur_key)))
+        elif isinstance(val, list):
+            if not cur_key in keys and not any(
+                _key.startswith(cur_key) for _key in keys
+            ):
+                continue
+
+            list_result = []
+            for entry in val:
+                if isinstance(val, dict):
+                    child_keys = [_key for _key in keys if _key.startswith(cur_key)]
+
+                    if len(child_keys) > 0:
+                        pruned_items.append((key, prune(val, child_keys, cur_key)))
+                else:
+                    list_result.append(entry)
+
+            pruned_items.append((key, list_result))
+        elif cur_key in keys:
+            pruned_items.append((key, val))
+
+    return {k: v for k, v in pruned_items}

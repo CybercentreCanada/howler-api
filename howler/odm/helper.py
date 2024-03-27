@@ -1,21 +1,21 @@
+from datetime import datetime, timedelta
 import json
+from math import ceil
 import random
 from hashlib import md5
-from random import choice, randint, sample
+from random import choice, sample
 import sys
-import time
 
 from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
 from howler.helper.discover import get_apps_list
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Escalation
+from howler.odm.models.howler_data import Escalation, Link
 from howler.odm.models.user import User
 from howler.odm.randomizer import (
     get_random_filename,
     get_random_host,
     get_random_ip,
-    get_random_iso_date,
     get_random_user_agent,
     get_random_word,
     random_department,
@@ -25,25 +25,34 @@ from howler.security.utils import get_password_hash
 from howler.utils.uid import get_random_id
 
 APPS = get_apps_list()
+ESCALATIONS = Escalation.list()
 
 logger = get_logger(__file__)
 
 
-def generate_useful_hit(lookups, users, prune_hit=False):
+def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
     hit: Hit = random_model_obj(Hit)
-    hit.event.created = get_random_iso_date(
-        epoch=(
-            time.time() + random.randint(-32000000, 0)
-        )  # purposefully make some hits immediately deletable
+
+    rand_seed = random.random()
+
+    timestamp = datetime.now() - timedelta(
+        days=round(rand_seed * 30),
+        hours=min(max(round(random.gauss(14, 3)), 0), 23),
+        minutes=random.randint(0, 59),
+        seconds=random.randint(0, 59),
     )
+
+    hit.event.created = timestamp.isoformat() + "Z"
     hit.event.provider = choice(["HBS", "NBS", "CBS", "AssemblyLine"])
-    hit.timestamp = hit.event.created
+    hit.timestamp = timestamp.isoformat() + "Z"
+
     hit.organization.name, hit.organization.id = random_department()
     hit.howler.outline.threat = get_random_ip()
     hit.howler.outline.target = get_random_host()
     hit.howler.outline.indicators = []
-    for _ in range(random.randint(1, 10)):
+    for _ in range(round(rand_seed * 10)):
         hit.howler.outline.indicators.append(get_random_filename())
+
     hit.cloud.service.name = choice(
         [
             "Azure",
@@ -66,35 +75,21 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     hit.user.name = get_random_word()
     hit.user_agent.original = get_random_user_agent()
     hit.howler.analytic = choice(
-        ["AssemblyLine", "COLISEUM", "HERETIC", "cmt.aws.sigma.rules", "6TailPhish"]
+        ["Password Checker", "Bad Guy Finder", "Exploit Patcher"]
     )
     hit.howler.detection = hit.threat.tactic.name
-    for host in hit.assemblyline.antivirus:
-        host.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for host in hit.assemblyline.behaviour:
-        host.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for host in hit.assemblyline.heuristic:
-        host.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for host in hit.assemblyline.yara:
-        host.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for host in hit.assemblyline.attribution:
-        host.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for item in hit.assemblyline.mitre.tactic:
-        item.verdict = choice(["info", "malicious", "safe", "suspicious"])
-    for item in hit.assemblyline.mitre.technique:
-        item.verdict = choice(["info", "malicious", "safe", "suspicious"])
 
     for i in range(len(hit.howler.comment)):
         hit.howler.comment[i].user = choice(users)
 
     hit.howler.labels.assignments = sample(
         [
-            "APA2B",
-            "CCID1A",
-            "ACE1C",
-            "APA1B",
-            "ADS4B",
-            "ADS2A",
+            "Team 1",
+            "Team 2",
+            "Team 3",
+            "Team 4",
+            "Team 5",
+            "Team 6",
         ],
         1,
     )
@@ -107,7 +102,7 @@ def generate_useful_hit(lookups, users, prune_hit=False):
             "Documentation",
             "Super Teams",
         ],
-        randint(1, 2),
+        ceil(rand_seed * 2),
     )
 
     hit.howler.labels.campaign = []
@@ -117,7 +112,7 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     hit.howler.labels.operation = []
     hit.howler.labels.threat = []
 
-    labelType = randint(1, 6)
+    labelType = ceil(rand_seed * 6)
     if labelType == 1:
         hit.howler.labels.campaign = ["Bad event 2023-07"]
     elif labelType == 2:
@@ -129,7 +124,7 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     elif labelType == 5:
         hit.howler.labels.operation = ["OP_HOWLER"]
     else:
-        hit.howler.labels.threat = ["Bad mojo"]
+        hit.howler.labels.threat = ["Bad Mojo"]
 
     hit.event.id = hit.howler.id
 
@@ -158,7 +153,15 @@ def generate_useful_hit(lookups, users, prune_hit=False):
     )
 
     hit.howler.data = [
-        json.dumps({"key": "value", "boolean": True, "number": 5, "float": 10.456}),
+        json.dumps(
+            {
+                "key": "value",
+                "boolean": True,
+                "number": 5,
+                "float": 10.456,
+                "array": ["a", "b", "c"],
+            }
+        ),
         json.dumps(
             {"key": "value1", "boolean": False, "number": 34, "float": 10678.098}
         ),
@@ -166,24 +169,14 @@ def generate_useful_hit(lookups, users, prune_hit=False):
         json.dumps(
             {
                 "KQLQuery": (
-                    "\n    let ioc_lookBack = 14d;\n    let deviceActionAllowed = datatable (action:string) [\n"
-                    'NetworkIP\n    | parse kind=regex flags = U SourceZoneURI_CF with * "[\\\\s\\\\S-]+/" Department '
-                    "summarize Summary=make_list(Source_Overview) by Indicator\n"
-                )
+                    "StormEvents\n| take 5\n| project State, EventType, DamageProperty"
+                ),
             }
         ),
     ]
 
-    try:
-        hit.howler.links = [
-            {
-                "title": get_random_word(),
-                "href": app["route"],
-                "icon": app["name"],
-            }
-            for app in random.choices(APPS, k=5)
-        ]
-        hit.howler.links.append(
+    hit.howler.links = [
+        Link(
             {
                 "title": "Goose",
                 "href": "https://en.wikipedia.org/wiki/Canada_goose",
@@ -192,6 +185,19 @@ def generate_useful_hit(lookups, users, prune_hit=False):
                     "_%2827826185489%29.jpg/788px-Canada_goose_on_Seedskadee_NWR_%2827826185489%29.jpg"
                 ),
             }
+        )
+    ]
+
+    try:
+        hit.howler.links.extend(
+            Link(
+                {
+                    "title": get_random_word(),
+                    "href": app["route"],
+                    "icon": app["name"],
+                }
+            )
+            for app in random.choices(APPS, k=5)
         )
     except IndexError:
         pass
@@ -208,15 +214,39 @@ def generate_useful_hit(lookups, users, prune_hit=False):
         empty_hit = Hit({"howler": hit.howler})
 
         for key in hit.fields():
-            if key in ["howler", "event", "related", "organization", "threat"]:
+            if key in [
+                "howler",
+                "event",
+                "related",
+                "organization",
+                "threat",
+                "timestamp",
+            ]:
                 continue
 
             if hit.howler.analytic.lower() != "assemblyline":
                 hit.assemblyline = None
-            elif key in ["related", "file"]:
-                continue
+            else:
+                verdict = choice(["info", "malicious", "safe", "suspicious"])
+                for host in hit.assemblyline.antivirus:
+                    host.verdict = verdict
+                for host in hit.assemblyline.behaviour:
+                    host.verdict = verdict
+                for host in hit.assemblyline.heuristic:
+                    host.verdict = verdict
+                for host in hit.assemblyline.yara:
+                    host.verdict = verdict
+                for host in hit.assemblyline.attribution:
+                    host.verdict = verdict
+                for item in hit.assemblyline.mitre.tactic:
+                    item.verdict = verdict
+                for item in hit.assemblyline.mitre.technique:
+                    item.verdict = verdict
 
-            if randint(0, 4) < 3:
+                if key in ["related", "file"]:
+                    continue
+
+            if round(rand_seed * 4) < 3:
                 hit[key] = empty_hit[key]
 
     return hit
@@ -228,7 +258,7 @@ def create_users_with_username(ds: HowlerDatastore, usernames: list[str]):
         user_data = User(
             {
                 "name": f"{username}",
-                "email": f"{username}@howler.cyber.gc.ca",
+                "email": f"{username}@example.com",
                 "apikeys": {
                     "devkey": {
                         "acl": ["R", "W"],

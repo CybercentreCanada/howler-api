@@ -75,10 +75,10 @@ class HitOperationType(str, HowlerEnum):
 
 
 class Escalation(str, HowlerEnum):
+    MISS = "miss"
+    HIT = "hit"
     ALERT = "alert"
     EVIDENCE = "evidence"
-    HIT = "hit"
-    MISS = "miss"
 
     def __str__(self) -> str:
         return self.value
@@ -135,7 +135,7 @@ class Link(odm.Model):
     href = odm.Keyword(description="Timestamp at which the comment was last edited.")
     title = odm.Text(description="The title to use for the link.", optional=True)
     icon = odm.Keyword(
-        description="The icon to show. Either an ID corresponding to a hogwarts application, or an external link."
+        description="The icon to show. Either an ID corresponding to an analytical platform application, or an external link."
     )
 
 
@@ -260,14 +260,14 @@ class HowlerData(odm.Model):
         default=DEFAULT_ASSIGNMENT,
     )
     bundles: list[str] = odm.List(
-        odm.Keyword(),
+        odm.Keyword(
+            description="A list of bundle IDs this hit is a part of. Corresponds to the howler.id of the bundle."
+        ),
         default=[],
-        description="A list of bundle IDs this hit is a part of. Corresponds to the howler.id of the bundle.",
     )
     data: list[str] = odm.List(
-        odm.Keyword(),
+        odm.Keyword(description="Raw telemetry records associated with this hit."),
         default=[],
-        description="Raw telemetry records associated with this hit.",
     )
     links: list[Link] = odm.List(
         odm.Compound(Link),
@@ -281,17 +281,19 @@ class HowlerData(odm.Model):
         description="A hash of the event used for deduplicating hits."
     )
     hits: list[str] = odm.List(
-        odm.Keyword(),
+        odm.Keyword(
+            description="A list of hit IDs this bundle represents. Corresponds to the howler.id of the child hit."
+        ),
         default=[],
-        description="A list of hit IDs this bundle represents. Corresponds to the howler.id of the child hit.",
     )
     is_bundle: bool = odm.Boolean(
         description="Is this hit a bundle or a normal hit?", default=False
     )
     related: list[str] = odm.List(
-        odm.Keyword(),
+        odm.Keyword(
+            description="Related hits grouped by the enrichment that correlated them. Populated by enrichments."
+        ),
         default=[],
-        description="Related hits grouped by the enrichment that correlated them. Populated by enrichments.",
     )
     reliability: Optional[float] = odm.Optional(
         odm.Float(
@@ -351,9 +353,7 @@ class HowlerData(odm.Model):
         description="A list of changes to the hit with timestamps and attribution.",
     )
     retained: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="If the hit was retained, this is a link to it in Alfred."
-        )
+        odm.Keyword(description="If the hit was retained, this is a link where.")
     )
     monitored: Optional[str] = odm.Optional(
         odm.Keyword(description="Link to the incident monitoring dashboard.")
@@ -381,7 +381,6 @@ class HowlerData(odm.Model):
         odm.FlattenedObject(description="Raw data provided by the different sources.")
     )
     viewers: list[str] = odm.List(
-        odm.Keyword(),
+        odm.Keyword(description="A list of users currently viewing the hit"),
         default=[],
-        description="A list of users currently viewing the hit",
     )

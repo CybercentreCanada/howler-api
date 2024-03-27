@@ -1,5 +1,5 @@
 import pytest
-from conftest import get_api_data
+from conftest import APIError, get_api_data
 
 from howler.odm.random_data import create_users, wipe_users
 
@@ -95,6 +95,16 @@ def test_histogram_search(datastore, login_session):
             assert isinstance(int(k), int) and isinstance(v, int)
 
 
+def test_count(datastore, login_session):
+    session, host = login_session
+
+    for collection in collections:
+        resp = get_api_data(
+            session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"}
+        )
+        assert TEST_SIZE <= resp["total"] >= len(resp["items"])
+
+
 # noinspection PyUnusedLocal
 def test_get_fields(datastore, login_session):
     session, host = login_session
@@ -121,10 +131,15 @@ def test_search(datastore, login_session):
     session, host = login_session
 
     for collection in collections:
-        resp = get_api_data(
+        search_resp = get_api_data(
             session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"}
         )
-        assert TEST_SIZE <= resp["total"] >= len(resp["items"])
+        count_resp = get_api_data(
+            session,
+            f"{host}/api/v1/search/count/{collection}/",
+            params={"query": "id:*"},
+        )
+        assert search_resp["total"] == count_resp["count"]
 
 
 # noinspection PyUnusedLocal
@@ -144,3 +159,26 @@ def test_stats_search(datastore, login_session):
         assert sorted(list(resp.keys())) == ["avg", "count", "max", "min", "sum"]
         for v in resp.values():
             assert isinstance(v, int) or isinstance(v, float)
+
+
+def test_search_fail(datastore, login_session):
+    session, host = login_session
+
+    urls = [
+        "api/v1/search/stats/hit/howler.score",
+        "api/v1/search/histogram/hit/howler.score",
+        "api/v1/search/facet/hit/howler.status",
+        "api/v1/search/count/hit",
+        "api/v1/search/grouped/hit/howler.status",
+        "api/v1/search/hit",
+    ]
+
+    for url in urls:
+        with pytest.raises(APIError) as api_err:
+            get_api_data(
+                session,
+                f"{host}/{url}",
+                params={"query": "--1123!@#21123!@#9sfg8d76dfvhjkln543"},
+            )
+
+        assert "400" in str(api_err)

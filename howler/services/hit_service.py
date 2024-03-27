@@ -2,14 +2,18 @@ import json
 from hashlib import sha256
 import re
 from typing import Any, Optional
+import typing
 
 from prometheus_client import Counter
 from howler.odm.models.ecs.event import Event
+from howler.odm.models.user import User
 from howler.services import action_service
 
 import howler.services.event_service as event_service
 from howler.common.exceptions import (
+    HowlerTypeError,
     HowlerValueError,
+    NotFoundException,
     ResourceExists,
 )
 from howler.common.loader import APP_NAME, datastore
@@ -301,10 +305,13 @@ def convert_hit(
 
         data["howler.data"] = parsed_data
 
-    odm = Hit(data, ignore_extra_values=ignore_extra_values)
+    try:
+        odm = Hit(data, ignore_extra_values=ignore_extra_values)
+    except TypeError as e:
+        raise HowlerTypeError(str(e), cause=e) from e
 
     # Check for deprecated field and unused fields
-    odm_flatten = odm.flat_fields()
+    odm_flatten = odm.flat_fields(show_compound=True)
     unused_keys = set(data.keys()) - set(odm_flatten.keys()) - BANNED_FIELDS
     if unused_keys and not ignore_extra_values:
         raise HowlerValueError(
@@ -357,11 +364,11 @@ def exists(id: str):
 
 def get_hit(
     id: str,
-    as_obj: bool = False,
+    as_odm: bool = False,
     version: bool = False,
 ):
     """Return hit object as either an ODM or Dict"""
-    return datastore().hit.get_if_exists(key=id, as_obj=as_obj, version=version)
+    return datastore().hit.get_if_exists(key=id, as_obj=as_odm, version=version)
 
 
 CREATED_HITS = Counter(
@@ -406,6 +413,7 @@ def update_hit(
     return _update_hit(hit_id, operations, user, version=version)
 
 
+@typing.no_type_check
 def save_hit(hit: Hit, version: Optional[str] = None) -> tuple[Hit, str]:
     datastore().hit.save(hit.howler.id, hit, version=version)
     data, _version = datastore().hit.get(hit.howler.id, as_obj=False, version=True)
@@ -419,14 +427,14 @@ def _update_hit(
     operations: list[OdmUpdateOperation],
     user: Optional[str] = None,
     version: Optional[str] = None,
-):
+) -> tuple[Hit, str]:
     """Add the worklog operations to the operation list"""
     final_operations = []
 
     if user and not isinstance(user, str):
         raise HowlerValueError("User must be of type string")
 
-    current_hit, saved_version = get_hit(hit_id, as_obj=True, version=True)
+    current_hit = get_hit(hit_id, as_odm=True)
 
     for operation in operations:
         if not operation:
@@ -472,7 +480,7 @@ def _update_hit(
                     "howler.log",
                     {
                         "timestamp": "NOW",
-                        "previous_version": saved_version,
+                        "previous_version": version,
                         "key": operation.key,
                         "explanation": operation.explanation,
                         "new_value": operation.value or "None",
@@ -503,10 +511,20 @@ def get_transitions(status: HitStatus) -> list[str]:
     return get_hit_workflow().get_transitions(status)
 
 
+def get_all_children(hit: Hit):
+    child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
+
+    for entry in child_hits:
+        if entry["howler"]["is_bundle"]:
+            child_hits.extend(get_all_children(entry))
+
+    return child_hits
+
+
 def transition_hit(
     id: str,
     transition: HitStatusTransition,
-    user: dict[str, Any],
+    user: User,
     version: Optional[str] = None,
     **kwargs,
 ):
@@ -519,19 +537,24 @@ def transition_hit(
         version (str): A version to validate against. The transition will not run if the version doesn't match.
     """
     hit: Hit = (
-        get_hit(id, as_obj=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
+        get_hit(id, as_odm=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
     )
 
     workflow: Workflow = get_hit_workflow()
 
-    child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
+    if not hit:
+        raise NotFoundException("Hit does not exist")
+
+    child_hits = get_all_children(hit)
 
     log.debug(
         "Transitioning (%s)",
-        ", ".join([h["howler"]["id"] for h in ([hit] + child_hits)]),
+        ", ".join(
+            [h["howler"]["id"] for h in ([hit] + [ch for ch in child_hits if ch])]
+        ),
     )
 
-    for _hit in [hit] + child_hits:
+    for _hit in [hit] + [ch for ch in child_hits if ch]:
         hit_status = _hit["howler"]["status"]
         hit_id = _hit["howler"]["id"]
 
@@ -548,9 +571,9 @@ def transition_hit(
                 hit_id,
                 updates,
                 user["uname"],
-                version=version
-                if (hit_id == hit["howler"]["id"] and version)
-                else None,
+                version=(
+                    version if (hit_id == hit["howler"]["id"] and version) else None
+                ),
             )
 
     if transition in ["promote", "demote"]:

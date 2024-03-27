@@ -12,7 +12,7 @@ def add_etag(getter, check_if_match=False):
         def generate_etag(*args, **kwargs):
             obj, version = getter(
                 kwargs.get("id", kwargs.get("username", None)),
-                as_obj=True,
+                as_odm=True,
                 version=True,
             )
             if (

@@ -1,4 +1,4 @@
-def docstring_parameters(**kwargs: dict[str, str]):
+def docstring_parameters(**kwargs: dict[str, str]):  # pragma: no cover
     """Substitute variables in docstring.
 
     This annotation modifies the docstring of an objects to insure that Howler's dynamic api documentation is

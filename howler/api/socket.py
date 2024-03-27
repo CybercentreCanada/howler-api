@@ -18,7 +18,7 @@ HWL_INTERPOD_COMMS_SECRET = os.getenv("HWL_INTERPOD_COMMS_SECRET", "secret")
 
 socket_api = Blueprint("socket", "socket", url_prefix="/socket/v1")
 
-socket_api._doc = (
+socket_api._doc = (  # type: ignore
     "Endpoints concerning websocket connectivity between the client and server"
 )
 
@@ -96,9 +96,10 @@ def connect(ws: Server, *args, ws_id, **kwargs):
                             "error",
                             error=True,
                             status=400,
-                            message="Authentication header is invalid.",
+                            message="Sent data is invalid.",
                         ),
                     )
+                    return
 
                 outstanding_actions = check_action(
                     obj["id"],

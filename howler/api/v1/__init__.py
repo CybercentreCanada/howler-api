@@ -1,3 +1,4 @@
+from textwrap import dedent
 from flask import Blueprint, current_app, request
 
 from howler.api import ok
@@ -5,7 +6,7 @@ from howler.security import api_login
 
 API_PREFIX = "/api/v1"
 apiv1 = Blueprint("apiv1", __name__, url_prefix=API_PREFIX)
-apiv1._doc = "Api Documentation Version 1"
+apiv1._doc = "Api Documentation Version 1"  # type: ignore[attr-defined]
 
 
 #####################################
@@ -48,11 +49,11 @@ def get_api_documentation(**kwargs):
     api_list = []
     for rule in current_app.url_map.iter_rules():
         if rule.rule.startswith(request.path):
-            methods = []
-
-            for item in rule.methods:
-                if item != "OPTIONS" and item != "HEAD":
-                    methods.append(item)
+            methods = [
+                item
+                for item in (rule.methods or [])
+                if item != "OPTIONS" and item != "HEAD"
+            ]
 
             func = current_app.view_functions[rule.endpoint]
             required_type = func.__dict__.get("required_type", ["user"])
@@ -76,17 +77,15 @@ def get_api_documentation(**kwargs):
                         try:
                             doc = current_app.blueprints[
                                 rule.endpoint[: rule.endpoint.rindex(".")]
-                            ]._doc
+                            ]._doc  # type: ignore[attr-defined]
                         except Exception:
                             doc = ""
 
                         api_blueprints[blueprint] = doc
 
-                    try:
-                        description = "\n".join(
-                            [x[4:] for x in doc_string.splitlines()]
-                        )
-                    except Exception:
+                    if doc_string:
+                        description = dedent(doc_string)
+                    else:
                         description = (
                             "[INCOMPLETE]\n\nTHIS API HAS NOT BEEN DOCUMENTED YET!"
                         )

@@ -86,10 +86,10 @@ def create_transport(url: str | Host, connection_attempts=None):
         base = "%s%s" % (host, base)
     port = parsed.port
     if parsed.password:
-        password = unquote(parsed.password)
+        password: Optional[str] = unquote(parsed.password)
     else:
         password = ""
-    user = parsed.username or ""
+    user: Optional[str] = parsed.username or ""
 
     scheme = parsed.scheme.lower()
     try:
@@ -101,7 +101,7 @@ def create_transport(url: str | Host, connection_attempts=None):
             if scheme == "ftps":
                 extras["use_tls"] = True
 
-            t = TransportFTP(
+            transport: Transport = TransportFTP(
                 base=base, host=host, password=password, user=user, port=port, **extras
             )
 
@@ -114,7 +114,7 @@ def create_transport(url: str | Host, connection_attempts=None):
                 valid_bool_keys=valid_bool_keys,
             )
 
-            t = TransportSFTP(
+            transport = TransportSFTP(
                 base=base, host=host, password=password, user=user, **extras
             )
 
@@ -127,7 +127,7 @@ def create_transport(url: str | Host, connection_attempts=None):
                 valid_bool_keys=valid_bool_keys,
             )
 
-            t = TransportHTTP(
+            transport = TransportHTTP(
                 scheme=scheme,
                 base=base,
                 host=host,
@@ -143,7 +143,7 @@ def create_transport(url: str | Host, connection_attempts=None):
                 parse_qs(parsed.query), valid_bool_keys=valid_bool_keys
             )
 
-            t = TransportLocal(base=base, **extras)
+            transport = TransportLocal(base=base, **extras)
 
         elif scheme == "s3":
             valid_str_keys = ["aws_region", "s3_bucket"]
@@ -158,7 +158,7 @@ def create_transport(url: str | Host, connection_attempts=None):
             if not user and not password:
                 user, password = None, None
 
-            t = TransportS3(
+            transport = TransportS3(
                 base=base,
                 host=host,
                 port=port,
@@ -172,16 +172,18 @@ def create_transport(url: str | Host, connection_attempts=None):
             valid_str_keys = ["access_key", "tenant_id", "client_id", "client_secret"]
             extras = _get_extras(parse_qs(parsed.query), valid_str_keys=valid_str_keys)
 
-            t = TransportAzure(
+            transport = TransportAzure(
                 base=base, host=host, connection_attempts=connection_attempts, **extras
             )
 
         else:
             raise FileStoreException(f"Unknown transport: {scheme}")
     except TransportException as e:
-        raise FileStoreException(f"Failed to connect to {url.host}", cause=e)
+        raise FileStoreException(
+            f"Failed to connect to {url if isinstance(url, str) else url.host}", cause=e
+        )
 
-    return t
+    return transport
 
 
 class FileStore(object):
@@ -317,7 +319,7 @@ class FileStore(object):
         self, local_remote_tuples, location="all"
     ) -> list[Tuple[str, str, str]]:
         failed_tuples = []
-        for (src_path, dst_path) in local_remote_tuples:
+        for src_path, dst_path in local_remote_tuples:
             try:
                 self.upload(src_path, dst_path, location)
             except Exception as ex:

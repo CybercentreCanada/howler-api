@@ -26,27 +26,18 @@ class Comment(odm.Model):
     )
 
 
-@odm.model(index=True, store=True, description="Notebook definition.")
-class Notebook(odm.Model):
-    id = odm.UUID(description="A unique ID for the notebook")
-    detection: Optional[str] = odm.Keyword(
-        description="The detection the notebook applies to, if it applies to a particular detection",
-        optional=True,
-    )
-    value = odm.Text(description="The link to the notebook")
-    name = odm.Text(description="Name for the analytic")
-    user = odm.Keyword(description="User ID who added the notebook.")
-
-
 @odm.model(index=True, store=True, description="Model of analytics")
 class Analytic(odm.Model):
     analytic_id: str = odm.UUID(description="A UUID for this analytic")
-    notebooks: list[Notebook] = odm.List(
-        odm.Compound(Notebook),
-        default=[],
-        description="A list of useful notebooks for the analytic",
-    )
     name: str = odm.Keyword(description="The name of the analytic.")
+    owner: Optional[str] = odm.Keyword(
+        description="The username of the user who owns this analytic.", optional=True
+    )
+    contributors: list[str] = odm.List(
+        odm.Keyword(),
+        description="A list of users who have contributed to this analytic.",
+        default=[],
+    )
     description: Optional[str] = odm.Text(
         description="A markdown description of the analytic", optional=True
     )
@@ -59,4 +50,11 @@ class Analytic(odm.Model):
         odm.Compound(Comment),
         default=[],
         description="A list of comments with timestamps and attribution.",
+    )
+    rule: Optional[str] = odm.Keyword(description="A rule query", optional=True)
+    rule_type: Optional[str] = odm.Optional(
+        odm.Enum(values=["lucene", "eql", "sigma"], description="Type of rule")
+    )
+    rule_crontab: Optional[str] = odm.Keyword(
+        description="The interval for the rule to run at", optional=True
     )
