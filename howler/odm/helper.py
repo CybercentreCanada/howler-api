@@ -24,6 +24,7 @@ from howler.odm.randomizer import (
 from howler.security.utils import get_password_hash
 from howler.utils.uid import get_random_id
 
+
 APPS = get_apps_list()
 ESCALATIONS = Escalation.list()
 

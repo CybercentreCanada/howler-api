@@ -52,10 +52,6 @@ resources:
         MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
       ports:
         - 9000:9000
-    - container: keycloak
-      image: quay.io/keycloak/keycloak:latest
-      ports:
-        - 9100:8080
 
 stages:
   - stage: test
@@ -70,16 +66,17 @@ stages:
           elasticsearch: elasticsearch
           redis: redis
           minio: minio
-          keycloak: keycloak
 
         steps:
+          - checkout: self
+            fetchDepth: 100
+          - script: |
+              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 develop
+            displayName: Fetch develop for diff coverage
           - task: UsePythonVersion@0
             displayName: Set python version
             inputs:
               versionSpec: "3.9"
-          - script: |
-              sleep 30
-            displayName: sleep time (allow ES to be ready)
           - script: |
               sudo mkdir -p /var/cache/howler/
               sudo mkdir -p /var/lib/howler/
@@ -87,22 +84,48 @@ stages:
               sudo chmod a+rw /var/cache/howler/
               sudo chmod a+rw /var/lib/howler/
               sudo chmod a+rw /var/log/howler/
+              sudo cp test/unit/config.yml /etc/howler/conf/config.yml
               sudo apt-get update
-              sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libldap2-dev libsasl2-dev wget
+              sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libsasl2-dev wget
             displayName: Setup Environment
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
               python -m venv venv
               . ./venv/bin/activate
               python -m pip install --upgrade pip
-              python -m pip install --no-cache-dir -e .
-
-              python -m pip install --no-cache-dir -r test/requirements.txt
+              python -m pip install -e .
+              python -m pip install -r test/requirements.txt
             displayName: Install howler-api
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
               . ./venv/bin/activate
-              python -m howler.app &
-              pytest -rsx -vv test
+              ./build_scripts/type_check.sh
+            displayName: Run type checking
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              . ./venv/bin/activate
+              python build_scripts/run_tests.py
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
+          - script: |
+              . ./venv/bin/activate
+              GIT_BRANCH=$(branch) python build_scripts/coverage_reports.py
+            workingDirectory: $(Pipeline.Workspace)/s
+            displayName: Coverage Results
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFiles: "$(Pipeline.Workspace)/s/**/test-*.xml"
+              testRunTitle: "Publish test results for Python $(python.version)"
+          - task: PublishCodeCoverageResults@1
+            condition: succeededOrFailed()
+            inputs:
+              codeCoverageTool: Cobertura
+              summaryFileLocation: "$(Pipeline.Workspace)/s/**/coverage.xml"
+              reportDirectory: "$(Pipeline.Workspace)/s/**/htmlcov"
+          - task: GithubComment@0
+            condition: and(eq(variables.isPrBranch, true), succeeded())
+            inputs:
+              githubConnection: Howler Github PAT
+              repositoryName: "$(Build.Repository.Name)"
+              comment: $(coverage_result)
