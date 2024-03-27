@@ -37,7 +37,6 @@ from howler.datastore.support.schemas import (
     default_index,
     default_mapping,
 )
-from howler.filestore.exceptions import HowlerConnectionError
 from howler.odm.base import (
     BANNED_FIELDS,
     ClassificationObject,
@@ -1282,9 +1281,7 @@ class ESCollection(Generic[ModelType]):
             return self.normalize(data, as_obj=as_obj), version
         return self.normalize(data, as_obj=as_obj)
 
-    def require(
-        self, key, as_obj=True, archive_access=None, version=False
-    ) -> Union[
+    def require(self, key, as_obj=True, archive_access=None, version=False) -> Union[
         tuple[Optional[Union[dict[str, Any], ModelType]], str],
         Optional[Union[dict[str, Any], ModelType]],
     ]:
@@ -1752,9 +1749,9 @@ class ESCollection(Generic[ModelType]):
             query_body["script_fields"] = fields
 
         if parsed_values["df"]:
-            query_body["query"]["bool"]["must"]["query_string"][
-                "default_field"
-            ] = parsed_values["df"]
+            query_body["query"]["bool"]["must"]["query_string"]["default_field"] = (
+                parsed_values["df"]
+            )
 
         # Time limit for the query
         if parsed_values["timeout"]:
@@ -2107,9 +2104,9 @@ class ESCollection(Generic[ModelType]):
                 fields=fields,
                 filter=parsed_filters,
                 size=rows,
-                wait_for_completion_timeout=f"{timeout}ms"
-                if timeout is not None
-                else None,
+                wait_for_completion_timeout=(
+                    f"{timeout}ms" if timeout is not None else None
+                ),
             )
 
             ret_data: dict[str, Any] = {
@@ -2203,6 +2200,40 @@ class ESCollection(Generic[ModelType]):
                     f"Current settings would generate {gaps_count} steps"
                 )
             return ret_type
+
+    def count(
+        self,
+        query,
+        access_control=None,
+        use_archive=False,
+    ):
+        """
+        This function should perform a count operation through the datastore and return a
+        search result object that consists of the following:
+
+            {
+                "total": 123456,  # Total number of documents matching the query
+            }
+
+        :param use_archive: Query also the archive
+        :param query: lucene query to search for
+        :param access_control: access control parameters to limiti the scope of the query
+        :return: a count result object
+        """
+
+        index = self.name
+        if self.archive_access and use_archive:
+            index = f"{index},{self.name}-*"
+
+        result = self.with_retries(
+            self.datastore.client.count, index=index, q=query
+        )
+
+        ret_data: dict[str, Any] = {
+            "count": result['count'],
+        }
+
+        return ret_data
 
     def histogram(
         self,
@@ -2488,9 +2519,9 @@ class ESCollection(Generic[ModelType]):
                             "list": field_model.multivalued if field_model else False,
                             "stored": field_model.store if field_model else False,
                             "type": f_type,
-                            "description": field_model.description
-                            if field_model
-                            else "",
+                            "description": (
+                                field_model.description if field_model else ""
+                            ),
                         }
                     else:
                         continue
@@ -2504,9 +2535,9 @@ class ESCollection(Generic[ModelType]):
                 "deprecated": field_model.deprecated if field_model else False,
                 "type": f_type,
                 "description": field_model.description if field_model else "",
-                "deprecated_description": field_model.deprecated_description
-                if field_model
-                else "",
+                "deprecated_description": (
+                    field_model.deprecated_description if field_model else ""
+                ),
             }
 
         collection_data.pop("id", None)

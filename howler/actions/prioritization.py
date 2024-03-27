@@ -76,6 +76,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Change Prioritization",
+        "priority": 10,
         "i18nKey": f"operations.{OPERATION_ID}",
         "description": {
             "short": "Change one of the prioritization fields of a hit",

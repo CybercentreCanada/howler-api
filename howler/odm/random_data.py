@@ -14,6 +14,8 @@ import yaml
 from howler.common import loader
 from howler.common.logging import get_logger
 from howler.datastore.howler_store import HowlerDatastore
+from howler.datastore.operations import OdmHelper
+from howler.helper.hit import assess_hit
 from howler.helper.oauth import VALID_CHARS
 from howler.odm.base import Keyword
 from howler.odm.helper import generate_useful_hit
@@ -24,19 +26,26 @@ from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import (
     Assessment,
     Escalation,
-    HitStatusTransition,
+    HitStatus,
     Scrutiny,
 )
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
-from howler.odm.randomizer import get_random_user, get_random_word, random_model_obj
+from howler.odm.randomizer import (
+    get_random_string,
+    get_random_user,
+    get_random_word,
+    random_model_obj,
+)
 from howler.security.utils import get_password_hash
-from howler.services import analytic_service, hit_service
+from howler.services import analytic_service
 
 classification = loader.get_classification()
 
 logger = get_logger(__file__)
+
+hit_helper = OdmHelper(Hit)
 
 
 def create_users(ds):
@@ -257,13 +266,15 @@ def wipe_users(ds):
 
 
 def create_templates(ds: HowlerDatastore):
-    for _ in range(30):
+    for _ in range(2):
         keys = sample(list(Hit.flat_fields().keys()), 5)
 
-        for detection in ["Detection 1", "Detection 2", None]:
+        for detection in ["Detection 1", "Detection 2"]:
             template = Template(
                 {
-                    "analytic": choice(["Password Checker", "Bad Guy Finder", "SecretAnalytic"]),
+                    "analytic": choice(
+                        ["Password Checker", "Bad Guy Finder", "SecretAnalytic"]
+                    ),
                     "detection": detection,
                     "type": "global",
                     "keys": keys,
@@ -382,7 +393,9 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
     lookups = loader.get_lookups()
     users = ds.user.search("*:*")["items"]
     for hit_idx in range(hit_count):
-        hit = generate_useful_hit(lookups, [user["uname"] for user in users])
+        hit = generate_useful_hit(
+            lookups, [user["uname"] for user in users], prune_hit=False
+        )
 
         if hit_idx + 1 == hit_count:
             hit.howler.analytic = "SecretAnalytic"
@@ -392,16 +405,24 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
         analytic_service.save_from_hit(hit, random.choice(users))
         ds.analytic.commit()
 
-        if choice([True, False, False]):
+        if choice([True, False, False, False]):
             user = choice(users)
-            hit_service.transition_hit(
+            ds.hit.update(
                 hit.howler.id,
-                HitStatusTransition.ASSESS,
-                user,
-                None,
-                hit=hit,
-                assessment=choice(Assessment.list()),
+                [
+                    *assess_hit(
+                        assessment=choice(Assessment.list()),
+                        rationale=get_random_string(),
+                        hit=hit,
+                    ),
+                    hit_helper.update(
+                        "howler.assignment",
+                        user.get("uname", user.get("username", None)),
+                    ),
+                    hit_helper.update("howler.status", HitStatus.RESOLVED),
+                ],
             )
+
         if hit_idx % 25 == 0 and "pytest" not in sys.modules:
             logger.info("\tCreated %s/%s", hit_idx, hit_count)
 
@@ -480,34 +501,34 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
         a.detections = list(set(a.detections))
         a.owner = random.choice(users)
         a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
-        a.correlation = None
-        a.correlation_crontab = None
-        a.correlation_type = None
+        a.rule = None
+        a.rule_crontab = None
+        a.rule_type = None
 
         ds.analytic.save(a.analytic_id, a)
 
-    for correlation_type in ["lucene", "eql", "sigma"]:
+    for rule_type in ["lucene", "eql", "sigma"]:
         a: Analytic = random_model_obj(Analytic)
-        a.correlation_type = correlation_type
+        a.rule_type = rule_type
         a.name = " ".join(
             [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
         )
-        a.detections = ["Correlation"]
+        a.detections = ["Rule"]
         a.owner = random.choice(users)
         a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
-        a.correlation_crontab = f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(8, 45)))])} * * * *"
+        a.rule_crontab = f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(2, 5)))])} * * * *"
 
-        if a.correlation_type == "lucene":
-            a.correlation = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
-        elif a.correlation_type == "eql":
-            a.correlation = textwrap.dedent(
+        if a.rule_type == "lucene":
+            a.rule = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
+        elif a.rule_type == "eql":
+            a.rule = textwrap.dedent(
                 f"""
             sequence
                 [ {random.choice(EVENT_CATEGORIES)} where howler.escalation in ({", ".join([f'"{item}"' for item in random.sample(Escalation.list(), k=random.randint(1, len(Escalation.list())))])}) ]
                 [ {random.choice(EVENT_CATEGORIES)} where howler.scrutiny in ({", ".join([f'"{item}"' for item in random.sample(Scrutiny.list(), k=random.randint(1, len(Scrutiny.list())))])}) ]
             """
             ).strip()
-        elif a.correlation_type == "sigma":
+        elif a.rule_type == "sigma":
             sigma_dir = Path(__file__).parent / "sigma"
             if sigma_dir.exists():
                 file_name = random.choice(list(sigma_dir.glob("*.yml")))
@@ -515,10 +536,10 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
                 data = yaml.safe_load(file_data)
                 a.name = data["title"]
                 a.description = data["description"]
-                a.correlation = file_data
+                a.rule = file_data
             else:
                 logger.warning(
-                    "For better test data using sigma correlations, execute howler/external/generate_sigma_rules.py."
+                    "For better test data using sigma rules, execute howler/external/generate_sigma_rules.py."
                 )
 
         ds.analytic.save(a.analytic_id, a)
@@ -561,9 +582,14 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
                     potential_values = step["options"].get(key, None)
                     if potential_values:
                         if isinstance(potential_values, dict):
-                            action_data[key] = choice(
-                                potential_values[choice(list(potential_values.keys()))]
-                            )
+                            try:
+                                action_data[key] = choice(
+                                    potential_values[
+                                        choice(list(potential_values.keys()))
+                                    ]
+                                )
+                            except IndexError:
+                                continue
                         else:
                             action_data[key] = choice(potential_values)
                     else:
@@ -619,6 +645,8 @@ INDEXES: dict[str, tuple[Callable, list[Callable]]] = {
 
 
 if __name__ == "__main__":
+    # TODO: Implement a solid command line interface for running this
+
     args = [*sys.argv]
 
     # Remove the file path
@@ -632,12 +660,13 @@ if __name__ == "__main__":
 
     ds = loader.datastore(archive_access=False)
 
-    logger.info("Wiping existing data.")
+    if "--no-wipe" not in args:
+        logger.info("Wiping existing data.")
 
-    for index, operations in INDEXES.items():
-        if index in args:
-            # Wipe function
-            operations[0](ds)
+        for index, operations in INDEXES.items():
+            if index in args:
+                # Wipe function
+                operations[0](ds)
 
     logger.info("Running setup steps.")
     if "hits" in args:

@@ -121,6 +121,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Add to Bundle",
+        "priority": 6,
         "i18nKey": f"operations.{OPERATION_ID}",
         "description": {
             "short": "Add a set of hits to a bundle",

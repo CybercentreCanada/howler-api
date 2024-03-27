@@ -33,6 +33,7 @@ from howler.odm.models.gcp import GCP
 from howler.odm.models.howler_data import HowlerData
 
 
+
 @odm.model(index=True, store=True, description="ECS model version")
 class ECSVersion(odm.Model):
     version: str = odm.Keyword(
@@ -73,7 +74,6 @@ class Hit(odm.Model):
         reference="https://confluence.devtools.cse-cst.gc.ca/display/~jjgalar/Hit+Schema",
     )
 
-    # Field Sets
     assemblyline: Optional[AssemblyLine] = odm.Optional(
         odm.Compound(
             AssemblyLine,
@@ -81,6 +81,7 @@ class Hit(odm.Model):
         )
     )
 
+    # Field Sets
     agent: Agent = odm.Optional(
         odm.Compound(
             Agent,

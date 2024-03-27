@@ -1,6 +1,4 @@
-from crypt import methods
 import json
-from typing import Any
 from flask import Response, request
 
 import howler.actions as actions
@@ -69,10 +67,7 @@ def add_action(user: User, **_) -> Response:
         "operations": [                     # A list of operations to execute
             {
                 "operation_id": "add_label",          # The id of the operation to run
-                "data": {                   # Various requisite values for the operation
-                    "category": "generic",
-                    "label": "assigned"
-                }
+                "data_json": "{ 'category': 'generic', 'label': 'assigned' }" # Various requisite values for the operation
             }
         ]
     }
@@ -118,15 +113,6 @@ def add_action(user: User, **_) -> Response:
 
         action_obj = Action(new_action)
 
-        # migration from data as mapping to data as json string
-        # TODO: Remove eventually
-        for op in action_obj.operations:
-            if op.data:
-                if not op.data_json:
-                    op.data_json = json.dumps(op.as_primitives()["data"])
-
-                op.data = None
-
         ds = datastore()
         ds.action.save(action_obj.action_id, action_obj)
         ds.action.commit()
@@ -159,10 +145,7 @@ def update_action(id, user: User, **_) -> Response:
         "actions": [                        # A list of actions to execute
             {
                 "operation_id": "add_label",          # The id of the action to run
-                "data": {                   # Various requisite values for the action
-                    "category": "generic",
-                    "label": "assigned"
-                }
+                "data_json": "{ 'category': 'generic', 'label': 'assigned' }" # Various requisite values for the action
             }
         ]
     }
@@ -223,15 +206,6 @@ def update_action(id, user: User, **_) -> Response:
     try:
         action_obj = Action(updated_action)
         action_obj.action_id = id
-
-        # migration from data as mapping to data as json string
-        # TODO: Remove eventually
-        for op in action_obj.operations:
-            if op.data:
-                if not op.data_json:
-                    op.data_json = json.dumps(op.as_primitives()["data"])
-
-                op.data = None
 
         ds.action.save(action_obj.action_id, action_obj)
         ds.action.commit()
@@ -295,6 +269,7 @@ def execute_action(id: str, **kwargs) -> Response:
     Data Block:
     {
         "request_id": "abc123",     # An id used to identify the request in websocket updates
+        "query": "howler.id:*"      # An optional override query
     }
 
     Result Example:
@@ -321,18 +296,15 @@ def execute_action(id: str, **kwargs) -> Response:
     current_user = kwargs.get("user", None)
 
     for operation in action.operations:
-        # check for deprecated operation.data usage. TODO: Remove eventually
-        op_data = (
-            (operation.get("data", {}))
-            if not operation.get("data_json", False)
-            else json.loads(operation["data_json"])
-        )
+        op_data = json.loads(operation["data_json"])
+
+        query = execute_req.get("query", action.query) or action.query
 
         audit(
             [],
             {
                 **kwargs,
-                "query": action.query,
+                "query": query,
                 "operation_id": operation.operation_id,
                 **op_data,
             },
@@ -344,7 +316,7 @@ def execute_action(id: str, **kwargs) -> Response:
         report = actions.execute(
             operation_id=operation.operation_id,
             request_id=execute_req["request_id"],
-            query=action.query,
+            query=query,
             user=current_user,
             **op_data,
         )
@@ -396,10 +368,7 @@ def execute_operations(**kwargs) -> Response:
         "operations": [                # A list of operations to execute
             {
                 "operation_id": "add_label",          # The id of the action to run
-                "data": {                   # Various requisite values for the action
-                    "category": "generic",
-                    "label": "assigned"
-                }
+                "data_json": { "category": "generic", "label": "assigned" } # Various requisite values for the action
             }
         ]
     }
@@ -430,12 +399,7 @@ def execute_operations(**kwargs) -> Response:
         )
 
     for operation in operations:
-        # check for deprecated operation.data usage. TODO: Remove eventually
-        op_data = (
-            (operation.get("data", {}))
-            if not operation.get("data_json", False)
-            else json.loads(operation["data_json"])
-        )
+        op_data = json.loads(operation["data_json"])
 
         audit(
             [],

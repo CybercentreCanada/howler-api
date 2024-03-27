@@ -1,4 +1,5 @@
 from typing import Any, Optional
+import typing
 
 from flask import request
 
@@ -13,14 +14,14 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
-from howler.cronjobs.correlations import register_correlations
+from howler.cronjobs.rules import register_rules
 from howler.datastore.exceptions import DataStoreException
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.analytic import Analytic, Comment
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.security import api_login
-from howler.services import analytic_service
+from howler.services import analytic_service, user_service
 
 
 MAX_COMMENT_LEN = 5000
@@ -51,7 +52,7 @@ def get_analytics(**kwargs):
     ]
     """
 
-    return ok(datastore().analytic.search("*:*", as_obj=False)["items"])
+    return ok(datastore().analytic.search("*:*", as_obj=False, rows=1000)["items"])
 
 
 @analytic_api.route("/<id>", methods=["GET"])
@@ -121,31 +122,35 @@ def update_analytic(id, user: User, **kwargs):
             "description", existing_analytic.description
         )
 
-        updated_correlation = False
-        if existing_analytic.correlation_type:
-            updated_correlation = existing_analytic.correlation != new_data.get(
-                "correlation", existing_analytic.correlation
+        updated_rule = False
+        if existing_analytic.rule_type:
+            updated_rule = existing_analytic.rule != new_data.get(
+                "rule", existing_analytic.rule
+            ) or existing_analytic.rule_crontab != new_data.get(
+                "rule_crontab", existing_analytic.rule_crontab
             )
-            existing_analytic.correlation = new_data.get(
-                "correlation", existing_analytic.correlation
+
+            existing_analytic.rule = new_data.get("rule", existing_analytic.rule)
+            existing_analytic.rule_crontab = new_data.get(
+                "rule_crontab", existing_analytic.rule_crontab
             )
 
         storage.analytic.save(existing_analytic.analytic_id, existing_analytic)
 
-        if updated_correlation:
-            # The registration process automatically deletes and resets the correlation cronjob
-            register_correlations(existing_analytic)
+        if updated_rule:
+            # The registration process automatically deletes and resets the rule cronjob
+            register_rules(existing_analytic)
 
         return ok(existing_analytic.as_primitives())
     except HowlerException as e:
         return bad_request(err=str(e))
 
 
-@analytic_api.route("/correlations", methods=["POST"])
+@analytic_api.route("/rules", methods=["POST"])
 @api_login(required_priv=["R", "W"])
-def create_correlation(user: User, **kwargs):
+def create_rule(user: User, **kwargs):
     """
-    Create a correlation analytic
+    Create a rule analytic
 
     Variables:
     None
@@ -155,13 +160,13 @@ def create_correlation(user: User, **kwargs):
 
     Data Block:
     {
-        "name": "Correlation Name",
+        "name": "Rule Name",
         "description": "*markdown* _description_"
     }
 
     Result Example:
     {
-        ...analytic     # The created analytic correlation
+        ...analytic     # The created analytic rule
     }
     """
 
@@ -170,19 +175,19 @@ def create_correlation(user: User, **kwargs):
     new_data: Optional[dict[str, Any]] = request.json
 
     if not new_data:
-        return bad_request(err="You must provide correlation data.")
+        return bad_request(err="You must provide rule data.")
 
     required_keys = {
         "name",
         "description",
-        "correlation",
-        "correlation_type",
-        "correlation_crontab",
+        "rule",
+        "rule_type",
+        "rule_crontab",
     }
 
     for key in required_keys:
         if key not in new_data or not new_data[key]:
-            return bad_request(err=f"You must provide a {key} for your correlation.")
+            return bad_request(err=f"You must provide a {key} for your rule.")
 
     extra_keys = set(new_data.keys()) - required_keys
 
@@ -194,17 +199,17 @@ def create_correlation(user: User, **kwargs):
     new_analytic = Analytic(
         {
             **new_data,
-            "tags": ["correlation"],
+            "tags": ["rule"],
             "owner": user["uname"],
             "contributors": [user["uname"]],
-            "detections": ["Correlation"],
+            "detections": ["Rule"],
         }
     )
 
     new_template = Template(
         {
             "analytic": new_data["name"],
-            "detection": "Correlation",
+            "detection": "Rule",
             "type": "global",
             "owner": user["uname"],
             # TODO: Allow custom keys
@@ -216,13 +221,54 @@ def create_correlation(user: User, **kwargs):
         storage.analytic.save(new_analytic.analytic_id, new_analytic)
         # Have to commit so the analytic is available during registration
         storage.analytic.commit()
-        register_correlations(new_analytic)
+        register_rules(new_analytic)
 
         storage.template.save(new_template.template_id, new_template)
 
         return ok(new_analytic.as_primitives())
     except HowlerException as e:
         return bad_request(err=str(e))
+
+
+@analytic_api.route("/<id>", methods=["DELETE"])
+@api_login(audit=False, required_priv=["W"])
+def delete_rule(id, user: User, **kwargs):
+    """
+    Delete a rule
+
+    Variables:
+    id  => id of the analytic whose comments we are deleting
+
+    Optional Arguments:
+    None
+
+    Data Block:
+    [
+        ...comment_ids
+    ]
+
+    Result Example:
+    {
+    }
+    """
+
+    if not analytic_service.does_analytic_exist(id):
+        return not_found(err=f"Analytic {id} does not exist")
+
+    analytic: Analytic = analytic_service.get_analytic(id, as_obj=True)
+
+    if not analytic.rule:
+        return bad_request(err="This is not a rule analytic, and cannot be deleted.")
+
+    if user["uname"] != analytic.owner and "admin" not in user["type"]:
+        return forbidden(err="You cannot delete this analytic.")
+
+    try:
+        datastore().analytic.delete(analytic.analytic_id)
+    except DataStoreException as e:
+        return bad_request(err=str(e))
+
+    return no_content()
 
 
 @analytic_api.route("/<id>/comments", methods=["POST"])
@@ -479,5 +525,124 @@ def delete_comments(id, user: User, **kwargs):
         return bad_request(err=str(e))
 
     return no_content()
+
+
+@analytic_api.route("/<id>/owner", methods=["POST"])
+@api_login(required_priv=["W"])
+def set_analytic_owner(id, user: dict[str, Any], **kwargs):
+    """
+    Set the analytic's owner
+
+    Variables:
+    id  => id of the analytic to claim
+
+    Arguments:
+    None
+
+    Data Block:
+    {
+        "username": "admin"     # The username to set the owner as
+    }
+
+    Result Example:
+    {
+        ...analytic            # The claimed analytic
+    }
+    """
+
+    if not analytic_service.does_analytic_exist(id):
+        return not_found(err=f"Analytic {id} does not exist")
+
+    data: dict[str, Any] = typing.cast(dict[str, Any], request.json)
+    if not user_service.get_user(data["username"]):
+        return not_found(err=f"User {data['username']} does not exist")
+
+    analytic: Analytic = analytic_service.get_analytic(id, as_obj=True)
+
+    analytic.owner = data["username"]
+
+    ds = datastore()
+    ds.analytic.save(analytic.analytic_id, analytic)
+    ds.analytic.commit()
+
+    return ok(analytic.as_primitives())
+
+
+@analytic_api.route("/<id>/favourite", methods=["POST"])
+@api_login(required_priv=["R", "W"])
+def set_as_favourite(id, **kwargs):
+    """
+    Add an analytic to a list of the user's favourites
+
+    Variables:
+    id => The id of the analytic to add as a favourite
+
+    Optional Arguments:
+    None
+
+    Data Block:
+    {}  # Empty
+
+    Result Example:
+    {
+        "success": True     # If the operation succeeded
+    }
+    """
+
+    storage = datastore()
+
+    existing_analytic: Analytic = storage.analytic.get_if_exists(id)
+    if not existing_analytic:
+        return not_found(err="This analytic does not exist")
+
+    try:
+        current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
+
+        current_user["favourite_analytics"] = list(
+            set(current_user.get("favourite_analytics", []) + [id])
+        )
+
+        storage.user.save(current_user["uname"], current_user)
+
+        return ok()
+    except ValueError as e:
+        return bad_request(err=str(e))
+
+
+@analytic_api.route("/<id>/favourite", methods=["DELETE"])
+@api_login(required_priv=["R", "W"])
+def remove_as_favourite(id, **kwargs):
+    """
+    Remove an analytic from a list of the user's favourites
+
+    Variables:
+    id => The id of the analytic to remove as a favourite
+
+    Optional Arguments:
+    None
+
+    Result Example:
+    {
+        "success": True     # If the operation succeeded
+    }
+    """
+
+    storage = datastore()
+
+    if not storage.analytic.exists(id):
+        return not_found(err="This analytic does not exist")
+
+    try:
+        current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
+
+        current_user["favourite_analytics"] = list(
+            filter(lambda f: f != id, current_user.get("favourite_analytics", []))
+        )
+
+        storage.user.save(current_user["uname"], current_user)
+
+        return no_content()
+    except ValueError as e:
+        return bad_request(err=str(e))
 
 

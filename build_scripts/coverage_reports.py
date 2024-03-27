@@ -19,7 +19,14 @@ def generate_badge(title, percentage, color):
     return f"![Static Badge](https://img.shields.io/badge/{title.replace(' ', '_')}-{percentage}25-{color}?style=flat&logo=azuredevops&logoColor=%230078D7)"
 
 
-not_develop = "develop" not in os.environ.get("GIT_BRANCH", "unknown")
+print(f"Running on branch {os.environ.get('GIT_BRANCH', 'unknown')}")
+
+develop = "develop" in os.environ.get("GIT_BRANCH", "unknown")
+rc_or_main = any(
+    x in os.environ.get("GIT_BRANCH", "unknown")
+    for x in ["patch", "rc", "main", "master"]
+)
+pr_branch = "origin/" + os.environ.get("PR_BRANCH", "develop")
 
 try:
     report_result = subprocess.check_output(
@@ -30,10 +37,10 @@ try:
 
     print(report_result)
 
-    if not_develop:
+    if not develop and not rc_or_main:
         diff_report_result = subprocess.check_output(
             shlex.split(
-                "diff-cover coverage.xml --compare-branch=origin/develop --markdown-report diff-cover-report.md"
+                f"diff-cover coverage.xml --compare-branch={pr_branch} --markdown-report diff-cover-report.md"
             )
         ).decode()
         print(diff_report_result)
@@ -42,7 +49,7 @@ try:
     total_percentage_int = int(total_percentage.replace("%", ""))
     total_color = get_color(total_percentage_int)
 
-    if not_develop:
+    if not develop and not rc_or_main:
         try:
             diff_percentage = (
                 [
@@ -78,10 +85,12 @@ try:
     newline = "\n"
     markdown_output = textwrap.dedent(
         f"""
-        # Coverage Results
-        {generate_badge('Total Coverage', total_percentage, total_color)} {generate_badge('Diff Coverage', diff_percentage, diff_color) if not_develop else ''}
+        ![Static Badge](https://img.shields.io/badge/build-passing-brightgreen)
 
-{newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if not_develop else ''}
+        # Coverage Results
+        {generate_badge('Total Coverage', total_percentage, total_color)} {generate_badge('Diff Coverage', diff_percentage, diff_color) if (not develop and not rc_or_main) else ''}
+
+{newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if (not develop and not rc_or_main) else ''}
 
         ## Full Coverage Report
         <details>

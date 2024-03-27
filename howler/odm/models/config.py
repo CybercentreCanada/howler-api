@@ -1,7 +1,6 @@
 # mypy: ignore-errors
 import logging
 import os
-from sched import scheduler
 from typing import Optional
 
 from howler import odm

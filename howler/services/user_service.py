@@ -54,6 +54,7 @@ def convert_user(user: User) -> dict[str, Any]:
             "uname",
             "api_quota",
             "favourite_views",
+            "favourite_analytics",
             "dashboard",
         ]
     }

@@ -119,7 +119,8 @@ class Workflow:
                 [
                     t["transition"]
                     for t in self.transitions.values()
-                    if t["source"] and current_status in t["source"]
+                    if (t["source"] and current_status in t["source"])
+                    or not t["source"]
                 ]
             )
         )

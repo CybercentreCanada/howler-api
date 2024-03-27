@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Optional
+from typing import Optional
 
 from howler.common.exceptions import InvalidDataException, NotFoundException
 from howler.common.loader import datastore
@@ -176,6 +176,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Transition",
+        "priority": 9,
         "i18nKey": "operations.transition",
         "description": {
             "short": "Transition a hit",

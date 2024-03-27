@@ -3,7 +3,6 @@ from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import Label
 from howler.services import hit_service
 from howler.utils.str_utils import sanitize_lucene_query
 
@@ -109,6 +108,7 @@ def specification():
     return {
         "id": OPERATION_ID,
         "title": "Remove from Bundle",
+        "priority": 5,
         "i18nKey": f"operations.{OPERATION_ID}",
         "description": {
             "short": "Remove a set of hits from a bundle",

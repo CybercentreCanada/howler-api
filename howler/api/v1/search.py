@@ -1,5 +1,7 @@
-from typing import Any, Union
+from typing import Union
+from elasticsearch import BadRequestError
 from flask import request
+from howler.common.logging import get_logger
 from sigma.backends.elasticsearch import LuceneBackend
 from sigma.rule import SigmaRule
 from werkzeug.exceptions import BadRequest
@@ -19,6 +21,8 @@ from howler.security import api_login
 SUB_API = "search"
 search_api = make_subapi_blueprint(SUB_API, api_version=1)
 search_api._doc = "Perform search queries"
+
+logger = get_logger(__file__)
 
 
 def generate_params(request, fields, multi_fields, params=None):
@@ -132,7 +136,7 @@ def search(index, **kwargs):
 
     try:
         return ok(collection().search(query, **params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -197,7 +201,8 @@ def eql_search(index, **kwargs):
 
     try:
         return ok(collection().raw_eql_search(**params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -291,7 +296,8 @@ def sigma_search(index, **kwargs):
                 "*:*", **params, filters=[*params.get("filters", []), *lucene_queries]
             )
         )
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -360,7 +366,8 @@ def group_search(index, group_field, **kwargs):
 
     try:
         return ok(collection().grouped_search(group_field, **params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -397,6 +404,67 @@ def list_index_fields(index, **kwargs):
         return ok(list_all_fields("admin" in user["type"]))
     else:
         return bad_request(err=f"Not a valid index to search in: {index}")
+
+
+@search_api.route("/count/<index>", methods=["GET", "POST"])
+@api_login(required_priv=["R"])
+def count(index, **kwargs):
+    """
+    Returns number of documents matching a query.
+    Uses lucene search syntax for query.
+
+    Variables:
+    index  =>   Index to search in (hit, user,...)
+
+    Arguments:
+    query   =>   Query to search for
+
+    Optional Arguments:
+    filters             =>   List of additional filter queries limit the data
+    timeout             =>   Maximum execution time (ms)
+    use_archive         =>   Allow access to the datastore achive (Default: False)
+
+    Data Block:
+    # Note that the data block is for POST requests only!
+    {
+        "query": "query",     # Query to search for
+        "timeout": 1000,      # Maximum execution time (ms)
+    }
+
+
+    Result Example:
+    {
+        "total": 201,                          # Total results found
+    }
+    """
+    user = kwargs["user"]
+    collection = get_collection(index, user)
+
+    if collection is None:
+        return bad_request(err=f"Not a valid index to search in: {index}")
+
+    params, req_data = generate_params(request, [], [])
+
+    boolean_fields = ["use_archive"]
+    params.update(
+        {
+            k: str(req_data.get(k, "false")).lower() in ["true", ""]
+            for k in boolean_fields
+            if req_data.get(k, None) is not None
+        }
+    )
+
+    if has_access_control(index):
+        params.update({"access_control": user["access_control"]})
+
+    query = req_data.get("query", None)
+    if not query:
+        return bad_request(err="There was no search query.")
+
+    try:
+        return ok(collection().count(query, **params))
+    except (SearchException, BadRequestError) as e:
+        return bad_request(err=f"SearchException: {e}")
 
 
 @search_api.route("/facet/<index>/<field>", methods=["GET", "POST"])
@@ -452,7 +520,8 @@ def facet(index, field, **kwargs):
 
     try:
         return ok(collection().facet(field, **params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -528,7 +597,8 @@ def histogram(index, field, **kwargs):
 
     try:
         return ok(collection().histogram(field, **params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
 
 
@@ -584,5 +654,6 @@ def stats(index, int_field, **kwargs):
 
     try:
         return ok(collection().stats(int_field, **params))
-    except SearchException as e:
+    except (SearchException, BadRequestError) as e:
+        logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")

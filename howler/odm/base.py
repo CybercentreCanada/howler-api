@@ -15,7 +15,6 @@ from __future__ import annotations
 import copy
 import json
 import re
-import textwrap
 import typing
 from datetime import datetime
 from enum import Enum as PyEnum
@@ -1341,6 +1340,8 @@ class Model:
                     raise HowlerValueError(
                         f"[{'.'.join([*context, name])}]: value is missing from the object!"
                     )
+                else:
+                    value = None
 
             self._odm_py_obj[name.rstrip("_")] = field_type.check(
                 value, context=[*context, name], **params
@@ -1376,16 +1377,20 @@ class Model:
                     out[key] = value.strftime(DATEFORMAT)
                 elif isinstance(value, TypedMapping):
                     out[key] = {
-                        k: v.as_primitives(strip_null=strip_null)
-                        if isinstance(v, Model)
-                        else v
+                        k: (
+                            v.as_primitives(strip_null=strip_null)
+                            if isinstance(v, Model)
+                            else v
+                        )
                         for k, v in value.items()
                     }
                 elif isinstance(value, TypedList):
                     out[key] = [
-                        v.as_primitives(strip_null=strip_null)
-                        if isinstance(v, Model)
-                        else v
+                        (
+                            v.as_primitives(strip_null=strip_null)
+                            if isinstance(v, Model)
+                            else v
+                        )
                         for v in value
                     ]
                 elif isinstance(value, ClassificationObject):

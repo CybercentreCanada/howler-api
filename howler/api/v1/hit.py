@@ -398,7 +398,7 @@ def update_by_query(**kwargs):
                     "explanation": f"Hit updated by {kwargs['user']['uname']}\n\n"
                     + "\n".join(explanation),
                     "user": kwargs["user"]["uname"],
-                }
+                },
             )
         )
 

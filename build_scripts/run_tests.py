@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
+import textwrap
 import time
 
 
@@ -23,11 +26,56 @@ try:
 
     print("Running pytest")
     time.sleep(2)
-    pytest = subprocess.check_call(
+    pytest = subprocess.Popen(
         prep_command(
             f"pytest --cov=howler --cov-branch --cov-config=.coveragerc.pytest -rsx -vv {sys.argv[1] if len(sys.argv) > 1 else 'test'}"
         ),
+        stdout=subprocess.PIPE,
     )
+
+    output = ""
+    while pytest.poll() is None:
+        if pytest.stdout:
+            out = pytest.stdout.read(1).decode()
+            output += out
+            sys.stdout.write(out)
+            sys.stdout.flush()
+
+    if pytest.stdout:
+        out = pytest.stdout.read().decode()
+        output += out
+        sys.stdout.write(out)
+        sys.stdout.flush()
+
+    return_code = pytest.poll()
+    if return_code is not None and return_code > 0:
+        if output and os.environ.get("TF_BUILD", None):
+            markdown_output = textwrap.dedent(
+                """
+            ![Static Badge](https://img.shields.io/badge/build-failing-red)
+
+            <details>
+                <summary>Error Output</summary>
+            """
+            ).strip()
+
+            markdown_output += "\n".join(
+                ("    " + line)
+                for line in re.sub(
+                    r"[\s\S]+=+ FAILURES =+([\S\s]+)-+ coverage[\s\S]+", r"\n\1", output
+                ).splitlines()
+            )
+
+            markdown_output += "\n</details>"
+
+            print(
+                "##vso[task.setvariable variable=error_result]"
+                + markdown_output.replace("\n", "%0D%0A")
+                + "\n\n"
+            )
+        raise subprocess.CalledProcessError(
+            return_code, pytest.args, output=output, stderr=None
+        )
 
     print("Shutting down background server")
     background_server.send_signal(2)

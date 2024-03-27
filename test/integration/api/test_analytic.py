@@ -59,6 +59,25 @@ def test_update_analytic(datastore: HowlerDatastore, login_session):
     assert resp["description"] == new_desc
 
 
+def test_change_ownership(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    analytic: Analytic = datastore.analytic.search("analytic_id:*")["items"][0]
+
+    new_owner = "admin" if analytic.owner != "admin" else "user"
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/analytic/{analytic.analytic_id}/owner",
+        method="POST",
+        data=json.dumps({"username": new_owner}),
+    )
+
+    resp = get_api_data(session, f"{host}/api/v1/analytic/{analytic.analytic_id}")
+
+    assert resp["owner"] == new_owner
+
+
 def test_comments(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
@@ -103,3 +122,58 @@ def test_comments(datastore: HowlerDatastore, login_session):
     )
 
     assert len(final_analytic["comment"]) == len(resp["comment"]) - 1
+
+
+def test_favourite(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")[
+        "username"
+    ]
+
+    analytic: Analytic = datastore.analytic.search("analytic_id:*")["items"][0]
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/analytic/{analytic.analytic_id}/favourite",
+        method="POST",
+        data={},
+    )
+
+    datastore.user.commit()
+
+    assert (
+        analytic.analytic_id
+        in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_analytics"]
+    )
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/analytic/{analytic.analytic_id}/favourite",
+        method="DELETE",
+    )
+
+    datastore.user.commit()
+
+    assert (
+        analytic.analytic_id
+        not in datastore.user.search(f"uname:{uname}")["items"][0][
+            "favourite_analytics"
+        ]
+    )
+
+
+def test_delete(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    analytic: Analytic = datastore.analytic.search("_exists_:rule")["items"][0]
+
+    get_api_data(
+        session,
+        f"{host}/api/v1/analytic/{analytic.analytic_id}",
+        method="DELETE",
+    )
+
+    datastore.analytic.commit()
+
+    assert not datastore.analytic.exists(analytic.analytic_id)

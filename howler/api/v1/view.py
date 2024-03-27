@@ -41,13 +41,12 @@ def get_views(user: User, **kwargs):
         ...views    # A list of views the user can use
     ]
     """
-
     try:
         return ok(
             datastore().view.search(
                 f"type:global OR owner:({user['uname']} OR none)",
                 as_obj=False,
-                rows=100,
+                rows=1000,
             )["items"]
         )
     except ValueError as e:
@@ -191,8 +190,8 @@ def update_view(id, user: User, **kwargs):
     if not isinstance(new_data, dict):
         return bad_request(err="Invalid data format")
 
-    if set(new_data.keys()) - {"title", "query"}:
-        return bad_request(err="Only title and query can be updated.")
+    if set(new_data.keys()) - {"title", "query", "span", "sort"}:
+        return bad_request(err="Only title, query, span and sort can be updated.")
 
     existing_view: View = storage.view.get_if_exists(id)
     if not existing_view:

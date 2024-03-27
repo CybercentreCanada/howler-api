@@ -11,6 +11,7 @@ from howler.services import action_service
 
 import howler.services.event_service as event_service
 from howler.common.exceptions import (
+    HowlerTypeError,
     HowlerValueError,
     NotFoundException,
     ResourceExists,
@@ -304,10 +305,13 @@ def convert_hit(
 
         data["howler.data"] = parsed_data
 
-    odm = Hit(data, ignore_extra_values=ignore_extra_values)
+    try:
+        odm = Hit(data, ignore_extra_values=ignore_extra_values)
+    except TypeError as e:
+        raise HowlerTypeError(str(e), cause=e) from e
 
     # Check for deprecated field and unused fields
-    odm_flatten = odm.flat_fields()
+    odm_flatten = odm.flat_fields(show_compound=True)
     unused_keys = set(data.keys()) - set(odm_flatten.keys()) - BANNED_FIELDS
     if unused_keys and not ignore_extra_values:
         raise HowlerValueError(
@@ -507,6 +511,16 @@ def get_transitions(status: HitStatus) -> list[str]:
     return get_hit_workflow().get_transitions(status)
 
 
+def get_all_children(hit: Hit):
+    child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
+
+    for entry in child_hits:
+        if entry["howler"]["is_bundle"]:
+            child_hits.extend(get_all_children(entry))
+
+    return child_hits
+
+
 def transition_hit(
     id: str,
     transition: HitStatusTransition,
@@ -531,7 +545,7 @@ def transition_hit(
     if not hit:
         raise NotFoundException("Hit does not exist")
 
-    child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
+    child_hits = get_all_children(hit)
 
     log.debug(
         "Transitioning (%s)",
@@ -557,9 +571,9 @@ def transition_hit(
                 hit_id,
                 updates,
                 user["uname"],
-                version=version
-                if (hit_id == hit["howler"]["id"] and version)
-                else None,
+                version=(
+                    version if (hit_id == hit["howler"]["id"] and version) else None
+                ),
             )
 
     if transition in ["promote", "demote"]:

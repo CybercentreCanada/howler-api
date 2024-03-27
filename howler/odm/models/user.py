@@ -84,6 +84,11 @@ class User(odm.Model):
         default=[],
         description="List of favourite views of the user",
     )
+    favourite_analytics = odm.List(
+        odm.Keyword(),
+        default=[],
+        description="List of favourite analytics of the user",
+    )
     dashboard: list[DashboardEntry] = odm.List(
         odm.Compound(DashboardEntry),
         default=[],

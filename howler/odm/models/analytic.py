@@ -30,8 +30,8 @@ class Comment(odm.Model):
 class Analytic(odm.Model):
     analytic_id: str = odm.UUID(description="A UUID for this analytic")
     name: str = odm.Keyword(description="The name of the analytic.")
-    owner: str = odm.Keyword(
-        description="The username of the user who owns this analytic."
+    owner: Optional[str] = odm.Keyword(
+        description="The username of the user who owns this analytic.", optional=True
     )
     contributors: list[str] = odm.List(
         odm.Keyword(),
@@ -51,12 +51,10 @@ class Analytic(odm.Model):
         default=[],
         description="A list of comments with timestamps and attribution.",
     )
-    correlation: Optional[str] = odm.Keyword(
-        description="A correlation query", optional=True
+    rule: Optional[str] = odm.Keyword(description="A rule query", optional=True)
+    rule_type: Optional[str] = odm.Optional(
+        odm.Enum(values=["lucene", "eql", "sigma"], description="Type of rule")
     )
-    correlation_type: Optional[str] = odm.Optional(
-        odm.Enum(values=["lucene", "eql", "sigma"], description="Type of correlation")
-    )
-    correlation_crontab: Optional[str] = odm.Keyword(
-        description="The interval for the correlation to run at", optional=True
+    rule_crontab: Optional[str] = odm.Keyword(
+        description="The interval for the rule to run at", optional=True
     )

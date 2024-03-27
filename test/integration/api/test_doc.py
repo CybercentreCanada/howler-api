@@ -34,7 +34,7 @@ def test_formatting(datastore_connection, login_session):
             matches = re.findall(r"<(\w+)>", path)
 
             assert re.search(
-                r"\nVariables:", description
+                r"\n *Variables:", description
             ), f"Endpoint {api['function']} is missing a Variables: portion of the docstring!"
 
             if len(matches) > 0:
@@ -55,8 +55,8 @@ def test_formatting(datastore_connection, login_session):
                 elif any("=>" not in line for line in desc_parts[1:]):
                     warnings.warn(variables_err)
 
-            assert re.search(r"\nArguments:", description) or re.search(
-                r"\nOptional Arguments:", description
+            assert re.search(r"\n *Arguments:", description) or re.search(
+                r"\n *Optional Arguments:", description
             ), f"Endpoint {api['function']} is missing an Arguments: portion of the docstring!"
 
             if (
@@ -80,7 +80,7 @@ def test_formatting(datastore_connection, login_session):
                 )
 
             assert re.search(
-                r"\nResult Example:", description
+                r"\n *Result Example:", description
             ), f"Endpoint {api['function']} doesn't have a Result Example: portion!"
 
             headers = [

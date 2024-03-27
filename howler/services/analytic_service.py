@@ -50,6 +50,10 @@ def save_from_hit(hit: Hit, user: User):
     if len(existing_analytics) > 0:
         analytic: Analytic = existing_analytics[0]
 
+        if not analytic.owner:
+            save = True
+            analytic.owner = user["uname"]
+
         if user["uname"] not in analytic.contributors:
             analytic.contributors.append(user["uname"])
 

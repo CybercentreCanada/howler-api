@@ -15,7 +15,7 @@ from sigma.rule import SigmaRule
 from yaml.scanner import ScannerError
 
 from howler.common.logging import get_logger
-from howler.config import DEBUG, HWL_ENABLE_CORRELATIONS
+from howler.config import DEBUG, HWL_ENABLE_RULES
 from howler.datastore.collection import ESCollection
 from howler.datastore.operations import OdmHelper, OdmUpdateOperation
 from howler.odm.models.analytic import Analytic
@@ -28,12 +28,10 @@ hit_helper = OdmHelper(Hit)
 __scheduler_instance: Optional[BaseScheduler] = None
 
 
-def create_correlated_bundle(
-    correlation: Analytic, query: str, correlated_hits: list[Hit]
-):
+def create_correlated_bundle(rule: Analytic, query: str, correlated_hits: list[Hit]):
     # We'll create a hash using the hashes of the children, and the analytic ID/current time
     bundle_hash = hashlib.sha256()
-    bundle_hash.update(correlation.analytic_id.encode())
+    bundle_hash.update(rule.analytic_id.encode())
     bundle_hash.update(query.replace("now", datetime.now().isoformat()).encode())
     for match in correlated_hits:
         bundle_hash.update(match.howler.hash.encode())
@@ -43,15 +41,15 @@ def create_correlated_bundle(
     # If a matching bundle exists already, just reused it (likely only ever lucene specific)
     existing_result = datastore().hit.search(f"howler.hash:{hashed}", rows=1)
     if existing_result["total"] > 0:
-        logger.debug(f"Correlation hash {hashed} exists - skipping create")
+        logger.debug(f"Rule hash {hashed} exists - skipping create")
         return existing_result["items"][0]
 
     child_ids = [match.howler.id for match in correlated_hits]
 
     correlated_bundle = Hit(
         {
-            "howler.analytic": correlation.name,
-            "howler.detection": "Correlation",
+            "howler.analytic": rule.name,
+            "howler.detection": "Rule",
             "howler.score": 0.0,
             "howler.hash": hashed,
             "howler.is_bundle": True,
@@ -59,14 +57,14 @@ def create_correlated_bundle(
             "howler.data": [
                 json.dumps(
                     {
-                        "raw": correlation.correlation,
+                        "raw": rule.rule,
                         "sanitized": query,
                     }
                 )
             ],
             "event.created": "NOW",
             "event.kind": "alert",
-            "event.module": correlation.correlation_type,
+            "event.module": rule.rule_type,
             "event.provider": "howler",
             "event.reason": f"Children match {query}",
             "event.type": ["info"],
@@ -91,7 +89,7 @@ def create_correlated_bundle(
                     {
                         "timestamp": "NOW",
                         "key": "howler.bundles",
-                        "explanation": f"This hit was correlated by the analytic '{correlation.name}'.",
+                        "explanation": f"This hit was correlated by the analytic '{rule.name}'.",
                         "new_value": correlated_bundle.howler.id,
                         "previous_value": "None",
                         "type": HitOperationType.APPENDED,
@@ -104,31 +102,27 @@ def create_correlated_bundle(
     return correlated_bundle
 
 
-def create_executor(correlation: Analytic):
+def create_executor(rule: Analytic):
     def execute():
         try:
-            if not correlation.correlation or not correlation.correlation_type:
-                logger.error(
-                    "Invalid correlation %s! Skipping", correlation.analytic_id
-                )
+            if not rule.rule or not rule.rule_type:
+                logger.error("Invalid rule %s! Skipping", rule.analytic_id)
                 return
 
             logger.info(
-                "Executing correlation %s (%s)",
-                correlation.name,
-                correlation.analytic_id,
+                "Executing rule %s (%s)",
+                rule.name,
+                rule.analytic_id,
             )
 
             correlated_hits: Optional[list[Hit]] = None
 
-            if correlation.correlation_type in ["lucene", "sigma"]:
-                if correlation.correlation_type == "lucene":
-                    query = re.sub(
-                        r"\n+", " ", re.sub(r"#.+", "", correlation.correlation)
-                    ).strip()
+            if rule.rule_type in ["lucene", "sigma"]:
+                if rule.rule_type == "lucene":
+                    query = re.sub(r"\n+", " ", re.sub(r"#.+", "", rule.rule)).strip()
                 else:
                     try:
-                        rule = SigmaRule.from_yaml(correlation.correlation)
+                        sigma_rule = SigmaRule.from_yaml(rule.rule)
                     except ScannerError as e:
                         raise HowlerValueError(
                             f"Error when parsing yaml: {e.problem} {e.problem_mark}",
@@ -138,13 +132,13 @@ def create_executor(correlation: Analytic):
                     es_collection = datastore().hit
                     lucene_queries = LuceneBackend(
                         index_names=[es_collection.index_name]
-                    ).convert_rule(rule)
+                    ).convert_rule(sigma_rule)
 
                     query = " AND ".join([f"({q})" for q in lucene_queries])
 
                 num_hits = datastore().hit.search(query, rows=1)["total"]
                 if num_hits > 0:
-                    bundle = create_correlated_bundle(correlation, query, [])
+                    bundle = create_correlated_bundle(rule, query, [])
                     datastore().hit.update_by_query(
                         f"({query}) AND -howler.bundles:{bundle.howler.id}",
                         [
@@ -159,7 +153,7 @@ def create_executor(correlation: Analytic):
                                 {
                                     "timestamp": "NOW",
                                     "key": "howler.bundles",
-                                    "explanation": f"This hit was correlated by the analytic '{correlation.name}'.",
+                                    "explanation": f"This hit was correlated by the analytic '{rule.name}'.",
                                     "new_value": bundle.howler.id,
                                     "previous_value": "None",
                                     "type": HitOperationType.APPENDED,
@@ -184,8 +178,8 @@ def create_executor(correlation: Analytic):
                         ],
                     )
 
-            elif correlation.correlation_type == "eql":
-                query = correlation.correlation
+            elif rule.rule_type == "eql":
+                query = rule.rule
 
                 result = datastore().hit.raw_eql_search(
                     query, rows=25, fl=",".join(Hit.flat_fields().keys())
@@ -194,35 +188,29 @@ def create_executor(correlation: Analytic):
                 if len(result["sequences"]) > 0:
                     for sequence in result["sequences"]:
                         if len(sequence) > 0:
-                            create_correlated_bundle(correlation, query, sequence)
+                            create_correlated_bundle(rule, query, sequence)
 
                 correlated_hits = result["items"]
 
-            else: # pragma: no cover
-                raise HowlerValueError(
-                    f"Unknown correlation type: {correlation.correlation_type}"
-                )
+            else:  # pragma: no cover
+                raise HowlerValueError(f"Unknown rule type: {rule.rule_type}")
 
             if correlated_hits and len(correlated_hits) > 0:
-                create_correlated_bundle(correlation, query, correlated_hits)
+                create_correlated_bundle(rule, query, correlated_hits)
         except Exception as e:
             logger.debug(e, exc_info=True)
             if __scheduler_instance:
-                __scheduler_instance.remove_job(
-                    f"correlation_{correlation.analytic_id}"
-                )
-            # TODO: Allow restarting of correlations
+                __scheduler_instance.remove_job(f"rule_{rule.analytic_id}")
+            # TODO: Allow restarting of rules
             logger.critical(
-                f"Correlation {correlation.name} ({correlation.analytic_id}) has been stopped, due to an exception: {type(e)}",
+                f"Rule {rule.name} ({rule.analytic_id}) has been stopped, due to an exception: {type(e)}",
                 exc_info=True,
             )
 
     return execute
 
 
-def register_correlations(
-    new_correlation: Optional[Analytic] = None, test_override=False
-):
+def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
     global __scheduler_instance
     if not __scheduler_instance:  # pragma: no cover
         logger.error("Scheduler instance does not exist!")
@@ -232,41 +220,37 @@ def register_correlations(
         logger.info("Skipping registration, running in a test environment")
         return
 
-    if new_correlation:
-        if __scheduler_instance.get_job(f"correlation_{new_correlation.analytic_id}"):
+    if new_rule:
+        if __scheduler_instance.get_job(f"rule_{new_rule.analytic_id}"):
             logger.info(
-                f"Updating existing correlation: {new_correlation.analytic_id} on interval {new_correlation.correlation_crontab}"
+                f"Updating existing rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}"
             )
 
             # remove the existing job
-            __scheduler_instance.remove_job(
-                f"correlation_{new_correlation.analytic_id}"
-            )
+            __scheduler_instance.remove_job(f"rule_{new_rule.analytic_id}")
         else:
             logger.info(
-                f"Registering new correlation: {new_correlation.analytic_id} on interval {new_correlation.correlation_crontab}"
+                f"Registering new rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}"
             )
-        correlations = [new_correlation]
+        rules = [new_rule]
     else:
-        logger.debug("Registering correlations")
-        correlations: list[Analytic] = datastore().analytic.search(
-            "_exists_:correlation"
-        )["items"]
+        logger.debug("Registering rules")
+        rules: list[Analytic] = datastore().analytic.search("_exists_:rule")["items"]
 
     total_initialized = 0
-    for correlation in correlations:
-        job_id = f"correlation_{correlation.analytic_id}"
-        interval = correlation.correlation_crontab or f"{random.randint(0, 59)} * * * *"
+    for rule in rules:
+        job_id = f"rule_{rule.analytic_id}"
+        interval = rule.rule_crontab or f"{random.randint(0, 59)} * * * *"
 
         if __scheduler_instance.get_job(job_id):
-            logger.debug(f"Correlation {job_id} already running!")
+            logger.debug(f"Rule {job_id} already running!")
             return
 
         logger.debug(
-            f"Initializing correlation cronjob with:\tJob ID: {job_id}\tCorrelation Name: {correlation.name}\tCrontab: {interval}"
+            f"Initializing rule cronjob with:\tJob ID: {job_id}\tRule Name: {rule.name}\tCrontab: {interval}"
         )
 
-        if DEBUG or new_correlation:
+        if DEBUG or new_rule:
             _kwargs: dict[str, Any] = {"next_run_time": datetime.now()}
         else:
             _kwargs = {}
@@ -274,24 +258,24 @@ def register_correlations(
         total_initialized += 1
         __scheduler_instance.add_job(
             id=job_id,
-            func=create_executor(correlation),
+            func=create_executor(rule),
             trigger=CronTrigger.from_crontab(interval),
             **_kwargs,
         )
 
-    logger.info(f"Initialized {total_initialized} correlations")
+    logger.info(f"Initialized {total_initialized} rules")
 
 
 def setup_job(sched: BaseScheduler):
-    if not DEBUG and not HWL_ENABLE_CORRELATIONS:  # pragma: no cover
-        logger.debug("Correlation integration disabled")
+    if not DEBUG and not HWL_ENABLE_RULES:  # pragma: no cover
+        logger.debug("Rule integration disabled")
         return
 
-    logger.debug("Correlation integration enabled")
+    logger.debug("Rule integration enabled")
 
     global __scheduler_instance
     __scheduler_instance = sched
 
-    register_correlations()
+    register_rules()
 
     logger.debug("Initialization complete")

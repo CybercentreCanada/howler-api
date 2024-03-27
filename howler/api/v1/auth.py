@@ -120,13 +120,16 @@ def add_apikey(**kwargs):
             )
             max_expiry = datetime.fromtimestamp(data["exp"])
 
-    try:
-        expiry = datetime.fromisoformat(expiry_date)
-    except ValueError:
-        return bad_request(err="Invalid expiry date format. Please use ISO format.")
+    if expiry_date:
+        try:
+            expiry = datetime.fromisoformat(expiry_date.replace("Z", ""))
+        except (ValueError, TypeError):
+            return bad_request(err="Invalid expiry date format. Please use ISO format.")
 
-    if max_expiry and max_expiry < expiry:
-        return bad_request(err=f"Expiry date must be before {max_expiry.isoformat()}.")
+        if max_expiry and max_expiry < expiry:
+            return bad_request(
+                err=f"Expiry date must be before {max_expiry.isoformat()}."
+            )
 
     try:
         random_pass = generate_random_secret(length=50)
@@ -135,12 +138,17 @@ def add_apikey(**kwargs):
             if "I" not in privs
             else f"impersonate_{apikey_data['name']}"
         )
-        user_data.apikeys[key_name] = {
+
+        new_key = {
             "password": bcrypt.encrypt(random_pass),
             "agents": apikey_data.get("agents", []),
             "acl": privs,
-            "expiry_date": expiry.isoformat(),
         }
+
+        if expiry_date:
+            new_key["expiry_date"] = expiry.isoformat()
+
+        user_data.apikeys[key_name] = new_key
     except HowlerException as e:
         return bad_request(err=e.message)
 
