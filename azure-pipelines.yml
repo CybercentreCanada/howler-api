@@ -85,6 +85,7 @@ stages:
               sudo chmod a+rw /var/lib/howler/
               sudo chmod a+rw /var/log/howler/
               sudo cp test/unit/config.yml /etc/howler/conf/config.yml
+              sudo chmod a+r /etc/howler/conf/config.yml
               sudo apt-get update
               sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libsasl2-dev wget
             displayName: Setup Environment
@@ -109,7 +110,7 @@ stages:
             displayName: Test
           - script: |
               . ./venv/bin/activate
-              GIT_BRANCH=$(branch) python build_scripts/coverage_reports.py
+              GIT_BRANCH=$(Build.SourceBranch) PR_BRANCH=$(System.PullRequest.targetBranchName) python build_scripts/coverage_reports.py
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Coverage Results
           - task: PublishTestResults@2
