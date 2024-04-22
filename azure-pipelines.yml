@@ -85,10 +85,12 @@ stages:
           - script: |
               sudo mkdir -p /var/cache/howler/
               sudo mkdir -p /var/lib/howler/
+              sudo mkdir -p /var/log/howler/
               sudo mkdir -p /etc/howler/conf/
               sudo mkdir -p /etc/howler/lookups/
               sudo chmod a+rw /var/cache/howler/
               sudo chmod a+rw /var/lib/howler/
+              sudo chmod a+rw /var/log/howler/
               sudo chmod a+rw /etc/howler/conf/
               sudo chmod a+rw /etc/howler/lookups/
               cp build_scripts/classification.yml /etc/howler/conf/classification.yml
