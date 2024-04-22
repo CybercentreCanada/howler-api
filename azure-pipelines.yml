@@ -76,7 +76,7 @@ stages:
             displayName: Fetch target branch for diff coverage
             condition: eq(variables.isPrBranch, true)
           - script: |
-              python$(pythonVersion) -m pip install poetry
+              python -m pip install poetry
             displayName: Install poetry
           - script: |
               poetry --version
