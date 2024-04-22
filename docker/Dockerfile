@@ -62,7 +62,7 @@ USER howler
 RUN touch /tmp/before-pip
 
 # Install howler UI into local so it merges new and old packages
-COPY setup.py dist* dist/
+COPY dist* dist/
 
 RUN pip install --no-cache-dir --no-warn-script-location --user dist/howler_api-*-py3-none-any.whl && \
     rm -rf ~/.cache/pip && \
