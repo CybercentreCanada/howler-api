@@ -61,9 +61,7 @@ def get_provider(access_token: str) -> str:
             _, PROVIDERS = get_jwks()
             oauth_provider = PROVIDERS[kid]
         except KeyError:
-            raise HowlerValueError(
-                "The provider of this access token does not match any supported providers"
-            )
+            raise HowlerValueError("The provider of this access token does not match any supported providers")
 
     return oauth_provider
 
@@ -113,12 +111,8 @@ def get_audience(oauth_provider: str) -> str:
     elif "client_id" in provider_data and provider_data.client_id:
         audience = provider_data.client_id
 
-    if oauth_provider == "azure" and not (
-        f"{audience}/.default" in provider_data.scope
-    ):
-        raise HowlerValueError(
-            "Azure scope must contain the <client_id>/.default claim!"
-        )
+    if oauth_provider == "azure" and not (f"{audience}/.default" in provider_data.scope):
+        raise HowlerValueError("Azure scope must contain the <client_id>/.default claim!")
 
     return audience
 
@@ -152,6 +146,4 @@ def decode(
     if validate_audience and not audience:
         audience = get_audience(get_provider(access_token))
 
-    return jwt.decode(
-        jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs  # type: ignore
-    )
+    return jwt.decode(jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs)  # type: ignore

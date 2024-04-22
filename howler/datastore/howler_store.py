@@ -108,8 +108,7 @@ class HowlerDatastore(object):
                     retries += 1
                 elif err_code == 429 or err_code == "429":
                     log.warning(
-                        "Elasticsearch is too busy to perform the requested task, "
-                        "we will wait a bit and retry..."
+                        "Elasticsearch is too busy to perform the requested task, " "we will wait a bit and retry..."
                     )
                     time.sleep(min(retries, max_retry_backoff))
                     self.ds.connection_reset()

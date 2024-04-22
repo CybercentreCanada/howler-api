@@ -32,9 +32,7 @@ INDEX_ORDER_MAP: dict[str, str] = {
 }
 
 
-def get_collection(
-    index: str, user: Union[User, dict[str, Any]]
-) -> Optional[Callable[[], ESCollection]]:
+def get_collection(index: str, user: Union[User, dict[str, Any]]) -> Optional[Callable[[], ESCollection]]:
     """Get the ESCollection for a given index
 
     Args:
@@ -44,9 +42,7 @@ def get_collection(
     Returns:
         ESCollection: The corresponding ESCollection
     """
-    return INDEX_MAP.get(
-        index, ADMIN_INDEX_MAP.get(index, None) if "admin" in user["type"] else None
-    )
+    return INDEX_MAP.get(index, ADMIN_INDEX_MAP.get(index, None) if "admin" in user["type"] else None)
 
 
 def get_default_sort(index: str, user: Union[User, dict[str, Any]]) -> Optional[str]:
@@ -89,8 +85,6 @@ def list_all_fields(is_admin=False) -> dict[str, dict]:
     fields_map = {k: INDEX_MAP[k]().fields() for k in INDEX_MAP.keys()}
 
     if is_admin:
-        fields_map.update(
-            {k: ADMIN_INDEX_MAP[k]().fields() for k in ADMIN_INDEX_MAP.keys()}
-        )
+        fields_map.update({k: ADMIN_INDEX_MAP[k]().fields() for k in ADMIN_INDEX_MAP.keys()})
 
     return fields_map

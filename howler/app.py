@@ -60,13 +60,9 @@ cache.init_app(app)
 
 app.logger.setLevel(60)  # This completely turns off the flask logger
 if HWL_UNSECURED_UI:
-    app.config.update(
-        SESSION_COOKIE_SECURE=False, SECRET_KEY=SECRET_KEY, PREFERRED_URL_SCHEME="http"
-    )
+    app.config.update(SESSION_COOKIE_SECURE=False, SECRET_KEY=SECRET_KEY, PREFERRED_URL_SCHEME="http")
 else:
-    app.config.update(
-        SESSION_COOKIE_SECURE=True, SECRET_KEY=SECRET_KEY, PREFERRED_URL_SCHEME="https"
-    )
+    app.config.update(SESSION_COOKIE_SECURE=True, SECRET_KEY=SECRET_KEY, PREFERRED_URL_SCHEME="https")
 
 app.register_blueprint(errors)
 app.register_blueprint(healthz)
@@ -138,9 +134,7 @@ if logger.parent:
 
 # Setup APMs
 if config.core.metrics.apm_server.server_url is not None:
-    logger.info(
-        f"Exporting application metrics to: {config.core.metrics.apm_server.server_url}"
-    )
+    logger.info(f"Exporting application metrics to: {config.core.metrics.apm_server.server_url}")
     ElasticAPM(
         app,
         server_url=config.core.metrics.apm_server.server_url,

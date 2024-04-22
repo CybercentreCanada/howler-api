@@ -49,11 +49,7 @@ def get_api_documentation(**kwargs):
     api_list = []
     for rule in current_app.url_map.iter_rules():
         if rule.rule.startswith(request.path):
-            methods = [
-                item
-                for item in (rule.methods or [])
-                if item != "OPTIONS" and item != "HEAD"
-            ]
+            methods = [item for item in (rule.methods or []) if item != "OPTIONS" and item != "HEAD"]
 
             func = current_app.view_functions[rule.endpoint]
             required_type = func.__dict__.get("required_type", ["user"])
@@ -62,12 +58,7 @@ def get_api_documentation(**kwargs):
                 if u_type in required_type:
                     doc_string = func.__doc__
                     func_title = " ".join(
-                        [
-                            x.capitalize()
-                            for x in rule.endpoint[
-                                rule.endpoint.rindex(".") + 1 :
-                            ].split("_")
-                        ]
+                        [x.capitalize() for x in rule.endpoint[rule.endpoint.rindex(".") + 1 :].split("_")]
                     )
                     blueprint = rule.endpoint[: rule.endpoint.rindex(".")]
                     if blueprint == "apiv1":
@@ -86,9 +77,7 @@ def get_api_documentation(**kwargs):
                     if doc_string:
                         description = dedent(doc_string)
                     else:
-                        description = (
-                            "[INCOMPLETE]\n\nTHIS API HAS NOT BEEN DOCUMENTED YET!"
-                        )
+                        description = "[INCOMPLETE]\n\nTHIS API HAS NOT BEEN DOCUMENTED YET!"
 
                     api_id = rule.endpoint.replace("apiv1.", "").replace(".", "_")
 

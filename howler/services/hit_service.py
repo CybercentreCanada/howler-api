@@ -258,9 +258,7 @@ def validate_hit_ids(hit_ids: list[str]) -> bool:
     return not any(does_hit_exist(hit_id) for hit_id in hit_ids)
 
 
-def convert_hit(
-    data: dict[str, Any], unique: bool, ignore_extra_values=False
-) -> tuple[Hit, list[str]]:
+def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values=False) -> tuple[Hit, list[str]]:
     """Validate if the provided dict is a valid hit.
 
     Args:
@@ -314,12 +312,8 @@ def convert_hit(
     odm_flatten = odm.flat_fields(show_compound=True)
     unused_keys = set(data.keys()) - set(odm_flatten.keys()) - BANNED_FIELDS
     if unused_keys and not ignore_extra_values:
-        raise HowlerValueError(
-            f"Hit was created with invalid parameters: {', '.join(unused_keys)}"
-        )
-    deprecated_keys = set(
-        key for key in odm_flatten.keys() & data.keys() if odm_flatten[key].deprecated
-    )
+        raise HowlerValueError(f"Hit was created with invalid parameters: {', '.join(unused_keys)}")
+    deprecated_keys = set(key for key in odm_flatten.keys() & data.keys() if odm_flatten[key].deprecated)
 
     warnings = [f"{key} is not currently used by howler." for key in unused_keys]
     warnings.extend(
@@ -334,10 +328,7 @@ def convert_hit(
             )
         )
 
-    if (
-        odm.howler.detection
-        and re.search(r"^([A-Za-z ])+$", odm.howler.detection) is None
-    ):
+    if odm.howler.detection and re.search(r"^([A-Za-z ])+$", odm.howler.detection) is None:
         warnings.append(
             (
                 f"The value {odm.howler.detection} does not match best practices for Howler detection names. "
@@ -389,9 +380,7 @@ def create_hit(
         raise ResourceExists("Hit %s already exists in datastore" % id)
 
     if user:
-        hit.howler.log = [
-            Log({"timestamp": "NOW", "explanation": "Created hit", "user": user})
-        ]
+        hit.howler.log = [Log({"timestamp": "NOW", "explanation": "Created hit", "user": user})]
 
     CREATED_HITS.labels(hit.howler.analytic).inc()
     return datastore().hit.save(id, hit)
@@ -406,9 +395,7 @@ def update_hit(
     """Update one or more properties of a hit in the database."""
     # Status of a hit should only be updated through the transition function
     if _modifies_prop("status", operations):
-        raise Exception(
-            "Status of a Hit cannot be modified like other properties. Please use a transition to do so."
-        )
+        raise Exception("Status of a Hit cannot be modified like other properties. Please use a transition to do so.")
 
     return _update_hit(hit_id, operations, user, version=version)
 
@@ -446,11 +433,7 @@ def _update_hit(
             is_list = current_hit.flat_fields()[operation.key].multivalued
             previous_value = current_hit[operation.key]
         except KeyError:
-            key = next(
-                key
-                for key in current_hit.flat_fields().keys()
-                if key.startswith(operation.key)
-            )
+            key = next(key for key in current_hit.flat_fields().keys() if key.startswith(operation.key))
             is_list = current_hit.flat_fields()[key].multivalued
             previous_value = "list"
 
@@ -468,9 +451,7 @@ def _update_hit(
 
             operation_type = HitOperationType.SET
 
-        log.debug(
-            "%s - %s - %s -> %s", hit_id, operation.key, previous_value, operation.value
-        )
+        log.debug("%s - %s - %s -> %s", hit_id, operation.key, previous_value, operation.value)
         final_operations.append(operation)
 
         if not operation.silent:
@@ -536,9 +517,7 @@ def transition_hit(
         user (dict[str, Any]): The user running the transition
         version (str): A version to validate against. The transition will not run if the version doesn't match.
     """
-    hit: Hit = (
-        get_hit(id, as_odm=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
-    )
+    hit: Hit = get_hit(id, as_odm=False) if not kwargs.get("hit", None) else kwargs.pop("hit")
 
     workflow: Workflow = get_hit_workflow()
 
@@ -549,9 +528,7 @@ def transition_hit(
 
     log.debug(
         "Transitioning (%s)",
-        ", ".join(
-            [h["howler"]["id"] for h in ([hit] + [ch for ch in child_hits if ch])]
-        ),
+        ", ".join([h["howler"]["id"] for h in ([hit] + [ch for ch in child_hits if ch])]),
     )
 
     for _hit in [hit] + [ch for ch in child_hits if ch]:
@@ -562,18 +539,14 @@ def transition_hit(
             log.debug("Skipping %s", hit_id)
             continue
 
-        updates = workflow.transition(
-            hit_status, transition, user=user, hit=_hit, **kwargs
-        )
+        updates = workflow.transition(hit_status, transition, user=user, hit=_hit, **kwargs)
 
         if updates:
             _update_hit(
                 hit_id,
                 updates,
                 user["uname"],
-                version=(
-                    version if (hit_id == hit["howler"]["id"] and version) else None
-                ),
+                version=(version if (hit_id == hit["howler"]["id"] and version) else None),
             )
 
     if transition in ["promote", "demote"]:
@@ -585,15 +558,11 @@ def transition_hit(
         )
 
         for _hit in [hit] + child_hits:
-            data, _version = datastore().hit.get(
-                _hit["howler"]["id"], as_obj=False, version=True
-            )
+            data, _version = datastore().hit.get(_hit["howler"]["id"], as_obj=False, version=True)
             event_service.emit("hits", {"hit": data, "version": _version})
 
 
-DELETED_HITS = Counter(
-    f"{APP_NAME.replace('-', '_')}_deleted_hits_total", "The number of deleted hits"
-)
+DELETED_HITS = Counter(f"{APP_NAME.replace('-', '_')}_deleted_hits_total", "The number of deleted hits")
 
 
 def delete_hits(hit_ids: list[str]) -> bool:

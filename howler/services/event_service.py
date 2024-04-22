@@ -27,9 +27,7 @@ def emit(event: str, data: Any):
             logger.debug("POST %s - event:%s", config.ui.websocket_url, event)
 
             if HWL_INTERPOD_COMMS_SECRET == "secret":
-                logger.warn(
-                    "Using default interpod secret! DO NOT allow this on a production instance."
-                )
+                logger.warn("Using default interpod secret! DO NOT allow this on a production instance.")
 
             res = requests.post(
                 f"{config.ui.websocket_url}/{event}",
@@ -41,9 +39,11 @@ def emit(event: str, data: Any):
         if res is None or not res.ok:
             logger.fatal(
                 "Event propagation failed: %s",
-                "No websocket_url provided"
-                if res is None
-                else f"Status code: {res.status_code}, Error message: {res.json().get('api_error_message', 'None')}",
+                (
+                    "No websocket_url provided"
+                    if res is None
+                    else f"Status code: {res.status_code}, Error message: {res.json().get('api_error_message', 'None')}"
+                ),
             )
     else:
         if event not in handlers:

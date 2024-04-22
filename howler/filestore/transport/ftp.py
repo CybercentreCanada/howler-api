@@ -73,12 +73,7 @@ def reconnect_retry_on_fail(func):
             # Prevent any stale connection errors to show up in the warnings
             # as these error can happen often if the ftp connection is not used
             # enough.
-            if (
-                msg.startswith("421")
-                or msg.startswith("425")
-                or msg == "IOError #32"
-                or msg == "IOError #104"
-            ):
+            if msg.startswith("421") or msg.startswith("425") or msg == "IOError #32" or msg == "IOError #104":
                 self.log.info("FTP [%s]: %s" % (self.host, msg))
             else:
                 self.log.warning("FTP [%s]: %s" % (self.host, msg))
@@ -96,10 +91,7 @@ def reconnect_retry_on_fail(func):
             self.ftp = None
             try_count += 1
 
-        raise TransportException(
-            "Max retries reach for function: %s(%s)"
-            % (func.__name__, ", ".join(map(repr, args)))
-        )
+        raise TransportException("Max retries reach for function: %s(%s)" % (func.__name__, ", ".join(map(repr, args))))
 
     new_func.__name__ = func.__name__
     new_func.__doc__ = func.__doc__
@@ -112,14 +104,10 @@ class TransportFTP(Transport):
     FTP Transport class.
     """
 
-    def __init__(
-        self, base=None, host=None, password=None, user=None, port=None, use_tls=None
-    ):
+    def __init__(self, base=None, host=None, password=None, user=None, port=None, use_tls=None):
         self.log = get_logger(f"{APP_NAME}.transport.ftp")
         self.base: str = base
-        self.ftp_objects: weakref.WeakKeyDictionary[
-            threading.Thread, ftplib.FTP
-        ] = weakref.WeakKeyDictionary()
+        self.ftp_objects: weakref.WeakKeyDictionary[threading.Thread, ftplib.FTP] = weakref.WeakKeyDictionary()
         self.host: str = host
         self.port: int = int(port or 21)
         self.password: str = password

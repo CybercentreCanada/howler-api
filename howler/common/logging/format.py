@@ -11,9 +11,7 @@ try:
 except Exception:  # pylint:disable=W0702
     pass
 
-HWL_SYSLOG_FORMAT = (
-    f"HWL %(levelname)8s {hostname} %(process)5d %(name)40s | %(message)s"
-)
+HWL_SYSLOG_FORMAT = f"HWL %(levelname)8s {hostname} %(process)5d %(name)40s | %(message)s"
 HWL_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s | %(message)s"
 HWL_DATE_FORMAT = "%y/%m/%d %H:%M:%S"
 HWL_JSON_FORMAT = (

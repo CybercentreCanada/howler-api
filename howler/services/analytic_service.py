@@ -58,11 +58,7 @@ def save_from_hit(hit: Hit, user: User):
             analytic.contributors.append(user["uname"])
 
         if hit.howler.detection:
-            new_detections = [
-                d
-                for d in analytic.detections
-                if d.lower() != (hit.howler.detection or "").lower()
-            ]
+            new_detections = [d for d in analytic.detections if d.lower() != (hit.howler.detection or "").lower()]
             new_detections.append(hit.howler.detection)
 
             new_detections = sorted(new_detections)

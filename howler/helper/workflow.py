@@ -50,51 +50,32 @@ class Workflow:
             if t.get("source", False) and isinstance(t["source"], list):
                 for s in t["source"]:
                     self.transitions[f'{s}{t["transition"]}'] = t
-                    identifiers.append(
-                        f'{s}{t["transition"]}{t.get("dest", None) or ""}'
-                    )
+                    identifiers.append(f'{s}{t["transition"]}{t.get("dest", None) or ""}')
             else:
                 self.transitions[f'{t.get("source", "") or ""}{t["transition"]}'] = t
-                identifiers.append(
-                    f'{t.get("source", "") or ""}{t["transition"]}{t.get("dest", "") or ""}'
-                )
+                identifiers.append(f'{t.get("source", "") or ""}{t["transition"]}{t.get("dest", "") or ""}')
 
         if len(set(identifiers)) != len(identifiers):
-            raise WorkflowException(
-                "There are duplicate transitions (same source, transition and dest values)."
-            )
+            raise WorkflowException("There are duplicate transitions (same source, transition and dest values).")
 
-    def transition(
-        self, current_status: str, transition: str, **kwargs
-    ) -> list[OdmUpdateOperation]:
+    def transition(self, current_status: str, transition: str, **kwargs) -> list[OdmUpdateOperation]:
         _transition: Optional[Transition] = self.transitions.get(
             f"{current_status}{transition}", self.transitions.get(transition, None)
         )
         if not _transition:
-            raise WorkflowException(
-                f"Current status '{current_status}' does not allow the '{transition}' transition."
-            )
+            raise WorkflowException(f"Current status '{current_status}' does not allow the '{transition}' transition.")
 
         # Check if we can actually perform this transition
         source = _transition.get("source")
-        if (
-            source
-            and (isinstance(source, list) and current_status not in source)
-            and current_status != source
-        ):
-            raise WorkflowException(
-                f"Current status '{current_status}' does not allow the '{transition}' transition."
-            )
+        if source and (isinstance(source, list) and current_status not in source) and current_status != source:
+            raise WorkflowException(f"Current status '{current_status}' does not allow the '{transition}' transition.")
 
         updates_dict: dict[str, OdmUpdateOperation] = {}
 
         for action in _transition.get("actions", []):
             for update in action(transition=_transition, **kwargs):
                 # Check if an update already exists for this property and if it's value is different
-                if (
-                    updates_dict.get(update.key)
-                    and updates_dict[update.key].value != update.value
-                ):
+                if updates_dict.get(update.key) and updates_dict[update.key].value != update.value:
                     raise WorkflowException(
                         f"Transition {transition} attempted to update the same property {update.key} with \
                             different values."
@@ -119,8 +100,7 @@ class Workflow:
                 [
                     t["transition"]
                     for t in self.transitions.values()
-                    if (t["source"] and current_status in t["source"])
-                    or not t["source"]
+                    if (t["source"] and current_status in t["source"]) or not t["source"]
                 ]
             )
         )

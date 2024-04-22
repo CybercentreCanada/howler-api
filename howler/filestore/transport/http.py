@@ -54,9 +54,7 @@ class TransportHTTP(Transport):
             else:
                 s = posixpath.join(self.base, normalize_srl_path(path))
 
-            return "{scheme}://{host}:{port}{path}".format(
-                scheme=scheme, host=host, port=port, path=s
-            )
+            return "{scheme}://{host}:{port}{path}".format(scheme=scheme, host=host, port=port, path=s)
 
         self._session = None
 
@@ -82,21 +80,15 @@ class TransportHTTP(Transport):
             self._session.close()
 
     def delete(self, path):
-        raise TransportException(
-            "READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError()
-        )
+        raise TransportException("READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError())
 
     def exists(self, path):
         path = self.normalize(path)
-        resp = self.session.head(
-            path, auth=self.auth, cert=self.pki, verify=self.verify
-        )
+        resp = self.session.head(path, auth=self.auth, cert=self.pki, verify=self.verify)
         return resp.ok
 
     def makedirs(self, path):
-        raise TransportException(
-            "READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError()
-        )
+        raise TransportException("READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError())
 
     # File based functions
     def download(self, src_path, dst_path):
@@ -105,27 +97,19 @@ class TransportHTTP(Transport):
             os.makedirs(dir_path)
         with open(dst_path, "wb") as localfile:
             src_path = self.normalize(src_path)
-            resp = self.session.get(
-                src_path, auth=self.auth, cert=self.pki, verify=self.verify
-            )
+            resp = self.session.get(src_path, auth=self.auth, cert=self.pki, verify=self.verify)
             if resp.ok:
                 for chunk in resp.iter_content(chunk_size=1024):
                     if chunk:
                         localfile.write(chunk)
             else:
-                raise TransportException(
-                    "[%s] %s: %s" % (resp.status_code, resp.reason, src_path)
-                )
+                raise TransportException("[%s] %s: %s" % (resp.status_code, resp.reason, src_path))
 
     def upload(self, src_path, dst_path):
-        raise TransportException(
-            "READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError()
-        )
+        raise TransportException("READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError())
 
     def upload_batch(self, local_remote_tuples):
-        raise TransportException(
-            "READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError()
-        )
+        raise TransportException("READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError())
 
     # Buffer based functions
     def get(self, path: str) -> bytes:
@@ -134,11 +118,7 @@ class TransportHTTP(Transport):
         if resp.ok:
             return resp.content
         else:
-            raise TransportException(
-                "[%s] %s: %s" % (resp.status_code, resp.reason, path)
-            )
+            raise TransportException("[%s] %s: %s" % (resp.status_code, resp.reason, path))
 
     def put(self, dst_path, content):
-        raise TransportException(
-            "READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError()
-        )
+        raise TransportException("READ ONLY TRANSPORT: Method not implemented", HowlerNotImplementedError())

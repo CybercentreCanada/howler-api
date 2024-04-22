@@ -8,6 +8,8 @@ Afin d'exécuter howler, vous avez besoin de :
 - Docker
 - Docker Compose
 - Recommandé : Visual Studio Code
+- Pipx (pour poetry)
+- Poetry
 
 ## Configurer les dossiers Howler
 
@@ -33,16 +35,27 @@ sudo apt install -yy python3-venv python3.9 python3.9-dev python3.9-venv
 sudo apt install -yy libsasl2-2 build-essential libsasl2-dev libssl-dev zip
 ```
 
+### Configurer pipx/poetry
+
+```bash
+pip install pipx
+pipx install poetry
+```
+
 ## Créez votre virtualenv
 
 ```bash
 cd ~/repos/howler-api
-python3.9 -m venv env
-. env/bin/activate
-pip install -U pip
-pip install -U wheel
-pip install python-dotenv
-pip install -e .
+poetry install --with test,dev,types
+poetry shell
+```
+
+### Configurer pre-commit
+
+Cela permettra d'activer le formatage "black" lors de la validation.
+
+```bash
+pre-commit install
 ```
 
 ## Mise en place des fichiers de configuration par défaut
@@ -50,7 +63,7 @@ pip install -e .
 Créer les fichiers classification.yml et config.yml par défaut :
 
 ```bash
-. env/bin/activate
+poetry shell
 ./generate_howler_conf.sh
 ```
 
@@ -85,8 +98,7 @@ Pour lancer le serveur API manuellement, vous pouvez utiliser cette commande :
 
 ```bash
 cd ~/repos/howler-api
-. env/bin/activate
-python howler/app.py
+poetry run server
 ```
 
 Lancer l'API Server manuellement ne vous donne malheureusement pas accès à un débogueur. Si vous souhaitez pouvoir déboguer votre code, vous pouvez utiliser la cible de lancement prédéfinie à l'intérieur de VSCode :

@@ -10,9 +10,7 @@ class HowlerException(Exception):
     message: str
     cause: Optional[Exception]
 
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
         super().__init__(message)
         self.message = message
         self.cause = cause
@@ -50,64 +48,38 @@ class ResourceExists(HowlerException):
 
 
 class VersionConflict(HowlerException):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
         HowlerException.__init__(self, message, cause)
 
 
 class HowlerTypeError(HowlerException, TypeError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else TypeError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else TypeError(message))
 
 
 class HowlerAttributeError(HowlerException, AttributeError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else AttributeError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else AttributeError(message))
 
 
 class HowlerValueError(HowlerException, ValueError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else ValueError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else ValueError(message))
 
 
 class HowlerNotImplementedError(HowlerException, NotImplementedError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else NotImplementedError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else NotImplementedError(message))
 
 
 class HowlerKeyError(HowlerException, KeyError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else KeyError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else KeyError(message))
 
 
 class HowlerRuntimeError(HowlerException, RuntimeError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else RuntimeError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else RuntimeError(message))
 
 
 class NotFoundException(HowlerException):
@@ -173,6 +145,4 @@ class ChainAll:
 
 
 def get_stacktrace_info(ex: Exception) -> str:
-    return "".join(
-        format_tb(exc_info()[2]) + [": ".join((ex.__class__.__name__, str(ex)))]
-    )
+    return "".join(format_tb(exc_info()[2]) + [": ".join((ex.__class__.__name__, str(ex)))])

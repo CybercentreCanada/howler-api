@@ -54,18 +54,14 @@ def handle_403(e):
         uname = "(None)"
         ip = request.remote_addr
 
-        log_with_traceback(
-            trace, f"Access Denied. (U:{uname} - IP:{ip}) [{error_message}]", audit=True
-        )
+        log_with_traceback(trace, f"Access Denied. (U:{uname} - IP:{ip}) [{error_message}]", audit=True)
 
     config_block = {
         "auth": {
             "allow_apikeys": config.auth.allow_apikeys,
         }
     }
-    return forbidden(
-        config_block, err=f"Access Denied ({request.path}) [{error_message}]"
-    )
+    return forbidden(config_block, err=f"Access Denied ({request.path}) [{error_message}]")
 
 
 @errors.app_errorhandler(404)
@@ -86,9 +82,5 @@ def handle_500(e):
     trace = exc_info()[2]
     log_with_traceback(trace, "Exception", is_exception=True)
 
-    message = "".join(
-        ["\n"]
-        + format_tb(exc_info()[2])
-        + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]
-    ).rstrip("\n")
+    message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip("\n")
     return internal_error(err=message)

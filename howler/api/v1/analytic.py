@@ -118,22 +118,16 @@ def update_analytic(id, user: User, **kwargs):
     try:
         existing_analytic: Analytic = storage.analytic.get_if_exists(id)
 
-        existing_analytic.description = new_data.get(
-            "description", existing_analytic.description
-        )
+        existing_analytic.description = new_data.get("description", existing_analytic.description)
 
         updated_rule = False
         if existing_analytic.rule_type:
             updated_rule = existing_analytic.rule != new_data.get(
                 "rule", existing_analytic.rule
-            ) or existing_analytic.rule_crontab != new_data.get(
-                "rule_crontab", existing_analytic.rule_crontab
-            )
+            ) or existing_analytic.rule_crontab != new_data.get("rule_crontab", existing_analytic.rule_crontab)
 
             existing_analytic.rule = new_data.get("rule", existing_analytic.rule)
-            existing_analytic.rule_crontab = new_data.get(
-                "rule_crontab", existing_analytic.rule_crontab
-            )
+            existing_analytic.rule_crontab = new_data.get("rule_crontab", existing_analytic.rule_crontab)
 
         storage.analytic.save(existing_analytic.analytic_id, existing_analytic)
 
@@ -192,9 +186,7 @@ def create_rule(user: User, **kwargs):
     extra_keys = set(new_data.keys()) - required_keys
 
     if len(extra_keys) > 0:
-        return bad_request(
-            err=f"Additional fields ({', '.join(extra_keys)}) are not permitted."
-        )
+        return bad_request(err=f"Additional fields ({', '.join(extra_keys)}) are not permitted.")
 
     new_analytic = Analytic(
         {
@@ -369,9 +361,7 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
 
     analytic: Analytic = analytic_service.get_analytic(id, as_obj=True)
 
-    comment: Optional[Comment] = next(
-        (c for c in analytic.comment if c.id == comment_id), None
-    )
+    comment: Optional[Comment] = next((c for c in analytic.comment if c.id == comment_id), None)
 
     if not comment:
         return not_found(err=f"Comment {comment_id} does not exist")
@@ -598,9 +588,7 @@ def set_as_favourite(id, **kwargs):
     try:
         current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
 
-        current_user["favourite_analytics"] = list(
-            set(current_user.get("favourite_analytics", []) + [id])
-        )
+        current_user["favourite_analytics"] = list(set(current_user.get("favourite_analytics", []) + [id]))
 
         storage.user.save(current_user["uname"], current_user)
 
@@ -644,5 +632,3 @@ def remove_as_favourite(id, **kwargs):
         return no_content()
     except ValueError as e:
         return bad_request(err=str(e))
-
-

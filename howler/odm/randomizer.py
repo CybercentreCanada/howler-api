@@ -301,15 +301,11 @@ def get_random_groups() -> str:
 
 
 def get_random_filename(smin: int = 1, smax: int = 3) -> str:
-    return "_".join(
-        [get_random_word().lower() for _ in range(random.randint(smin, smax))]
-    ) + random.choice(EXT)
+    return "_".join([get_random_word().lower() for _ in range(random.randint(smin, smax))]) + random.choice(EXT)
 
 
 def get_random_directory(smin: int = 2, smax: int = 6) -> str:
-    return "/".join(
-        [get_random_word().lower() for _ in range(random.randint(smin, smax))]
-    )
+    return "/".join([get_random_word().lower() for _ in range(random.randint(smin, smax))])
 
 
 def get_random_string(smin: int = 4, smax: int = 24) -> str:
@@ -336,10 +332,7 @@ def get_random_iso_date(epoch: _Optional[float] = None) -> str:
 
 
 def get_random_mapping(field) -> dict[str, _Any]:
-    return {
-        MAPPING_KEYS[i]: random_data_for_field(field, MAPPING_KEYS[i])
-        for i in range(random.randint(1, 5))
-    }
+    return {MAPPING_KEYS[i]: random_data_for_field(field, MAPPING_KEYS[i]) for i in range(random.randint(1, 5))}
 
 
 def get_random_phone() -> str:
@@ -406,9 +399,7 @@ def random_data_for_field(field, name: str, minimal: bool = False) -> _Any:
     elif isinstance(field, Classification):
         if field.engine.enforce:
             possible_classifications = list(field.engine._classification_cache)
-            possible_classifications.extend(
-                [field.engine.UNRESTRICTED, field.engine.RESTRICTED]
-            )
+            possible_classifications.extend([field.engine.UNRESTRICTED, field.engine.RESTRICTED])
         else:
             possible_classifications = [field.engine.UNRESTRICTED]
         return random.choice(possible_classifications)
@@ -419,9 +410,11 @@ def random_data_for_field(field, name: str, minimal: bool = False) -> _Any:
         return random.choice([x for x in field.values if x is not None])
     elif isinstance(field, List):
         return [
-            random_data_for_field(field.child_type, name)
-            if not isinstance(field.child_type, Model)
-            else random_model_obj(field.child_type, as_json=True)
+            (
+                random_data_for_field(field.child_type, name)
+                if not isinstance(field.child_type, Model)
+                else random_model_obj(field.child_type, as_json=True)
+            )
             for _ in range(random.randint(1, 4))
         ]
     elif isinstance(field, Compound):

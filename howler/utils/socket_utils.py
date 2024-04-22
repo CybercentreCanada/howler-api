@@ -9,11 +9,7 @@ hit_helper = OdmHelper(Hit)
 
 
 def check_action(
-    id: str,
-    action: str,
-    broadcast: bool,
-    outstanding_actions: list[tuple[str, str, bool]] = [],
-    **kwargs
+    id: str, action: str, broadcast: bool, outstanding_actions: list[tuple[str, str, bool]] = [], **kwargs
 ) -> list[tuple[str, str, bool]]:
     """Emit an event based on the specified action for use by websocket clients
 
@@ -58,11 +54,7 @@ def check_action(
         if hit_service.exists(id):
             hit_service.update_hit(
                 id,
-                [
-                    hit_helper.list_remove(
-                        "howler.viewers", kwargs["username"], silent=True
-                    )
-                ],
+                [hit_helper.list_remove("howler.viewers", kwargs["username"], silent=True)],
                 user=kwargs["username"],
             )
         outstanding_actions = [a for a in outstanding_actions if a[1] != "stop_viewing"]

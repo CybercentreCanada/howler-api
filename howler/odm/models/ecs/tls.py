@@ -13,9 +13,7 @@ from howler import odm
 )
 class Server(odm.Model):
     ja3s: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="A hash that identifies servers based on how they perform an SSL/TLS handshake."
-        )
+        odm.Keyword(description="A hash that identifies servers based on how they perform an SSL/TLS handshake.")
     )
 
 
@@ -37,9 +35,7 @@ class Client(odm.Model):
         )
     )
     ja3: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="A hash that identifies clients based on how they perform an SSL/TLS handshake."
-        )
+        odm.Keyword(description="A hash that identifies clients based on how they perform an SSL/TLS handshake.")
     )
 
 
@@ -53,14 +49,10 @@ class Client(odm.Model):
 )
 class TLS(odm.Model):
     version: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="Numeric part of the version parsed from the original string."
-        )
+        odm.Keyword(description="Numeric part of the version parsed from the original string.")
     )
     version_protocol: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="Normalized lowercase protocol name parsed from original string."
-        )
+        odm.Keyword(description="Normalized lowercase protocol name parsed from original string.")
     )
     client: Client = odm.Optional(odm.Compound(Client))
     server: Server = odm.Optional(odm.Compound(Server))

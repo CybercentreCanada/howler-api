@@ -73,8 +73,4 @@ def get_hostname() -> str:
 
 
 def get_mac_address() -> str:
-    return "".join(
-        ["{0:02x}".format((uuid.getnode() >> i) & 0xFF) for i in range(0, 8 * 6, 8)][
-            ::-1
-        ]
-    ).upper()
+    return "".join(["{0:02x}".format((uuid.getnode() >> i) & 0xFF) for i in range(0, 8 * 6, 8)][::-1]).upper()

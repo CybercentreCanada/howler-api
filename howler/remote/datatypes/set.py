@@ -42,9 +42,7 @@ class Set(object):
 
     def limited_add(self, value, size_limit):
         """Add a single value to the set, but only if that wouldn't make the set grow past a given size."""
-        return retry_call(
-            self._limited_add, keys=[self.name], args=[json.dumps(value), size_limit]
-        )
+        return retry_call(self._limited_add, keys=[self.name], args=[json.dumps(value), size_limit])
 
     def exist(self, value):
         return retry_call(self.c.sismember, self.name, json.dumps(value))
@@ -80,9 +78,7 @@ class Set(object):
         return json.loads(data) if data else None
 
     def pop_all(self):
-        return [
-            json.loads(s) for s in retry_call(self.c.spop, self.name, self.length())
-        ]
+        return [json.loads(s) for s in retry_call(self.c.spop, self.name, self.length())]
 
     def delete(self):
         retry_call(self.c.delete, self.name)

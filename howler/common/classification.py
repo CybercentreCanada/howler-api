@@ -90,9 +90,7 @@ class Classification(object):
 
             if self.enforce:
                 self._classification_cache = self.list_all_classification_combinations()
-                self._classification_cache_short = (
-                    self.list_all_classification_combinations(long_format=False)
-                )
+                self._classification_cache_short = self.list_all_classification_combinations(long_format=False)
 
             if classification_definition.get("levels", None) is None:
                 raise HowlerKeyError("No classification levels provided!")
@@ -106,19 +104,14 @@ class Classification(object):
                     self.NULL_CLASSIFICATION,
                 ]:
                     raise InvalidDefinition(
-                        "You cannot use reserved words NULL, INVALID or INV in your "
-                        "classification definition."
+                        "You cannot use reserved words NULL, INVALID or INV in your " "classification definition."
                     )
 
                 lvl = int(x["lvl"])
                 if lvl > self.MAX_LVL:
-                    raise InvalidDefinition(
-                        "Level over maximum classification level of %s." % self.MAX_LVL
-                    )
+                    raise InvalidDefinition("Level over maximum classification level of %s." % self.MAX_LVL)
                 if lvl < self.MIN_LVL:
-                    raise InvalidDefinition(
-                        "Level under minimum classification level of %s." % self.MIN_LVL
-                    )
+                    raise InvalidDefinition("Level under minimum classification level of %s." % self.MIN_LVL)
 
                 self.levels_map[short_name] = lvl
                 self.levels_map[str(lvl)] = short_name
@@ -126,9 +119,7 @@ class Classification(object):
                 self.levels_map_lts[name] = short_name
                 for a in x.get("aliases", []):
                     self.levels_aliases[a] = short_name
-                self.params_map[short_name] = {
-                    k: v for k, v in x.items() if k not in banned_params_keys
-                }
+                self.params_map[short_name] = {k: v for k, v in x.items() if k not in banned_params_keys}
                 self.params_map[name] = self.params_map[short_name]
                 self.levels_styles_map[short_name] = x.get("css", {"color": "default"})
                 self.levels_styles_map[name] = self.levels_styles_map[short_name]
@@ -136,9 +127,7 @@ class Classification(object):
                 self.description[name] = self.description[short_name]
 
             if classification_definition.get("required", None) is None:
-                log.warning(
-                    "No required tokens specified in classification definition!"
-                )
+                log.warning("No required tokens specified in classification definition!")
 
             for x in classification_definition.get("required", []):
                 short_name = x["short_name"]
@@ -146,12 +135,8 @@ class Classification(object):
                 self.access_req_map_lts[name] = short_name
                 self.access_req_map_stl[short_name] = name
                 for a in x.get("aliases", []):
-                    self.access_req_aliases[a] = self.access_req_aliases.get(a, []) + [
-                        short_name
-                    ]
-                self.params_map[short_name] = {
-                    k: v for k, v in x.items() if k not in banned_params_keys
-                }
+                    self.access_req_aliases[a] = self.access_req_aliases.get(a, []) + [short_name]
+                self.params_map[short_name] = {k: v for k, v in x.items() if k not in banned_params_keys}
                 self.params_map[name] = self.params_map[short_name]
                 self.description[short_name] = x.get("description", "N/A")
                 self.description[name] = self.description[short_name]
@@ -165,23 +150,16 @@ class Classification(object):
                 self.groups_map_lts[name] = short_name
                 self.groups_map_stl[short_name] = name
                 for a in x.get("aliases", []):
-                    self.groups_aliases[a] = list(
-                        set(self.groups_aliases.get(a, []) + [short_name])
-                    )
+                    self.groups_aliases[a] = list(set(self.groups_aliases.get(a, []) + [short_name]))
                 solitary_display_name = x.get("solitary_display_name", None)
                 if solitary_display_name:
                     self.groups_aliases[solitary_display_name] = list(
-                        set(
-                            self.groups_aliases.get(solitary_display_name, [])
-                            + [short_name]
-                        )
+                        set(self.groups_aliases.get(solitary_display_name, []) + [short_name])
                     )
                 if x.get("auto_select", False):
                     self.groups_auto_select.append(name)
                     self.groups_auto_select_short.append(short_name)
-                self.params_map[short_name] = {
-                    k: v for k, v in x.items() if k not in banned_params_keys
-                }
+                self.params_map[short_name] = {k: v for k, v in x.items() if k not in banned_params_keys}
                 self.params_map[name] = self.params_map[short_name]
                 self.description[short_name] = x.get("description", "N/A")
                 self.description[name] = self.description[short_name]
@@ -195,46 +173,31 @@ class Classification(object):
                 self.subgroups_map_lts[name] = short_name
                 self.subgroups_map_stl[short_name] = name
                 for a in x.get("aliases", []):
-                    self.subgroups_aliases[a] = list(
-                        set(self.subgroups_aliases.get(a, []) + [short_name])
-                    )
+                    self.subgroups_aliases[a] = list(set(self.subgroups_aliases.get(a, []) + [short_name]))
                 solitary_display_name = x.get("solitary_display_name", None)
                 if solitary_display_name:
                     self.subgroups_aliases[solitary_display_name] = list(
-                        set(
-                            self.subgroups_aliases.get(solitary_display_name, [])
-                            + [short_name]
-                        )
+                        set(self.subgroups_aliases.get(solitary_display_name, []) + [short_name])
                     )
                 if x.get("auto_select", False):
                     self.subgroups_auto_select.append(name)
                     self.subgroups_auto_select_short.append(short_name)
-                self.params_map[short_name] = {
-                    k: v for k, v in x.items() if k not in banned_params_keys
-                }
+                self.params_map[short_name] = {k: v for k, v in x.items() if k not in banned_params_keys}
                 self.params_map[name] = self.params_map[short_name]
                 self.description[short_name] = x.get("description", "N/A")
                 self.description[name] = self.description[short_name]
 
             if not self.is_valid(classification_definition["unrestricted"]):
-                raise InvalidDefinition(
-                    "Classification definition's unrestricted classification is invalid."
-                )
+                raise InvalidDefinition("Classification definition's unrestricted classification is invalid.")
 
             if not self.is_valid(classification_definition["restricted"]):
-                raise InvalidDefinition(
-                    "Classification definition's restricted classification is invalid."
-                )
+                raise InvalidDefinition("Classification definition's restricted classification is invalid.")
 
             self.UNRESTRICTED = classification_definition["unrestricted"]
             self.RESTRICTED = classification_definition["restricted"]
 
-            self.UNRESTRICTED = self.normalize_classification(
-                classification_definition["unrestricted"]
-            )
-            self.RESTRICTED = self.normalize_classification(
-                classification_definition["restricted"]
-            )
+            self.UNRESTRICTED = self.normalize_classification(classification_definition["unrestricted"])
+            self.RESTRICTED = self.normalize_classification(classification_definition["restricted"])
 
         except Exception as e:
             self.UNRESTRICTED = self.NULL_CLASSIFICATION
@@ -251,9 +214,7 @@ class Classification(object):
     # Private functions
     ############################
     @staticmethod
-    def _build_combinations(
-        items: Set, separator: str = "/", solitary_display: Optional[Dict] = None
-    ) -> Set:
+    def _build_combinations(items: Set, separator: str = "/", solitary_display: Optional[Dict] = None) -> Set:
         if solitary_display is None:
             solitary_display = {}
 
@@ -291,16 +252,14 @@ class Classification(object):
             return self.levels_map[self.levels_aliases[lvl]]
         else:
             raise InvalidClassification(
-                "Classification level '%s' was not found in "
-                "your classification definition." % lvl
+                "Classification level '%s' was not found in " "your classification definition." % lvl
             )
 
     def _get_c12n_level_text(self, lvl_idx: int, long_format: bool = True) -> str:
         text = self.levels_map.get(str(lvl_idx), None)
         if not text:
             raise InvalidClassification(
-                "Classification level number '%s' was not "
-                "found in your classification definition." % lvl_idx
+                "Classification level number '%s' was not " "found in your classification definition." % lvl_idx
             )
         if long_format:
             return self.levels_map_stl[text]
@@ -326,9 +285,7 @@ class Classification(object):
             return sorted([self.access_req_map_stl[r] for r in return_set])
         return sorted(list(return_set))
 
-    def _get_c12n_groups(
-        self, c12n: str, long_format: bool = True
-    ) -> Tuple[List, List]:
+    def _get_c12n_groups(self, c12n: str, long_format: bool = True) -> Tuple[List, List]:
         # Parse classifications in uppercase mode only
         c12n = c12n.upper()
 
@@ -409,12 +366,8 @@ class Classification(object):
         # 1. Check for all required items if they need a specific classification lvl
         required_lvl_idx = 0
         for r in req:
-            required_lvl_idx = max(
-                required_lvl_idx, self.params_map.get(r, {}).get("require_lvl", 0)
-            )
-        out = self._get_c12n_level_text(
-            max(lvl_idx, required_lvl_idx), long_format=long_format
-        )
+            required_lvl_idx = max(required_lvl_idx, self.params_map.get(r, {}).get("require_lvl", 0))
+        out = self._get_c12n_level_text(max(lvl_idx, required_lvl_idx), long_format=long_format)
 
         # 2. Check for all required items if they should be shown inside the groups display part
         req_grp = []
@@ -430,23 +383,11 @@ class Classification(object):
 
         # 3. Add auto-selected subgroups
         if long_format:
-            if (
-                len(subgroups) > 0
-                and len(self.subgroups_auto_select) > 0
-                and not skip_auto_select
-            ):
-                subgroups = sorted(
-                    list(set(subgroups).union(set(self.subgroups_auto_select)))
-                )
+            if len(subgroups) > 0 and len(self.subgroups_auto_select) > 0 and not skip_auto_select:
+                subgroups = sorted(list(set(subgroups).union(set(self.subgroups_auto_select))))
         else:
-            if (
-                len(subgroups) > 0
-                and len(self.subgroups_auto_select_short) > 0
-                and not skip_auto_select
-            ):
-                subgroups = sorted(
-                    list(set(subgroups).union(set(self.subgroups_auto_select_short)))
-                )
+            if len(subgroups) > 0 and len(self.subgroups_auto_select_short) > 0 and not skip_auto_select:
+                subgroups = sorted(list(set(subgroups).union(set(self.subgroups_auto_select_short))))
 
         # 4. For every subgroup, check if the subgroup requires or is limited to a specific group
         temp_groups = []
@@ -471,30 +412,18 @@ class Classification(object):
 
         # 5. Add auto-selected groups
         if long_format:
-            if (
-                len(groups) > 0
-                and len(self.groups_auto_select) > 0
-                and not skip_auto_select
-            ):
+            if len(groups) > 0 and len(self.groups_auto_select) > 0 and not skip_auto_select:
                 groups = sorted(list(set(groups).union(set(self.groups_auto_select))))
         else:
-            if (
-                len(groups) > 0
-                and len(self.groups_auto_select_short) > 0
-                and not skip_auto_select
-            ):
-                groups = sorted(
-                    list(set(groups).union(set(self.groups_auto_select_short)))
-                )
+            if len(groups) > 0 and len(self.groups_auto_select_short) > 0 and not skip_auto_select:
+                groups = sorted(list(set(groups).union(set(self.groups_auto_select_short))))
 
         if groups:
             out += {True: "/", False: "//"}[len(req_grp) > 0]
             if len(groups) == 1:
                 # 6. If only one group, check if it has a solitary display name.
                 grp = groups[0]
-                display_name = self.params_map.get(grp, {}).get(
-                    "solitary_display_name", grp
-                )
+                display_name = self.params_map.get(grp, {}).get("solitary_display_name", grp)
                 if display_name != grp:
                     out += display_name
                 else:
@@ -536,8 +465,7 @@ class Classification(object):
         if len(groups_1) > 0 and len(groups_2) > 0 and len(groups) == 0:
             # NOTE: Intersection generated nothing, we will raise an InvalidClassification exception
             raise InvalidClassification(
-                "Could not find any intersection between the groups. %s & %s"
-                % (groups_1, groups_2)
+                "Could not find any intersection between the groups. %s & %s" % (groups_1, groups_2)
             )
 
         return list(groups)
@@ -549,18 +477,10 @@ class Classification(object):
     def list_all_classification_combinations(self, long_format: bool = True) -> Set:
         combinations = set()
 
-        levels = self._list_items_and_aliases(
-            self.original_definition["levels"], long_format=long_format
-        )
-        reqs = self._list_items_and_aliases(
-            self.original_definition["required"], long_format=long_format
-        )
-        grps = self._list_items_and_aliases(
-            self.original_definition["groups"], long_format=long_format
-        )
-        sgrps = self._list_items_and_aliases(
-            self.original_definition["subgroups"], long_format=long_format
-        )
+        levels = self._list_items_and_aliases(self.original_definition["levels"], long_format=long_format)
+        reqs = self._list_items_and_aliases(self.original_definition["required"], long_format=long_format)
+        grps = self._list_items_and_aliases(self.original_definition["groups"], long_format=long_format)
+        sgrps = self._list_items_and_aliases(self.original_definition["subgroups"], long_format=long_format)
 
         req_cbs = self._build_combinations(reqs)
         if long_format:
@@ -576,14 +496,10 @@ class Classification(object):
                 if "solitary_display_name" in x
             }
         solitary_names = [
-            x["solitary_display_name"]
-            for x in self.original_definition["groups"]
-            if "solitary_display_name" in x
+            x["solitary_display_name"] for x in self.original_definition["groups"] if "solitary_display_name" in x
         ]
 
-        grp_cbs = self._build_combinations(
-            grps, separator=", ", solitary_display=grp_solitary_display
-        )
+        grp_cbs = self._build_combinations(grps, separator=", ", solitary_display=grp_solitary_display)
         sgrp_cbs = self._build_combinations(sgrps)
 
         for p in itertools.product(levels, req_cbs):
@@ -632,9 +548,7 @@ class Classification(object):
         return combinations
 
     # noinspection PyUnusedLocal
-    def default_user_classification(
-        self, user: Optional[str] = None, long_format: bool = True
-    ) -> str:
+    def default_user_classification(self, user: Optional[str] = None, long_format: bool = True) -> str:
         """
         You can overload this function to specify a way to get the default classification of a user.
         By default, this function returns the UNRESTRICTED value of your classification definition.
@@ -669,9 +583,7 @@ class Classification(object):
         out.pop("original_definition", None)
         return out
 
-    def get_access_control_parts(
-        self, c12n: str, user_classification: bool = False
-    ) -> Dict:
+    def get_access_control_parts(self, c12n: str, user_classification: bool = False) -> Dict:
         """
         Returns a dictionary containing the different access parameters Lucene needs to build it's queries
 
@@ -684,9 +596,7 @@ class Classification(object):
 
         try:
             # Normalize the classification before gathering the parts
-            c12n = self.normalize_classification(
-                c12n, skip_auto_select=user_classification
-            )
+            c12n = self.normalize_classification(c12n, skip_auto_select=user_classification)
 
             access_lvl = self._get_c12n_level_index(c12n)
             access_req = self._get_c12n_required(c12n, long_format=False)
@@ -736,9 +646,7 @@ class Classification(object):
 
         return self.subgroups_map_stl.keys()
 
-    def intersect_user_classification(
-        self, user_c12n_1: str, user_c12n_2: str, long_format: bool = True
-    ) -> str:
+    def intersect_user_classification(self, user_c12n_1: str, user_c12n_2: str, long_format: bool = True) -> str:
         """
         This function intersects two user classification to return the maximum classification
         that both user could see.
@@ -756,25 +664,17 @@ class Classification(object):
 
         # Normalize classifications before comparing them
         if user_c12n_1 is not None:
-            user_c12n_1 = self.normalize_classification(
-                user_c12n_1, skip_auto_select=True
-            )
+            user_c12n_1 = self.normalize_classification(user_c12n_1, skip_auto_select=True)
         if user_c12n_2 is not None:
-            user_c12n_2 = self.normalize_classification(
-                user_c12n_2, skip_auto_select=True
-            )
+            user_c12n_2 = self.normalize_classification(user_c12n_2, skip_auto_select=True)
 
         if user_c12n_1 is None:
             return user_c12n_2
         if user_c12n_2 is None:
             return user_c12n_1
 
-        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(
-            user_c12n_1, long_format=long_format
-        )
-        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(
-            user_c12n_2, long_format=long_format
-        )
+        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(user_c12n_1, long_format=long_format)
+        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(user_c12n_2, long_format=long_format)
 
         req = list(set(req_1) & set(req_2))
         groups = list(set(groups_1) & set(groups_2))
@@ -789,9 +689,7 @@ class Classification(object):
             skip_auto_select=True,
         )
 
-    def is_accessible(
-        self, user_c12n: str, c12n: str, ignore_invalid: bool = False
-    ) -> bool:
+    def is_accessible(self, user_c12n: str, c12n: str, ignore_invalid: bool = False) -> bool:
         """
         Given a user classification, check if a user is allow to see a certain classification
 
@@ -821,9 +719,7 @@ class Classification(object):
             req = self._get_c12n_required(c12n)
             groups, subgroups = self._get_c12n_groups(c12n)
 
-            if self._get_c12n_level_index(user_c12n) >= self._get_c12n_level_index(
-                c12n
-            ):
+            if self._get_c12n_level_index(user_c12n) >= self._get_c12n_level_index(c12n):
                 if not self._can_see_required(user_req, req):
                     return False
                 if not self._can_see_groups(user_groups, groups):
@@ -854,12 +750,8 @@ class Classification(object):
 
         try:
             # Classification normalization test
-            n_c12n = self.normalize_classification(
-                c12n, skip_auto_select=skip_auto_select
-            )
-            n_lvl_idx, n_req, n_groups, n_subgroups = self._get_classification_parts(
-                n_c12n
-            )
+            n_c12n = self.normalize_classification(c12n, skip_auto_select=skip_auto_select)
+            n_lvl_idx, n_req, n_groups, n_subgroups = self._get_classification_parts(n_c12n)
             lvl_idx, req, groups, subgroups = self._get_classification_parts(c12n)
         except InvalidClassification:
             return False
@@ -933,9 +825,7 @@ class Classification(object):
 
         return True
 
-    def max_classification(
-        self, c12n_1: str, c12n_2: str, long_format: bool = True
-    ) -> str:
+    def max_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
         """
         Mixes to classification and returns to most restrictive form for them
 
@@ -961,12 +851,8 @@ class Classification(object):
         if c12n_2 is None:
             return c12n_1
 
-        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(
-            c12n_1, long_format=long_format
-        )
-        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(
-            c12n_2, long_format=long_format
-        )
+        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(c12n_1, long_format=long_format)
+        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(c12n_2, long_format=long_format)
 
         req = list(set(req_1) | set(req_2))
         groups = self._max_groups(groups_1, groups_2)
@@ -976,9 +862,7 @@ class Classification(object):
             max(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
         )
 
-    def min_classification(
-        self, c12n_1: str, c12n_2: str, long_format: bool = True
-    ) -> str:
+    def min_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
         """
         Mixes to classification and returns to least restrictive form for them
 
@@ -1004,12 +888,8 @@ class Classification(object):
         if c12n_2 is None:
             return c12n_1
 
-        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(
-            c12n_1, long_format=long_format
-        )
-        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(
-            c12n_2, long_format=long_format
-        )
+        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(c12n_1, long_format=long_format)
+        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(c12n_2, long_format=long_format)
 
         req = list(set(req_1) & set(req_2))
         if len(groups_1) > 0 and len(groups_2) > 0:
@@ -1026,9 +906,7 @@ class Classification(object):
             min(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
         )
 
-    def normalize_classification(
-        self, c12n: str, long_format: bool = True, skip_auto_select: bool = False
-    ) -> str:
+    def normalize_classification(self, c12n: str, long_format: bool = True, skip_auto_select: bool = False) -> str:
         """
         Normalize a given classification by applying the rules defined in the classification definition.
         This function will remove any invalid parts and add missing parts to the classification.
@@ -1051,9 +929,7 @@ class Classification(object):
         if not long_format and c12n in self._classification_cache_short:
             return c12n
 
-        lvl_idx, req, groups, subgroups = self._get_classification_parts(
-            c12n, long_format=long_format
-        )
+        lvl_idx, req, groups, subgroups = self._get_classification_parts(c12n, long_format=long_format)
         new_c12n = self._get_normalized_classification_text(
             lvl_idx,  # type: ignore
             req,
@@ -1069,9 +945,7 @@ class Classification(object):
 
         return new_c12n
 
-    def build_user_classification(
-        self, c12n_1: str, c12n_2: str, long_format: bool = True
-    ) -> str:
+    def build_user_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
         """
         Mixes to classification and return the classification marking that would give access to the most data
 
@@ -1097,12 +971,8 @@ class Classification(object):
         if c12n_2 is None:
             return c12n_1
 
-        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(
-            c12n_1, long_format=long_format
-        )
-        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(
-            c12n_2, long_format=long_format
-        )
+        lvl_idx_1, req_1, groups_1, subgroups_1 = self._get_classification_parts(c12n_1, long_format=long_format)
+        lvl_idx_2, req_2, groups_2, subgroups_2 = self._get_classification_parts(c12n_2, long_format=long_format)
 
         req = list(set(req_1) | set(req_2))
         groups = list(set(groups_1) | set(groups_2))

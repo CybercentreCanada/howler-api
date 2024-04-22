@@ -14,14 +14,6 @@ from howler.common.logging import get_logger
 from howler.filestore.exceptions import HowlerConnectionError
 from howler.filestore.transport.base import Transport, TransportException
 
-try:
-    from botocore.vendored.requests.packages.urllib3 import disable_warnings
-except ImportError:
-    from urllib3 import disable_warnings
-
-
-disable_warnings()
-
 """
 This class assumes a flat file structure in the S3 bucket.  This is due to the way the AL datastore currently handles
 file paths for local/ftp datastores not playing nicely with s3 constraints.
@@ -68,9 +60,7 @@ class TransportS3(Transport):
 
         self.scheme = {True: "https", False: "http"}[self.use_ssl]
 
-        self.endpoint_url = "{scheme}://{host}:{port}".format(
-            scheme=self.scheme, host=self.host, port=self.port
-        )
+        self.endpoint_url = "{scheme}://{host}:{port}".format(scheme=self.scheme, host=self.host, port=self.port)
 
         session = boto3.session.Session()
         self.client = session.client(
@@ -88,10 +78,7 @@ class TransportS3(Transport):
             self.with_retries(self.client.head_bucket, Bucket=self.bucket)
             bucket_exist = True
         except TransportException as e:
-            if (
-                isinstance(e.cause, ClientError)
-                and e.cause.response["Error"]["Code"] == "404"
-            ):
+            if isinstance(e.cause, ClientError) and e.cause.response["Error"]["Code"] == "404":
                 pass
             else:
                 raise
@@ -100,10 +87,7 @@ class TransportS3(Transport):
             try:
                 self.with_retries(self.client.create_bucket, Bucket=self.bucket)
             except TransportException as e:
-                if (
-                    isinstance(e.cause, ClientError)
-                    and e.cause.response["Error"]["Code"] == "BucketAlreadyOwnedByYou"
-                ):
+                if isinstance(e.cause, ClientError) and e.cause.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
                     # By the time that we listed the bucket an found it didn't exist, someone else created it.
                     pass
                 else:
@@ -138,9 +122,7 @@ class TransportS3(Transport):
                 return ret_val
 
             except (EndpointConnectionError, ConnectionClosedError):
-                self.log.warning(
-                    f"No connection to S3 transport {self.endpoint_url}, retrying..."
-                )
+                self.log.warning(f"No connection to S3 transport {self.endpoint_url}, retrying...")
                 retries += 1
         raise HowlerConnectionError(
             f"Couldn't connect to the requested S3 endpoint {self.endpoint_url} inside retry limit"
@@ -200,6 +182,4 @@ class TransportS3(Transport):
             content = content.encode("utf-8")
 
         with BytesIO(content) as file_io:
-            self.with_retries(
-                self.client.upload_fileobj, file_io, self.bucket, dst_path
-            )
+            self.with_retries(self.client.upload_fileobj, file_io, self.bucket, dst_path)

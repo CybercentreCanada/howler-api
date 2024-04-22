@@ -16,14 +16,10 @@ logger = get_logger(__file__)
 
 
 def ws_response(type, data={}, error=False, status=200, message=""):
-    return json.dumps(
-        {"error": error, "status": status, "message": message, "type": type, **data}
-    )
+    return json.dumps({"error": error, "status": status, "message": message, "type": type, **data})
 
 
-def websocket_auth(
-    required_type: Optional[list[str]] = None, required_priv: Optional[list[str]] = None
-):
+def websocket_auth(required_type: Optional[list[str]] = None, required_priv: Optional[list[str]] = None):
     """Authentication for a new websocket connection.
 
     Args:

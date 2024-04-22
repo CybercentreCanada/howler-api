@@ -65,22 +65,14 @@ class Event(odm.Model):
             "related to event.type, which is used as a subcategory.",
         )
     )
-    code = odm.Optional(
-        odm.Keyword(description="Identification code for this event, if one exists.")
-    )
+    code = odm.Optional(odm.Keyword(description="Identification code for this event, if one exists."))
     created = odm.Optional(
-        odm.Date(
-            description="Contains the date/time when the event was first read by an agent, or by your pipeline."
-        )
+        odm.Date(description="Contains the date/time when the event was first read by an agent, or by your pipeline.")
     )
     dataset = odm.Optional(odm.Keyword(description="Name of the dataset."))
-    duration = odm.Optional(
-        odm.Integer(description="Duration of the event in nanoseconds.")
-    )
+    duration = odm.Optional(odm.Integer(description="Duration of the event in nanoseconds."))
     end = odm.Optional(
-        odm.Date(
-            description="Contains the date when the event ended or when the activity was last observed."
-        )
+        odm.Date(description="Contains the date when the event ended or when the activity was last observed.")
     )
     hash = odm.Optional(
         odm.Keyword(
@@ -99,9 +91,7 @@ class Event(odm.Model):
             "contains, without being specific to the contents of the event. ",
         )
     )
-    module = odm.Optional(
-        odm.Keyword(description="Name of the module this data is coming from.")
-    )
+    module = odm.Optional(odm.Keyword(description="Name of the module this data is coming from."))
     original = odm.Optional(
         odm.Keyword(
             description="Raw text message of entire event. Used to demonstrate log integrity or where the "
@@ -116,36 +106,20 @@ class Event(odm.Model):
         )
     )
     provider = odm.Optional(odm.Keyword(description="Source of the event."))
-    reason = odm.Optional(
-        odm.Keyword(
-            description="Reason why this event happened, according to the source."
-        )
-    )
+    reason = odm.Optional(odm.Keyword(description="Reason why this event happened, according to the source."))
     reference = odm.Optional(
-        odm.Keyword(
-            description="Reference URL linking to additional information about this event."
-        )
+        odm.Keyword(description="Reference URL linking to additional information about this event.")
     )
-    risk_score = odm.Optional(
-        odm.Float(
-            description="Risk score or priority of the event (e.g. security solutions)."
-        )
-    )
+    risk_score = odm.Optional(odm.Float(description="Risk score or priority of the event (e.g. security solutions)."))
     risk_score_norm = odm.Optional(
-        odm.Float(
-            description="Normalized risk score or priority of the event, on a scale of 0 to 100."
-        )
+        odm.Float(description="Normalized risk score or priority of the event, on a scale of 0 to 100.")
     )
     sequence = odm.Optional(odm.Integer(description="Sequence number of the event."))
     severity = odm.Optional(
-        odm.Integer(
-            description="The numeric severity of the event according to your event source."
-        )
+        odm.Integer(description="The numeric severity of the event according to your event source.")
     )
     start = odm.Optional(
-        odm.Date(
-            description="Contains the date when the event started or when the activity was first observed."
-        )
+        odm.Date(description="Contains the date when the event started or when the activity was first observed.")
     )
     timezone = odm.Optional(
         odm.Keyword(
@@ -161,7 +135,5 @@ class Event(odm.Model):
         )
     )
     url = odm.Optional(
-        odm.Keyword(
-            description="URL linking to an external system to continue investigation of this event."
-        )
+        odm.Keyword(description="URL linking to an external system to continue investigation of this event.")
     )

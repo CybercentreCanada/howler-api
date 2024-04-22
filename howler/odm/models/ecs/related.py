@@ -20,9 +20,7 @@ class Related(odm.Model):
         "include FQDNs, domain names, workstation names, or aliases.",
         default=[],
     )
-    ip: list[str] = odm.List(
-        odm.IP(), description="All of the IPs seen on your event.", default=[]
-    )
+    ip: list[str] = odm.List(odm.IP(), description="All of the IPs seen on your event.", default=[])
     user: list[str] = odm.List(
         odm.Keyword(),
         description="All the user names or other user identifiers seen on the event.",
@@ -37,9 +35,7 @@ class Related(odm.Model):
     # Extra fields not defined in ECS but added for outline purposes
     id = odm.Optional(odm.Keyword(description="The id related to the event."))
 
-    uri = odm.Optional(
-        odm.List(odm.URI(), description="All of the URIs related to the event.")
-    )
+    uri = odm.Optional(odm.List(odm.URI(), description="All of the URIs related to the event."))
 
     signature = odm.Optional(
         odm.List(

@@ -14,15 +14,9 @@ class Hash(odm.Model):
 
 @odm.model(index=True, store=True, description="Information about the container Image.")
 class Image(odm.Model):
-    hash: Optional[Hash] = odm.Optional(
-        odm.Compound(Hash, description="Container hashes information.")
-    )
-    name: Optional[str] = odm.Optional(
-        odm.Keyword(description="Name of the image the container was built on.")
-    )
-    tag: list[str] = odm.List(
-        odm.Keyword(), description="Container image tags.", default=[]
-    )
+    hash: Optional[Hash] = odm.Optional(odm.Compound(Hash, description="Container hashes information."))
+    name: Optional[str] = odm.Optional(odm.Keyword(description="Name of the image the container was built on."))
+    tag: list[str] = odm.List(odm.Keyword(), description="Container image tags.", default=[])
 
 
 @odm.model(

@@ -104,9 +104,7 @@ def add_action(user: User, **_) -> Response:
 
     operation_ids = [o["operation_id"] for o in operations]
     if len(operation_ids) != len(set(operation_ids)):
-        return bad_request(
-            err="You must have a maximum of one operation of each type in the action."
-        )
+        return bad_request(err="You must have a maximum of one operation of each type in the action.")
 
     try:
         new_action["owner_id"] = user.uname
@@ -167,13 +165,8 @@ def update_action(id, user: User, **_) -> Response:
     if not existing_action:
         return not_found(err="The specified automation does not exist")
 
-    if (
-        "automation_advanced" not in user.type
-        and updated_action["triggers"] != existing_action["triggers"]
-    ):
-        return forbidden(
-            err="Updating triggers requires the role 'automation_advanced'."
-        )
+    if "automation_advanced" not in user.type and updated_action["triggers"] != existing_action["triggers"]:
+        return forbidden(err="Updating triggers requires the role 'automation_advanced'.")
 
     updated_action = {
         **existing_action,
@@ -199,9 +192,7 @@ def update_action(id, user: User, **_) -> Response:
 
     operation_ids = [o["operation_id"] for o in operations]
     if len(operation_ids) != len(set(operation_ids)):
-        return bad_request(
-            err="You must have a maximum of one operation of each type in request."
-        )
+        return bad_request(err="You must have a maximum of one operation of each type in request.")
 
     try:
         action_obj = Action(updated_action)
@@ -241,9 +232,7 @@ def delete_action(id: str, user: User, **kwargs) -> Response:
     action: Action = result["items"][0]
 
     if action.owner_id != user.uname and "admin" not in user.type:
-        return forbidden(
-            err="You do not have the permissions necessary to delete this action."
-        )
+        return forbidden(err="You do not have the permissions necessary to delete this action.")
 
     try:
         ds.action.delete(id)
@@ -394,9 +383,7 @@ def execute_operations(**kwargs) -> Response:
 
     operation_ids = [o["operation_id"] for o in operations]
     if len(operation_ids) != len(set(operation_ids)):
-        return bad_request(
-            err="You must have a maximum of one operation of each type in request."
-        )
+        return bad_request(err="You must have a maximum of one operation of each type in request.")
 
     for operation in operations:
         op_data = json.loads(operation["data_json"])

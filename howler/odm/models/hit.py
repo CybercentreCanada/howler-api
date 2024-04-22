@@ -104,9 +104,7 @@ class Hit(odm.Model):
         )
     )
 
-    cbs: CBS = odm.Optional(
-        odm.Compound(CBS, description="CBS metadata associated with this alert.")
-    )
+    cbs: CBS = odm.Optional(odm.Compound(CBS, description="CBS metadata associated with this alert."))
     cloud: Cloud = odm.Optional(
         odm.Compound(
             Cloud,
@@ -306,8 +304,5 @@ class Hit(odm.Model):
 if __name__ == "__main__":
     from pprint import pprint
 
-    fields = {
-        k: f"{v.__class__.__name__}{' (array)' if v.multivalued else ''}"
-        for k, v in Hit.flat_fields().items()
-    }
+    fields = {k: f"{v.__class__.__name__}{' (array)' if v.multivalued else ''}" for k, v in Hit.flat_fields().items()}
     pprint(fields)

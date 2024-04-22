@@ -86,9 +86,7 @@ def get_pool(host, port):
 
     connection_pool = pool.get(key, None)
     if not connection_pool:
-        connection_pool = redis.BlockingConnectionPool(
-            host=host, port=port, max_connections=200
-        )
+        connection_pool = redis.BlockingConnectionPool(host=host, port=port, max_connections=200)
         pool[key] = connection_pool
 
     return connection_pool

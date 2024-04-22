@@ -79,7 +79,7 @@ def run(writepath):
     print("Done!")
 
 
-if __name__ == "__main__":
+def main():
     writepath = None
     try:
         writepath = sys.argv[1]
@@ -87,3 +87,7 @@ if __name__ == "__main__":
         writepath = "lookups"
 
     run(writepath)
+
+
+if __name__ == "__main__":
+    main()

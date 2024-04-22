@@ -16,24 +16,16 @@ def bulk_execute_on_query(query: str, trigger="create", user: Optional[User] = N
     storage = datastore()
 
     if trigger not in VALID_TRIGGERS:
-        raise HowlerValueError(
-            f"{trigger} is not a valid trigger. It must be one of {','.join(VALID_TRIGGERS)}"
-        )
+        raise HowlerValueError(f"{trigger} is not a valid trigger. It must be one of {','.join(VALID_TRIGGERS)}")
 
-    on_trigger_actions: list[Action] = storage.action.search(
-        f"triggers:{sanitize_lucene_query(trigger)}"
-    )["items"]
+    on_trigger_actions: list[Action] = storage.action.search(f"triggers:{sanitize_lucene_query(trigger)}")["items"]
 
     for action in on_trigger_actions:
         intersected_query = f"({query}) AND ({action.query})"
 
         logger.info("Running action %s on bulk query %s", action.action_id, query)
         for operation in action.operations:
-            parsed_data = (
-                json.loads(operation.data_json)
-                if operation.data_json
-                else operation.data
-            )
+            parsed_data = json.loads(operation.data_json) if operation.data_json else operation.data
 
             audit(
                 [],
@@ -48,9 +40,7 @@ def bulk_execute_on_query(query: str, trigger="create", user: Optional[User] = N
             )
 
             if not user:
-                raise NotImplementedError(
-                    "Running actions without a user object is not currently supported"
-                )
+                raise NotImplementedError("Running actions without a user object is not currently supported")
 
             report = actions.execute(
                 operation_id=operation.operation_id,

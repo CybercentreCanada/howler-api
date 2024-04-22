@@ -10,9 +10,7 @@ class Counters(object):
         self.c = get_client(host, port, False)
         self.prefix = prefix
         if track_counters:
-            self.tracker: Optional[Hash] = Hash(
-                "c-tracker-%s" % prefix, host=host, port=port
-            )
+            self.tracker: Optional[Hash] = Hash("c-tracker-%s" % prefix, host=host, port=port)
         else:
             self.tracker = None
 
@@ -41,9 +39,7 @@ class Counters(object):
         return {k.decode("utf-8"): v for k, v in out.items()}
 
     def get_queues(self):
-        return [
-            k.decode("utf-8") for k in retry_call(self.c.keys, "%s-*" % self.prefix)
-        ]
+        return [k.decode("utf-8") for k in retry_call(self.c.keys, "%s-*" % self.prefix)]
 
     def ready(self):
         try:

@@ -41,9 +41,7 @@ def wrap_bidir_unicode_string(uni_str):
         return uni_str
 
     re_obj = re.search(r"[\u202E\u202B\u202D\u202A\u200E\u200F]", uni_str)
-    if (
-        re_obj is None or len(re_obj.group()) == 0
-    ):  # No unicode bidir controls found, return string unchanged
+    if re_obj is None or len(re_obj.group()) == 0:  # No unicode bidir controls found, return string unchanged
         return uni_str
 
     # Parse str for unclosed bidir blocks
@@ -117,16 +115,12 @@ def escape_str(s, reversible=True, force_str=False):
             reversible,
         )
     except Exception:
-        return escape_str_strict(
-            s.encode("utf-8", errors="backslashreplace"), reversible
-        )
+        return escape_str_strict(s.encode("utf-8", errors="backslashreplace"), reversible)
 
 
 # Returns a string (str) with only valid UTF-8 byte sequences.
 def escape_str_strict(s: bytes, reversible=True) -> str:
-    escaped = b"".join(
-        [_escape(t, reversible) for t in enumerate(_valid_utf8.split(s))]
-    )
+    escaped = b"".join([_escape(t, reversible) for t in enumerate(_valid_utf8.split(s))])
     return escaped.decode("utf-8")
 
 
@@ -184,9 +178,7 @@ def truncate(data: Union[bytes, str], length: int = 100) -> str:
     return string
 
 
-def default_string_value(
-    *values: Optional[str], env_name: str = "", default=None
-) -> str:
+def default_string_value(*values: Optional[str], env_name: str = "", default=None) -> str:
     return next((val for val in values if val), os.getenv(env_name, default))
 
 

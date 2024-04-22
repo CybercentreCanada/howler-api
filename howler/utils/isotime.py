@@ -102,10 +102,7 @@ def utc_offset_from_local(cur_time: Optional[float] = None) -> float:
     if not cur_time:
         cur_time = time()
 
-    return (
-        int(cur_time - iso_to_epoch("%sZ" % epoch_to_local(cur_time).replace(" ", "T")))
-        / 3600
-    )
+    return int(cur_time - iso_to_epoch("%sZ" % epoch_to_local(cur_time).replace(" ", "T"))) / 3600
 
 
 def trunc_day(timeobj: datetime) -> datetime:

@@ -130,9 +130,7 @@ def create_executor(rule: Analytic):
                         )
 
                     es_collection = datastore().hit
-                    lucene_queries = LuceneBackend(
-                        index_names=[es_collection.index_name]
-                    ).convert_rule(sigma_rule)
+                    lucene_queries = LuceneBackend(index_names=[es_collection.index_name]).convert_rule(sigma_rule)
 
                     query = " AND ".join([f"({q})" for q in lucene_queries])
 
@@ -170,20 +168,13 @@ def create_executor(rule: Analytic):
                     )["items"]
                     datastore().hit.update_by_query(
                         f"howler.id:{bundle.howler.id}",
-                        [
-                            hit_helper.list_add(
-                                "howler.hits", hit.howler.id, if_missing=True
-                            )
-                            for hit in child_hits
-                        ],
+                        [hit_helper.list_add("howler.hits", hit.howler.id, if_missing=True) for hit in child_hits],
                     )
 
             elif rule.rule_type == "eql":
                 query = rule.rule
 
-                result = datastore().hit.raw_eql_search(
-                    query, rows=25, fl=",".join(Hit.flat_fields().keys())
-                )
+                result = datastore().hit.raw_eql_search(query, rows=25, fl=",".join(Hit.flat_fields().keys()))
 
                 if len(result["sequences"]) > 0:
                     for sequence in result["sequences"]:
@@ -222,16 +213,12 @@ def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
 
     if new_rule:
         if __scheduler_instance.get_job(f"rule_{new_rule.analytic_id}"):
-            logger.info(
-                f"Updating existing rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}"
-            )
+            logger.info(f"Updating existing rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}")
 
             # remove the existing job
             __scheduler_instance.remove_job(f"rule_{new_rule.analytic_id}")
         else:
-            logger.info(
-                f"Registering new rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}"
-            )
+            logger.info(f"Registering new rule: {new_rule.analytic_id} on interval {new_rule.rule_crontab}")
         rules = [new_rule]
     else:
         logger.debug("Registering rules")
@@ -246,9 +233,7 @@ def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
             logger.debug(f"Rule {job_id} already running!")
             return
 
-        logger.debug(
-            f"Initializing rule cronjob with:\tJob ID: {job_id}\tRule Name: {rule.name}\tCrontab: {interval}"
-        )
+        logger.debug(f"Initializing rule cronjob with:\tJob ID: {job_id}\tRule Name: {rule.name}\tCrontab: {interval}")
 
         if DEBUG or new_rule:
             _kwargs: dict[str, Any] = {"next_run_time": datetime.now()}

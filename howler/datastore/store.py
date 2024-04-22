@@ -103,14 +103,10 @@ class ESStore(object):
 
     def __getattr__(self, name) -> ESCollection:
         if not self.validate:
-            return ESCollection(
-                self, name, model_class=self._models[name], validate=self.validate
-            )
+            return ESCollection(self, name, model_class=self._models[name], validate=self.validate)
 
         if name not in self._collections:
-            self._collections[name] = ESCollection(
-                self, name, model_class=self._models[name], validate=self.validate
-            )
+            self._collections[name] = ESCollection(self, name, model_class=self._models[name], validate=self.validate)
 
         return self._collections[name]
 
@@ -201,8 +197,7 @@ class ESStore(object):
         name_match = re.match(r"[a-z0-9_]*", name)
         if not name_match or name_match.string != name:
             raise DataStoreException(
-                "Invalid characters in model name. "
-                "You can only use lower case letters, numbers and underscores."
+                "Invalid characters in model name. " "You can only use lower case letters, numbers and underscores."
             )
 
         self._models[name] = model_class

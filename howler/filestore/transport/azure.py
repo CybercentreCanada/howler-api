@@ -69,12 +69,8 @@ class TransportAzure(Transport):
             self.credential = None
 
         # Clients
-        self.service_client = BlobServiceClient(
-            account_url=self.endpoint_url, credential=self.credential
-        )
-        self.container_client = self.service_client.get_container_client(
-            self.blob_container
-        )
+        self.service_client = BlobServiceClient(account_url=self.endpoint_url, credential=self.credential)
+        self.container_client = self.service_client.get_container_client(self.blob_container)
 
         # Init
         try:
@@ -87,9 +83,7 @@ class TransportAzure(Transport):
             except TransportException as error:
                 if not isinstance(error.cause, ResourceNotFoundError):
                     raise
-                self.log.info(
-                    "Failed to create container, we're most likely in read only mode"
-                )
+                self.log.info("Failed to create container, we're most likely in read only mode")
                 self.read_only = True
 
         def azure_normalize(path):

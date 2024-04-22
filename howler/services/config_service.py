@@ -42,11 +42,7 @@ def get_configuration(user: User):
                 options={"verify_signature": False},
             )
             amount, unit = (
-                ceil(
-                    (
-                        datetime.fromtimestamp(data["exp"]) - datetime.now()
-                    ).total_seconds()
-                ),
+                ceil((datetime.fromtimestamp(data["exp"]) - datetime.now()).total_seconds()),
                 "seconds",
             )
 
@@ -56,10 +52,7 @@ def get_configuration(user: User):
             "howler.scrutiny": Scrutiny.list(),
             "howler.escalation": Escalation.list(),
             "howler.assessment": Assessment.list(),
-            "transitions": {
-                status: hit_service.get_transitions(status)
-                for status in HitStatus.list()
-            },
+            "transitions": {status: hit_service.get_transitions(status) for status in HitStatus.list()},
             **lookups,
         },
         "configuration": {
@@ -71,9 +64,7 @@ def get_configuration(user: User):
                 "oauth_providers": [
                     name
                     for name, p in config.auth.oauth.providers.items()
-                    if default_string_value(
-                        p.client_secret, env_name=f"{name.upper()}_CLIENT_SECRET"
-                    )
+                    if default_string_value(p.client_secret, env_name=f"{name.upper()}_CLIENT_SECRET")
                 ],
                 "internal": {"enabled": config.auth.internal.enabled},
             },
@@ -93,11 +84,8 @@ def get_configuration(user: User):
                 "banner": config.ui.banner,
                 "banner_level": config.ui.banner_level,
             },
-            "features": {
-            },
+            "features": {},
         },
         "c12nDef": classification_definition,
-        "indexes": list_all_fields(
-            "admin" in user["type"] if user is not None else False
-        ),
+        "indexes": list_all_fields("admin" in user["type"] if user is not None else False),
     }

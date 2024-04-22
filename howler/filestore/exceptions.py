@@ -23,9 +23,5 @@ class TransportException(HowlerException):
 
 
 class HowlerConnectionError(HowlerException, ConnectionError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else ConnectionError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else ConnectionError(message))

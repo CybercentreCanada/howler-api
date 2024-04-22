@@ -9,9 +9,7 @@ T = TypeVar("T")
 
 
 class NamedQueue(Generic[T]):
-    def __init__(
-        self, name: str, host=None, port=None, private: bool = False, ttl: int = 0
-    ):
+    def __init__(self, name: str, host=None, port=None, private: bool = False, ttl: int = 0):
         self.c = get_client(host, port, private)
         self.name: str = name
         self.ttl: int = ttl

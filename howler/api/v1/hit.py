@@ -101,18 +101,12 @@ def create_hits(user: User, **kwargs):
 
     response_body: dict[str, list[Any]] = {"valid": [], "invalid": []}
     odms = []
-    ignore_extra_values: bool = bool(
-        request.args.get(
-            "ignore_extra_values", False, type=lambda v: v.lower() == "true"
-        )
-    )
+    ignore_extra_values: bool = bool(request.args.get("ignore_extra_values", False, type=lambda v: v.lower() == "true"))
     logger.debug(f"ignore_extra_values = {ignore_extra_values}")
     warnings = []
     for hit in hits:
         try:
-            odm, _warnings = hit_service.convert_hit(
-                hit, unique=True, ignore_extra_values=ignore_extra_values
-            )
+            odm, _warnings = hit_service.convert_hit(hit, unique=True, ignore_extra_values=ignore_extra_values)
             response_body["valid"].append(odm.as_primitives())
             odms.append(odm)
             warnings.extend(_warnings)
@@ -131,9 +125,7 @@ def create_hits(user: User, **kwargs):
 
         datastore().hit.commit()
 
-        action_service.bulk_execute_on_query(
-            f"howler.id:({' OR '.join(odm.howler.id for odm in odms)})", user=user
-        )
+        action_service.bulk_execute_on_query(f"howler.id:({' OR '.join(odm.howler.id for odm in odms)})", user=user)
 
         response_body["warnings"] = warnings
 
@@ -177,9 +169,7 @@ def delete_hits(user: User, **kwargs):
     if "admin" not in user["type"]:
         return forbidden(err="Cannot delete hit, only admin is allowed to delete")
 
-    non_existing_hit_ids = [
-        hit_id for hit_id in hit_ids if not hit_service.exists(hit_id)
-    ]
+    non_existing_hit_ids = [hit_id for hit_id in hit_ids if not hit_service.exists(hit_id)]
 
     if len(non_existing_hit_ids) == 1:
         return not_found(err=f"Hit id {non_existing_hit_ids[0]} does not exist.")
@@ -330,8 +320,7 @@ def update_hit(id: str, server_version: str, **kwargs):
                     "timestamp": "NOW",
                     "previous_version": server_version,
                     "key": "howler.log",
-                    "explanation": f"Hit updated by {kwargs['user']['uname']}\n\n"
-                    + "\n".join(explanation),
+                    "explanation": f"Hit updated by {kwargs['user']['uname']}\n\n" + "\n".join(explanation),
                     "new_value": "N/A",
                     "previous_value": "None",
                     "type": HitOperationType.APPENDED,
@@ -395,8 +384,7 @@ def update_by_query(**kwargs):
                 "howler.log",
                 {
                     "timestamp": "NOW",
-                    "explanation": f"Hit updated by {kwargs['user']['uname']}\n\n"
-                    + "\n".join(explanation),
+                    "explanation": f"Hit updated by {kwargs['user']['uname']}\n\n" + "\n".join(explanation),
                     "user": kwargs["user"]["uname"],
                 },
             )
@@ -499,14 +487,20 @@ def add_label(id, label_set, user, **kwargs):
     existing_labels = existing_hit[f"howler.labels.{label_set}"]
 
     if not set(labels).isdisjoint(set(existing_labels)):
-        return bad_request(
-            err=f"Cannot add duplicate labels: {set(labels) & set(existing_labels)}"
-        )
+        return bad_request(err=f"Cannot add duplicate labels: {set(labels) & set(existing_labels)}")
 
     hit_service.update_hit(
         id,
         [hit_helper.list_add(f"howler.labels.{label_set}", label) for label in labels],
         user["uname"],
+    )
+
+    datastore().hit.commit()
+
+    action_service.bulk_execute_on_query(
+        f"howler.id:{id}",
+        trigger="add_label",
+        user=user,
     )
 
     hit, version = hit_service.get_hit(id, version=True)
@@ -542,10 +536,7 @@ def remove_labels(id, label_set, user, **kwargs):
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
-    if (
-        f"howler.labels.{label_set}"
-        not in hit_service.get_hit(id, as_odm=True).flat_fields()
-    ):
+    if f"howler.labels.{label_set}" not in hit_service.get_hit(id, as_odm=True).flat_fields():
         return not_found(err=f"Label set {label_set} does not exist")
 
     label_data = request.json
@@ -559,11 +550,16 @@ def remove_labels(id, label_set, user, **kwargs):
 
     hit_service.update_hit(
         id,
-        [
-            hit_helper.list_remove(f"howler.labels.{label_set}", label)
-            for label in labels
-        ],
+        [hit_helper.list_remove(f"howler.labels.{label_set}", label) for label in labels],
         user["uname"],
+    )
+
+    datastore().hit.commit()
+
+    action_service.bulk_execute_on_query(
+        f"howler.id:{id}",
+        trigger="remove_label",
+        user=user,
     )
 
     hit, version = hit_service.get_hit(id, version=True)
@@ -606,9 +602,7 @@ def transition(id, user: User, **kwargs):
     if "If-Match" in request.headers:
         version = request.headers["If-Match"]
     else:
-        return bad_request(
-            err="No If-Match header in request. Contact an Administrator for help."
-        )
+        return bad_request(err="No If-Match header in request. Contact an Administrator for help.")
 
     try:
         if transition not in HitStatusTransition.list():
@@ -619,9 +613,7 @@ def transition(id, user: User, **kwargs):
                 )
             )
 
-        hit_service.transition_hit(
-            id, transition, user, version, **kwargs, **transition_data.get("data", {})
-        )
+        hit_service.transition_hit(id, transition, user, version, **kwargs, **transition_data.get("data", {}))
     except (WorkflowException, DataStoreException, InvalidDataException) as e:
         return bad_request(err=str(e))
     except VersionConflictException as e:
@@ -654,9 +646,7 @@ def get_comment(id, comment_id: str, user: User, server_version: str, **kwargs):
     if not hit:
         return not_found(err=f"Hit {id} does not exist")
 
-    comment: Optional[Comment] = next(
-        (c for c in hit.howler.comment if c.id == comment_id), None
-    )
+    comment: Optional[Comment] = next((c for c in hit.howler.comment if c.id == comment_id), None)
 
     if not comment:
         return not_found(err=f"Comment {comment_id} does not exist")
@@ -764,9 +754,7 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
 
     hit: Hit = kwargs["cached_hit"]
 
-    comment: Optional[Comment] = next(
-        (c for c in hit.howler.comment if c.id == comment_id), None
-    )
+    comment: Optional[Comment] = next((c for c in hit.howler.comment if c.id == comment_id), None)
 
     if not comment:
         return not_found(err=f"Comment {comment_id} does not exist")
@@ -779,9 +767,7 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     new_comment["modified"] = "NOW"
 
     diff = []
-    for line in difflib.unified_diff(
-        comment.value.split("\n"), new_comment["value"].split("\n")
-    ):
+    for line in difflib.unified_diff(comment.value.split("\n"), new_comment["value"].split("\n")):
         if line[:3] not in ("+++", "---", "@@ "):
             diff.append(line)
 
@@ -792,9 +778,7 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
             hit_helper.list_add(
                 "howler.comment",
                 new_comment,
-                explanation="Edited a comment. Changes:\n\n````diff\n"
-                + "\n".join(diff)
-                + "\n````",
+                explanation="Edited a comment. Changes:\n\n````diff\n" + "\n".join(diff) + "\n````",
             ),
         ],
         user["uname"],
@@ -837,17 +821,11 @@ def delete_comments(id, user: User, **kwargs):
     hit: Hit = kwargs["cached_hit"]
     comments = [comment for comment in hit.howler.comment if comment.id in comment_ids]
 
-    if ("admin" not in user["type"]) and any(
-        comment for comment in comments if comment.user != user["uname"]
-    ):
+    if ("admin" not in user["type"]) and any(comment for comment in comments if comment.user != user["uname"]):
         return forbidden(err="You cannot delete the comment of someone else.")
 
     if len(comments) != len(comment_ids):
-        missing_id = next(
-            id
-            for id in comment_ids
-            if not any(comment for comment in comments if comment.id == id)
-        )
+        missing_id = next(id for id in comment_ids if not any(comment for comment in comments if comment.id == id))
         return not_found(err=f"Comment with id {missing_id} not found")
 
     try:
@@ -1059,9 +1037,7 @@ def update_bundle(id, **kwargs):
             if hit_id not in new_hit_list:
                 new_hit_list.append(hit_id)
             else:
-                return conflict(
-                    err=f"The hit {hit_id} is already in the bundle {bundle_hit.howler.id}."
-                )
+                return conflict(err=f"The hit {hit_id} is already in the bundle {bundle_hit.howler.id}.")
     else:
         new_hit_list = hit_ids
 

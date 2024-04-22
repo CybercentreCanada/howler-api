@@ -67,11 +67,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
 
     field_map = data.pop("map", None)
     hits = data.pop("hits", None)
-    ignore_extra_values: bool = bool(
-        request.args.get(
-            "ignore_extra_values", False, type=lambda v: v.lower() == "true"
-        )
-    )
+    ignore_extra_values: bool = bool(request.args.get("ignore_extra_values", False, type=lambda v: v.lower() == "true"))
     logger.debug(f"ignore_extra_values = {ignore_extra_values}")
     # Check data type
     if not isinstance(field_map, dict):
@@ -88,9 +84,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
             # Compound fields - hit.obj of type dict (should also match)
             # This allows significantly easier creation of hits, since you don't need to deconstruct every dict into
             # individual fields
-            if target not in FIELDS and not any(
-                f for f in FIELDS.keys() if get_parent_key(f) == target
-            ):
+            if target not in FIELDS and not any(f for f in FIELDS.keys() if get_parent_key(f) == target):
                 warning = f"Invalid target field in the map: {target}"
                 if ignore_extra_values:
                     warnings.append(warning)
@@ -123,11 +117,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
                     except KeyError:
                         logger.debug(f"`{target}` not in FIELDS")
                         field_data = next(
-                            (
-                                v
-                                for k, v in FIELDS.items()
-                                if get_parent_key(k) == target
-                            ),
+                            (v for k, v in FIELDS.items() if get_parent_key(k) == target),
                             None,
                         )
 
@@ -146,9 +136,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
                         obj[target] = _val
 
         try:
-            odm, warns = hit_service.convert_hit(
-                obj, unique=True, ignore_extra_values=ignore_extra_values
-            )
+            odm, warns = hit_service.convert_hit(obj, unique=True, ignore_extra_values=ignore_extra_values)
 
             if odm.howler.is_bundle and bundle_hit is None:
                 bundle_hit = odm
@@ -189,8 +177,6 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
 
         datastore().hit.commit()
 
-        action_service.bulk_execute_on_query(
-            f"howler.id:({' OR '.join(entry['id'] for entry in out)})", user=user
-        )
+        action_service.bulk_execute_on_query(f"howler.id:({' OR '.join(entry['id'] for entry in out)})", user=user)
 
         return created(out, warnings=warnings)

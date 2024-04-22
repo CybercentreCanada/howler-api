@@ -8,7 +8,5 @@ from howler import odm
     "about the company or entity the data is associated with.",
 )
 class Organization(odm.Model):
-    id = odm.Optional(
-        odm.Keyword(description="Unique identifier for the organization.")
-    )
+    id = odm.Optional(odm.Keyword(description="Unique identifier for the organization."))
     name = odm.Keyword(description="Organization name.")

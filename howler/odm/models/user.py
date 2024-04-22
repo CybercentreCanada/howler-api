@@ -12,31 +12,21 @@ DASHBOARD_TYPES = {"view", "analytic"}
 
 @odm.model(index=False, store=False, description="Model for API keys")
 class ApiKey(odm.Model):
-    acl: list[str] = odm.List(
-        odm.Enum(values=ACL), description="Access Control List for the API key"
-    )
+    acl: list[str] = odm.List(odm.Enum(values=ACL), description="Access Control List for the API key")
     agents: list[str] = odm.List(
         odm.Keyword(),
         default=[],
         description="List of user ids permitted to use this api key for impersonation",
     )
-    password: str = odm.Keyword(
-        description="BCrypt hash of the password for the apikey"
-    )
-    expiry_date: Optional[datetime] = odm.Optional(
-        odm.Date(description="Expiry date for the apikey")
-    )
+    password: str = odm.Keyword(description="BCrypt hash of the password for the apikey")
+    expiry_date: Optional[datetime] = odm.Optional(odm.Date(description="Expiry date for the apikey"))
 
 
 @odm.model(index=False, store=False, description="Model for user dashboard settings")
 class DashboardEntry(odm.Model):
     entry_id: str = odm.Keyword(description="A unique id for this entry")
-    type: str = odm.Enum(
-        DASHBOARD_TYPES, description="The type of dashboard entry to render."
-    )
-    config: str = odm.Keyword(
-        description="A stringified JSON object containing additional configuration data"
-    )
+    type: str = odm.Enum(DASHBOARD_TYPES, description="The type of dashboard entry to render.")
+    config: str = odm.Keyword(description="A stringified JSON object containing additional configuration data")
 
 
 @odm.model(index=True, store=True, description="Model of User")
@@ -59,9 +49,7 @@ class User(odm.Model):
         default=CLASSIFICATION.UNRESTRICTED,
         description="Maximum classification for the user",
     )
-    email = odm.Optional(
-        odm.Email(copyto="__text__"), description="User's email address"
-    )
+    email = odm.Optional(odm.Email(copyto="__text__"), description="User's email address")
     groups = odm.List(
         odm.Keyword(),
         copyto="__text__",
@@ -70,9 +58,7 @@ class User(odm.Model):
     )
     is_active = odm.Boolean(default=True, description="Is the user active?")
     name = odm.Keyword(copyto="__text__", description="Full name of the user")
-    password = odm.Keyword(
-        index=False, store=False, description="BCrypt hash of the user's password"
-    )
+    password = odm.Keyword(index=False, store=False, description="BCrypt hash of the user's password")
     type = odm.List(
         odm.Enum(values=loader.USER_TYPES),
         default=["user", "automation_basic"],

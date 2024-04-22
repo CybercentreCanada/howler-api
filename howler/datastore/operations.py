@@ -20,16 +20,12 @@ class OdmHelper:
         if_missing: bool = False,
     ):
         if self.valid_fields and not any(
-            field
-            for field in self.valid_fields
-            if field.startswith(key) and self.fields[field].multivalued
+            field for field in self.valid_fields if field.startswith(key) and self.fields[field].multivalued
         ):
             raise HowlerValueError(f"Key {key} not found in {self.model_name}")
 
         return OdmUpdateOperation(
-            ESCollection.UPDATE_APPEND_IF_MISSING
-            if if_missing
-            else ESCollection.UPDATE_APPEND,
+            ESCollection.UPDATE_APPEND_IF_MISSING if if_missing else ESCollection.UPDATE_APPEND,
             key,
             value,
             explanation,
@@ -44,9 +40,7 @@ class OdmHelper:
         silent: bool = False,
     ):
         if self.valid_fields and not any(
-            field
-            for field in self.valid_fields
-            if field.startswith(key) and self.fields[field].multivalued
+            field for field in self.valid_fields if field.startswith(key) and self.fields[field].multivalued
         ):
             raise HowlerValueError(f"Key {key} not found in {self.model_name}")
 
@@ -103,9 +97,7 @@ class OdmUpdateOperation:
         silent: bool = False,
     ) -> None:
         if operation not in ESCollection.UPDATE_OPERATIONS:
-            raise HowlerValueError(
-                f"Operation {operation} not found in ESCollection.UPDATE_OPERATIONS"
-            )
+            raise HowlerValueError(f"Operation {operation} not found in ESCollection.UPDATE_OPERATIONS")
 
         self.operation = operation
 

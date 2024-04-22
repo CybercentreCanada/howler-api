@@ -92,9 +92,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
             if config.logging.log_as_json:
                 dbg_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
             else:
-                dbg_file_handler.setFormatter(
-                    logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT)
-                )
+                dbg_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
             logger.addHandler(dbg_file_handler)
 
         if log_level <= logging.INFO:
@@ -107,9 +105,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
             if config.logging.log_as_json:
                 op_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
             else:
-                op_file_handler.setFormatter(
-                    logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT)
-                )
+                op_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
             logger.addHandler(op_file_handler)
 
         if log_level <= logging.ERROR:
@@ -122,12 +118,8 @@ def init_logging(name: str, log_level: Optional[int] = None):
             if config.logging.log_as_json:
                 err_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
             else:
-                err_file_handler.setFormatter(
-                    logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT)
-                )
-            err_file_handler.setFormatter(
-                logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT)
-            )
+                err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
+            err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
             logger.addHandler(err_file_handler)
 
     if config.logging.log_to_console:
@@ -138,11 +130,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
             console.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
         logger.addHandler(console)
 
-    if (
-        config.logging.log_to_syslog
-        and config.logging.syslog_host
-        and config.logging.syslog_port
-    ):
+    if config.logging.log_to_syslog and config.logging.syslog_host and config.logging.syslog_port:
         syslog_handler = logging.handlers.SysLogHandler(
             address=(config.logging.syslog_host, config.logging.syslog_port)
         )
@@ -154,12 +142,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
 
 
 def get_logger(name=None) -> logging.Logger:
-    name = (
-        re.sub(r".+howler/", "", name)
-        .replace("/", ".")
-        .replace(".__init__", "")
-        .replace(".py", "")
-    )
+    name = re.sub(r".+howler/", "", name).replace("/", ".").replace(".__init__", "").replace(".py", "")
     name = re.sub(r"^api\.?", "", name)
     logger = init_logging("api")
     if name:
@@ -219,9 +202,7 @@ def dumb_log(log, msg, is_exception=False):
 
 
 def log_with_traceback(traceback, msg, is_exception=False, audit=False):
-    log = (
-        get_logger("traceback") if not audit else logging.getLogger("howler.api.audit")
-    )
+    log = get_logger("traceback") if not audit else logging.getLogger("howler.api.audit")
 
     tb_info = get_traceback_info(traceback)
     if tb_info:

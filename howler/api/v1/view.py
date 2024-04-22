@@ -104,9 +104,7 @@ def create_view(**kwargs):
         if view.type == "personal":
             current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
 
-            current_user["favourite_views"] = current_user.get(
-                "favourite_views", []
-            ) + [view.view_id]
+            current_user["favourite_views"] = current_user.get("favourite_views", []) + [view.view_id]
 
             storage.user.save(current_user["uname"], current_user)
 
@@ -146,9 +144,7 @@ def delete_view(id, user: User, **kwargs):
         return not_found(err="This view does not exist")
 
     if existing_view.owner != user.uname and "admin" not in user.type:
-        return forbidden(
-            err="You cannot delete a view unless you are an administrator, or the owner."
-        )
+        return forbidden(err="You cannot delete a view unless you are an administrator, or the owner.")
 
     if existing_view.type == "readonly":
         return forbidden(err="You cannot delete built-in views.")
@@ -201,18 +197,10 @@ def update_view(id, user: User, **kwargs):
         return forbidden(err="You cannot edit a built-in view.")
 
     if existing_view.type == "personal" and existing_view.owner != user.uname:
-        return forbidden(
-            err="You cannot update a personal view that is not owned by you."
-        )
+        return forbidden(err="You cannot update a personal view that is not owned by you.")
 
-    if (
-        existing_view.type == "global"
-        and existing_view.owner != user.uname
-        and "admin" not in user.type
-    ):
-        return forbidden(
-            err="Only the owner of a view and administrators can edit a global view."
-        )
+    if existing_view.type == "global" and existing_view.owner != user.uname and "admin" not in user.type:
+        return forbidden(err="Only the owner of a view and administrators can edit a global view.")
 
     new_view = View({**existing_view.as_primitives(), **new_data})
 
@@ -262,16 +250,12 @@ def set_as_favourite(id, **kwargs):
     if existing_view.type != "global" and (
         existing_view.owner != kwargs["user"]["uname"] and existing_view.owner != "none"
     ):
-        return forbidden(
-            err="You can only favourite global views, or views owned by you."
-        )
+        return forbidden(err="You can only favourite global views, or views owned by you.")
 
     try:
         current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
 
-        current_user["favourite_views"] = list(
-            set(current_user.get("favourite_views", []) + [id])
-        )
+        current_user["favourite_views"] = list(set(current_user.get("favourite_views", []) + [id]))
 
         storage.user.save(current_user["uname"], current_user)
 
@@ -306,9 +290,7 @@ def remove_as_favourite(id, **kwargs):
     try:
         current_user = storage.user.get_if_exists(kwargs["user"]["uname"])
 
-        current_user["favourite_views"] = list(
-            filter(lambda f: f != id, current_user.get("favourite_views", []))
-        )
+        current_user["favourite_views"] = list(filter(lambda f: f != id, current_user.get("favourite_views", [])))
 
         storage.user.save(current_user["uname"], current_user)
 

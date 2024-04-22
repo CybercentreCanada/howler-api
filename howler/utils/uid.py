@@ -37,9 +37,7 @@ def get_id_from_data(data: Any, prefix=None, length=MEDIUM) -> str:
     """
     possible_len = [TINY, SHORT, MEDIUM, LONG]
     if length not in possible_len:
-        raise HowlerValueError(
-            f"Invalid hash length of {length}. Possible values are: {str(possible_len)}."
-        )
+        raise HowlerValueError(f"Invalid hash length of {length}. Possible values are: {str(possible_len)}.")
     sha256_hash = hashlib.sha256(str(data).encode()).hexdigest()[:length]
     _hash = baseconv.base62.encode(int(sha256_hash, 16))
 

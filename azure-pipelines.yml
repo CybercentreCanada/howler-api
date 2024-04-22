@@ -70,47 +70,49 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 100
+            persistCredentials: true
           - script: |
-              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 develop
-            displayName: Fetch develop for diff coverage
-          - task: UsePythonVersion@0
-            displayName: Set python version
-            inputs:
-              versionSpec: "3.9"
+              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 $(System.PullRequest.targetBranchName)
+            displayName: Fetch target branch for diff coverage
+            condition: eq(variables.isPrBranch, true)
           - script: |
-              sudo mkdir -p /var/cache/howler/
-              sudo mkdir -p /var/lib/howler/
-              sudo mkdir -p /var/log/howler/
-              sudo chmod a+rw /var/cache/howler/
-              sudo chmod a+rw /var/lib/howler/
-              sudo chmod a+rw /var/log/howler/
-              sudo cp test/unit/config.yml /etc/howler/conf/config.yml
-              sudo chmod a+r /etc/howler/conf/config.yml
-              sudo apt-get update
-              sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev libsasl2-dev wget
+              python$(pythonVersion) -m pip install poetry
+            displayName: Install poetry
+          - script: |
+              poetry --version
+              poetry check
+            displayName: Check for poetry config integrity
+          - script: |
+              mkdir -p /var/cache/howler/
+              mkdir -p /var/lib/howler/
+              mkdir -p /etc/howler/conf/
+              mkdir -p /etc/howler/lookups/
+              chmod a+rw /var/cache/howler/
+              chmod a+rw /var/lib/howler/
+              chmod a+rw /etc/howler/conf/
+              chmod a+rw /etc/howler/lookups/
+              cp build_scripts/classification.yml /etc/howler/conf/classification.yml
+              cp test/unit/config.yml /etc/howler/conf/config.yml
             displayName: Setup Environment
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
-              python -m venv venv
-              . ./venv/bin/activate
-              python -m pip install --upgrade pip
-              python -m pip install -e .
-              python -m pip install -r test/requirements.txt
+              poetry install --verbose --with test
             displayName: Install howler-api
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
-              . ./venv/bin/activate
-              ./build_scripts/type_check.sh
+              poetry run black howler/ --check
+            displayName: Run black formatter checks
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              poetry run type_check
             displayName: Run type checking
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
-              . ./venv/bin/activate
-              HWL_USE_WEBSOCKET_API=true HWL_ENABLE_RULES=true python build_scripts/run_tests.py
+              poetry run test
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
           - script: |
-              . ./venv/bin/activate
-              GIT_BRANCH=$(Build.SourceBranch) PR_BRANCH=$(System.PullRequest.targetBranchName) python build_scripts/coverage_reports.py
+              GIT_BRANCH=$(Build.SourceBranch) PR_BRANCH=$(System.PullRequest.targetBranchName) poetry run coverage_report
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Coverage Results
           - task: PublishTestResults@2
@@ -130,3 +132,9 @@ stages:
               githubConnection: Howler Github PAT
               repositoryName: "$(Build.Repository.Name)"
               comment: $(coverage_result)
+          - task: GithubComment@0
+            condition: and(eq(variables.isPrBranch, true), failed())
+            inputs:
+              githubConnection: Howler Github PAT
+              repositoryName: "$(Build.Repository.Name)"
+              comment: $(error_result)

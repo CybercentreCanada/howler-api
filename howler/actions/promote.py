@@ -17,9 +17,7 @@ ESCALATIONS = [esc for esc in Escalation.list() if esc != Escalation.MISS]
 odm_helper = OdmHelper(Hit)
 
 
-def execute(
-    query: str, escalation=Escalation.ALERT, assessment=None, rationale=None, **kwargs
-):
+def execute(query: str, escalation=Escalation.ALERT, assessment=None, rationale=None, **kwargs):
     """Promote a hit.
 
     Args:
@@ -129,8 +127,7 @@ def specification():
                         "escalation:evidence": [
                             assessment
                             for assessment in Assessment.list()
-                            if AssessmentEscalationMap[assessment]
-                            == Escalation.EVIDENCE
+                            if AssessmentEscalationMap[assessment] == Escalation.EVIDENCE
                         ],
                         "escalation:alert": [],
                         "escalation:hit": [],

@@ -21,17 +21,9 @@ class Email(odm.Model):
     description="Information about the subtechnique used by this threat.",
 )
 class SubTechnique(odm.Model):
-    id = odm.Optional(
-        odm.Keyword(description="The id of subtechnique used by this threat.")
-    )
-    name = odm.Optional(
-        odm.Keyword(description="Name of the type of subtechnique used by this threat.")
-    )
-    reference = odm.Optional(
-        odm.Keyword(
-            description="The reference url of subtechnique used by this threat."
-        )
-    )
+    id = odm.Optional(odm.Keyword(description="The id of subtechnique used by this threat."))
+    name = odm.Optional(odm.Keyword(description="Name of the type of subtechnique used by this threat."))
+    reference = odm.Optional(odm.Keyword(description="The reference url of subtechnique used by this threat."))
 
 
 @odm.model(
@@ -40,15 +32,9 @@ class SubTechnique(odm.Model):
     description="Information about the technique used by this threat.",
 )
 class Technique(odm.Model):
-    id = odm.Optional(
-        odm.Keyword(description="The id of technique  used by this threat.")
-    )
-    name = odm.Optional(
-        odm.Keyword(description="Name of the type of technique used by this threat.")
-    )
-    reference = odm.Optional(
-        odm.Keyword(description="The reference url of technique used by this threat.")
-    )
+    id = odm.Optional(odm.Keyword(description="The id of technique  used by this threat."))
+    name = odm.Optional(odm.Keyword(description="Name of the type of technique used by this threat."))
+    reference = odm.Optional(odm.Keyword(description="The reference url of technique used by this threat."))
     subtechnique = odm.Optional(
         odm.Compound(
             SubTechnique,
@@ -64,12 +50,8 @@ class Technique(odm.Model):
 )
 class Tactic(odm.Model):
     id = odm.Optional(odm.Keyword(description="The id of tactic used by this threat."))
-    name = odm.Optional(
-        odm.Keyword(description="Name of the type of tactic used by this threat.")
-    )
-    reference = odm.Optional(
-        odm.Keyword(description="The reference url of tactic used by this threat.")
-    )
+    name = odm.Optional(odm.Keyword(description="Name of the type of tactic used by this threat."))
+    reference = odm.Optional(odm.Keyword(description="The reference url of tactic used by this threat."))
 
 
 @odm.model(
@@ -159,18 +141,10 @@ class Feed(odm.Model):
             "displaying dashboard links to threat feeds in Kibana."
         )
     )
-    description = odm.Optional(
-        odm.Keyword(
-            description="Description of the threat feed in a UI friendly format."
-        )
-    )
-    name = odm.Optional(
-        odm.Keyword(description="The name of the threat feed in UI friendly format.")
-    )
+    description = odm.Optional(odm.Keyword(description="Description of the threat feed in a UI friendly format."))
+    name = odm.Optional(odm.Keyword(description="The name of the threat feed in UI friendly format."))
     reference = odm.Optional(
-        odm.Keyword(
-            description="Reference information for the threat feed in a UI friendly format."
-        )
+        odm.Keyword(description="Reference information for the threat feed in a UI friendly format.")
     )
 
 
@@ -186,47 +160,29 @@ class Indicator(odm.Model):
             "in Appendix A of the STIX 2.1 framework. Vendor-specific confidence scales may be added as custom fields."
         )
     )
-    description = odm.Optional(
-        odm.Text(description="Describes the type of action conducted by the threat.")
-    )
+    description = odm.Optional(odm.Text(description="Describes the type of action conducted by the threat."))
     email: Email = odm.Optional(odm.Compound(Email))
-    provider = odm.Optional(
-        odm.Keyword(description="The name of the indicator’s provider.")
-    )
+    provider = odm.Optional(odm.Keyword(description="The name of the indicator’s provider."))
     reference = odm.Optional(
-        odm.Keyword(
-            description="Reference URL linking to additional information about this indicator."
-        )
+        odm.Keyword(description="Reference URL linking to additional information about this indicator.")
     )
     scanner_stats = odm.Optional(
-        odm.Integer(
-            description="Count of AV/EDR vendors that successfully detected malicious file or URL."
-        )
+        odm.Integer(description="Count of AV/EDR vendors that successfully detected malicious file or URL.")
     )
     sightings = odm.Optional(
-        odm.Integer(
-            description="Number of times this indicator was observed conducting threat activity."
-        )
+        odm.Integer(description="Number of times this indicator was observed conducting threat activity.")
     )
     ip: Optional[str] = odm.Optional(
-        odm.IP(
-            description="Identifies a threat indicator as an IP address (irrespective of direction)."
-        )
+        odm.IP(description="Identifies a threat indicator as an IP address (irrespective of direction).")
     )
     type: Optional[str] = odm.Optional(
-        odm.Keyword(
-            description="Type of indicator as represented by Cyber Observable in STIX 2.0."
-        )
+        odm.Keyword(description="Type of indicator as represented by Cyber Observable in STIX 2.0.")
     )
     first_seen: Optional[str] = odm.Optional(
-        odm.Date(
-            description="The date and time when intelligence source first reported sighting this indicator."
-        )
+        odm.Date(description="The date and time when intelligence source first reported sighting this indicator.")
     )
     last_seen: Optional[str] = odm.Optional(
-        odm.Date(
-            description="The date and time when intelligence source last reported sighting this indicator."
-        )
+        odm.Date(description="The date and time when intelligence source last reported sighting this indicator.")
     )
 
 
@@ -244,27 +200,15 @@ class Threat(odm.Model):
             "technique of the reported threat."
         )
     )
-    group = odm.Optional(
-        odm.Compound(
-            Group, description="Information about the group related to this threat."
-        )
-    )
+    group = odm.Optional(odm.Compound(Group, description="Information about the group related to this threat."))
     indicator = odm.Optional(
         odm.Compound(
             Indicator,
             description="Object containing associated indicators enriching the event.",
         )
     )
-    software = odm.Optional(
-        odm.Compound(
-            Software, description="Information about the software used by this threat."
-        )
-    )
-    tactic: Tactic = odm.Optional(
-        odm.Compound(
-            Tactic, description="Information about the tactic used by this threat."
-        )
-    )
+    software = odm.Optional(odm.Compound(Software, description="Information about the software used by this threat."))
+    tactic: Tactic = odm.Optional(odm.Compound(Tactic, description="Information about the tactic used by this threat."))
     technique: Tactic = odm.Optional(
         odm.Compound(
             Tactic,

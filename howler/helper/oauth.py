@@ -16,12 +16,7 @@ from howler.helper.azure import azure_obo
 from howler.odm.models.config import OAuthProvider
 from howler.services import jwt_service
 
-VALID_CHARS = (
-    [str(x) for x in range(10)]
-    + [chr(x + 65) for x in range(26)]
-    + [chr(x + 97) for x in range(26)]
-    + ["-"]
-)
+VALID_CHARS = [str(x) for x in range(10)] + [chr(x + 65) for x in range(26)] + [chr(x + 97) for x in range(26)] + ["-"]
 
 logger = get_logger(__file__)
 
@@ -38,9 +33,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
     # Find email address and normalize it for further processing
     email_adr = profile.get(
         "email",
-        profile.get(
-            "emails", profile.get("preferred_username", profile.get("upn", None))
-        ),
+        profile.get("emails", profile.get("preferred_username", profile.get("upn", None))),
     )
 
     if isinstance(email_adr, list):
@@ -72,9 +65,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
                 match = re.match(provider_config.uid_regex, uname)
                 if match:
                     if provider_config.uid_format:
-                        uname = provider_config.uid_format.format(
-                            *[x or "" for x in match.groups()]
-                        ).lower()
+                        uname = provider_config.uid_format.format(*[x or "" for x in match.groups()]).lower()
                     else:
                         uname = "".join([x for x in match.groups() if x]).lower()
 
@@ -134,9 +125,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
                 # Compute classification from matching patterns
                 elif auto_prop.type == "classification":
                     if re.match(auto_prop.pattern, value):
-                        classification = cl_engine.build_user_classification(
-                            classification, auto_prop.value
-                        )
+                        classification = cl_engine.build_user_classification(classification, auto_prop.value)
                         break
 
     # Infer roles from groups
@@ -186,9 +175,7 @@ def fetch_avatar(url, provider, oauth_provider: str, access_token=None):
                 return avatar
 
         # Url that is protected through OAuth
-        elif provider_config.api_base_url and url.startswith(
-            provider_config.api_base_url
-        ):
+        elif provider_config.api_base_url and url.startswith(provider_config.api_base_url):
             resp = provider.get(url[len(provider_config.api_base_url) :])
             if resp.ok and resp.headers.get("content-type") is not None:
                 b64_img = base64.b64encode(resp.content).decode()
@@ -219,9 +206,7 @@ def fetch_groups(token: str):
                 token = azure_obo(token)
             except HowlerException as e:
                 logger.error(e)
-                raise HowlerException(
-                    "Something went wrong when getting the detailed groups data."
-                )
+                raise HowlerException("Something went wrong when getting the detailed groups data.")
 
         headers = {}
         if token:
@@ -240,16 +225,12 @@ def fetch_groups(token: str):
                 detailed_group_data.append(
                     {
                         "id": group.get("id", None),
-                        "name": group.get(
-                            "name", group.get("displayName", group.get("id", None))
-                        ),
+                        "name": group.get("name", group.get("displayName", group.get("id", None))),
                     }
                 )
 
             return sorted(detailed_group_data, key=lambda g: g.get("name", "").lower())
 
-        raise HowlerException(
-            "Something went wrong when getting the detailed groups data."
-        )
+        raise HowlerException("Something went wrong when getting the detailed groups data.")
     else:
         return None

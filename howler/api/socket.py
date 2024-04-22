@@ -18,9 +18,7 @@ HWL_INTERPOD_COMMS_SECRET = os.getenv("HWL_INTERPOD_COMMS_SECRET", "secret")
 
 socket_api = Blueprint("socket", "socket", url_prefix="/socket/v1")
 
-socket_api._doc = (  # type: ignore
-    "Endpoints concerning websocket connectivity between the client and server"
-)
+socket_api._doc = "Endpoints concerning websocket connectivity between the client and server"  # type: ignore
 
 logger = get_logger(__file__)
 
@@ -32,16 +30,10 @@ def emit(event: str):
     if "Authorization" not in request.headers:
         return unauthorized(err="Invalid auth data")
 
-    auth_data = (
-        base64.b64decode(request.headers["Authorization"].split(" ")[1])
-        .decode()
-        .split(":")[1]
-    )
+    auth_data = base64.b64decode(request.headers["Authorization"].split(" ")[1]).decode().split(":")[1]
 
     if HWL_INTERPOD_COMMS_SECRET == "secret":
-        logger.warn(
-            "Using default interpod secret! DO NOT allow this on a production instance."
-        )
+        logger.warn("Using default interpod secret! DO NOT allow this on a production instance.")
 
     if auth_data != HWL_INTERPOD_COMMS_SECRET:
         return unauthorized(err="Invalid auth data")
@@ -102,11 +94,7 @@ def connect(ws: Server, *args, ws_id, **kwargs):
                     return
 
                 outstanding_actions = check_action(
-                    obj["id"],
-                    obj["action"],
-                    obj["broadcast"],
-                    outstanding_actions=outstanding_actions,
-                    **kwargs
+                    obj["id"], obj["action"], obj["broadcast"], outstanding_actions=outstanding_actions, **kwargs
                 )
             else:
                 logger.debug(ws_id + " listening")
@@ -121,6 +109,4 @@ def connect(ws: Server, *args, ws_id, **kwargs):
         event_service.off("action", send_action)
 
         for id, action, broadcast in outstanding_actions:
-            outstanding_actions = check_action(
-                id, action, broadcast, outstanding_actions=outstanding_actions, **kwargs
-            )
+            outstanding_actions = check_action(id, action, broadcast, outstanding_actions=outstanding_actions, **kwargs)

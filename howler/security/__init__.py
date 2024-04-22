@@ -74,9 +74,7 @@ class api_login(object):
             required_method_set = set(required_method)
 
         if len(required_method_set - {"userpass", "apikey", "internal", "oauth"}) > 0:
-            raise HowlerAttributeError(
-                "required_method must be a subset of {userpass, apikey, internal, oauth}"
-            )
+            raise HowlerAttributeError("required_method must be a subset of {userpass, apikey, internal, oauth}")
 
         self.required_type = required_type
         self.audit = audit and AUDIT
@@ -104,29 +102,21 @@ class api_login(object):
                 if not authorization:
                     raise AuthenticationException("No Authorization header present")
                 elif " " not in authorization or len(authorization.split(" ")) > 2:
-                    raise InvalidDataException(
-                        "Incorrectly formatted Authorization header"
-                    )
+                    raise InvalidDataException("Incorrectly formatted Authorization header")
 
                 logger.debug("Authenticating user for path %s", request.path)
 
                 [auth_type, data] = authorization.split(" ")
 
                 user = None
-                if (
-                    auth_type == "Basic"
-                    and len(self.required_method & {"userpass", "apikey"}) > 0
-                ):
+                if auth_type == "Basic" and len(self.required_method & {"userpass", "apikey"}) > 0:
                     # Authenticate case (1) and (2) above
                     user, priv = auth_service.basic_auth(
                         data,
                         skip_apikey="apikey" not in self.required_method,
                         skip_password="userpass" not in self.required_method,
                     )
-                elif (
-                    auth_type == "Bearer"
-                    and len(self.required_method & {"internal", "oauth"}) > 0
-                ):
+                elif auth_type == "Bearer" and len(self.required_method & {"internal", "oauth"}) > 0:
                     # Authenticate case (3) and (4) above
                     try:
                         user, priv = auth_service.bearer_auth(
@@ -137,13 +127,9 @@ class api_login(object):
                     except ExpiredSignatureError as e:
                         raise AuthenticationException("Token Expired") from e
                     except (requests.exceptions.ConnectionError, ConnectionError) as e:
-                        raise HowlerRuntimeError(
-                            "Failed to connect to OAuth Provider"
-                        ) from e
+                        raise HowlerRuntimeError("Failed to connect to OAuth Provider") from e
                 else:
-                    raise InvalidDataException(
-                        "Not a valid authentication type for this endpoint."
-                    )
+                    raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
                 if not user:
                     raise AuthenticationException("No authenticated user found")
@@ -165,9 +151,7 @@ class api_login(object):
 
                     if auth_type == "Basic":
                         try:
-                            username, apikey = auth_service.decode_b64(data).split(
-                                ":", 1
-                            )
+                            username, apikey = auth_service.decode_b64(data).split(":", 1)
 
                             (
                                 impersonated_user,
@@ -176,9 +160,7 @@ class api_login(object):
                         except AuthenticationException:
                             impersonated_user = None
                     else:
-                        raise InvalidDataException(
-                            "Not a valid authentication type for impersonation."
-                        )
+                        raise InvalidDataException("Not a valid authentication type for impersonation.")
 
                     # Either the they are trying to impersonate doesn't exist, or they don't have a valid key for them
                     if not impersonated_user:
@@ -251,21 +233,13 @@ class api_login(object):
                 quota = user.get("api_quota", 25)
                 if not QUOTA_TRACKER.begin(user["uname"], quota):
                     if config.ui.enforce_quota:
-                        logger.info(
-                            f"{user['uname']} was prevented from using the api due to exceeded quota."
-                        )
+                        logger.info(f"{user['uname']} was prevented from using the api due to exceeded quota.")
                         FAILED_ATTEMPTS.labels("429").inc()
-                        return too_many_requests(
-                            err=f"You've exceeded your maximum quota of {quota}"
-                        )
+                        return too_many_requests(err=f"You've exceeded your maximum quota of {quota}")
                     else:
-                        logger.debug(
-                            f"Quota of {quota} exceeded for user {user['uname']}."
-                        )
+                        logger.debug(f"Quota of {quota} exceeded for user {user['uname']}.")
                 else:
-                    logger.debug(
-                        f"{user['uname']}'s quota is under or equal its limit of {quota}"
-                    )
+                    logger.debug(f"{user['uname']}'s quota is under or equal its limit of {quota}")
             else:
                 logger.debug(f"Quota not enforced for {user['uname']}")
 

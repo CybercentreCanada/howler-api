@@ -22,14 +22,10 @@ logger = get_logger(__file__)
 
 def make_subapi_blueprint(name, api_version=1):
     """Create a flask Blueprint for a subapi in a standard way."""
-    return Blueprint(
-        name, name, url_prefix="/".join([API_PREFIX, f"v{api_version}", name])
-    )
+    return Blueprint(name, name, url_prefix="/".join([API_PREFIX, f"v{api_version}", name]))
 
 
-def _make_api_response(
-    data, err="", warnings="", status_code=200, cookies=None
-) -> Response:
+def _make_api_response(data, err="", warnings="", status_code=200, cookies=None) -> Response:
     quota_user = flsk_session.pop("quota_user", None)
     quota_set = flsk_session.pop("quota_set", False)
     if quota_user and quota_set:
@@ -37,11 +33,7 @@ def _make_api_response(
 
     if type(err) is Exception:  # pragma: no cover
         trace = exc_info()[2]
-        err = "".join(
-            ["\n"]
-            + format_tb(trace)
-            + ["%s: %s\n" % (err.__class__.__name__, str(err))]
-        ).rstrip("\n")
+        err = "".join(["\n"] + format_tb(trace) + ["%s: %s\n" % (err.__class__.__name__, str(err))]).rstrip("\n")
         log_with_traceback(trace, "Exception", is_exception=True)
 
     resp = make_response(
@@ -85,9 +77,7 @@ def accepted(data=DEFAULT_DATA[True], cookies=None):
 
 
 def no_content(data=None, cookies=None):
-    return _make_api_response(
-        data or DEFAULT_DATA[True], status_code=204, cookies=cookies
-    )
+    return _make_api_response(data or DEFAULT_DATA[True], status_code=204, cookies=cookies)
 
 
 def not_modified(data=DEFAULT_DATA[True], cookies=None):
@@ -95,9 +85,7 @@ def not_modified(data=DEFAULT_DATA[True], cookies=None):
 
 
 def bad_request(data=DEFAULT_DATA[False], err="", cookies=None, warnings=None):
-    return _make_api_response(
-        data, err, status_code=400, cookies=cookies, warnings=warnings
-    )
+    return _make_api_response(data, err, status_code=400, cookies=cookies, warnings=warnings)
 
 
 def unauthorized(data=DEFAULT_DATA[False], err="", cookies=None):
@@ -160,9 +148,7 @@ def service_unavailable(
     return _make_api_response(data, err, status_code=503, cookies=cookies)
 
 
-def make_file_response(
-    data, name, size, status_code=200, content_type="application/octet-stream"
-):
+def make_file_response(data, name, size, status_code=200, content_type="application/octet-stream"):
     quota_user = flsk_session.pop("quota_user", None)
     quota_set = flsk_session.pop("quota_set", False)
     if quota_user and quota_set:
@@ -171,9 +157,7 @@ def make_file_response(
     response = make_response(data, status_code)
     response.headers["Content-Type"] = content_type
     response.headers["Content-Length"] = size
-    response.headers["Content-Disposition"] = 'attachment; filename="%s"' % safe_str(
-        name
-    )
+    response.headers["Content-Disposition"] = 'attachment; filename="%s"' % safe_str(name)
     return response
 
 

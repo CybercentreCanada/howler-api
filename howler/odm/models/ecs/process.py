@@ -4,11 +4,7 @@ from howler.odm.models.ecs.user import ShortUser
 
 @odm.model(index=True, store=True, description="Information about the char device.")
 class CharDevice(odm.Model):
-    major = odm.Optional(
-        odm.Integer(
-            description="The major number identifies the driver associated with the device."
-        )
-    )
+    major = odm.Optional(odm.Integer(description="The major number identifies the driver associated with the device."))
     minor = odm.Optional(
         odm.Integer(
             description="The minor number is used only by the driver specified by the major number; other parts of "
@@ -17,13 +13,9 @@ class CharDevice(odm.Model):
     )
 
 
-@odm.model(
-    index=True, store=True, description="Information about the controlling TTY device."
-)
+@odm.model(index=True, store=True, description="Information about the controlling TTY device.")
 class TTY(odm.Model):
-    char_device = odm.Optional(
-        odm.Compound(CharDevice, description="Information about the char device.")
-    )
+    char_device = odm.Optional(odm.Compound(CharDevice, description="Information about the char device."))
 
 
 @odm.model(index=True, store=True, description="Thread Information.")
@@ -44,12 +36,8 @@ class PreviousProcess(odm.Model):
             description="Array of process arguments, starting with the absolute path to the executable.",
         )
     )
-    args_count = odm.Optional(
-        odm.Integer(description="Length of the process.args array.")
-    )
-    executable = odm.Optional(
-        odm.Keyword(description="Absolute path to the process executable.")
-    )
+    args_count = odm.Optional(odm.Integer(description="Length of the process.args array."))
+    executable = odm.Optional(odm.Keyword(description="Absolute path to the process executable."))
 
 
 @odm.model(
@@ -64,9 +52,7 @@ class ParentProcess(odm.Model):
             description="Array of process arguments, starting with the absolute path to the executable.",
         )
     )
-    args_count = odm.Optional(
-        odm.Integer(description="Length of the process.args array.")
-    )
+    args_count = odm.Optional(odm.Integer(description="Length of the process.args array."))
     command_line = odm.Optional(
         odm.Keyword(
             description="Full command line that started the process, including the absolute path to the "
@@ -74,9 +60,7 @@ class ParentProcess(odm.Model):
         )
     )
     end = odm.Date(odm.Keyword(description="The time the process ended."))
-    entity_id = odm.Optional(
-        odm.Keyword(description="Unique identifier for the process.")
-    )
+    entity_id = odm.Optional(odm.Keyword(description="Unique identifier for the process."))
     env_vars = odm.Optional(
         odm.Mapping(
             odm.Keyword(),
@@ -84,19 +68,9 @@ class ParentProcess(odm.Model):
             "protect sensitive information.",
         )
     )
-    executable = odm.Optional(
-        odm.Keyword(description="Absolute path to the process executable.")
-    )
-    exit_code = odm.Optional(
-        odm.Integer(
-            description="The exit code of the process, if this is a termination event."
-        )
-    )
-    interactive = odm.Optional(
-        odm.Boolean(
-            description="Whether the process is connected to an interactive shell."
-        )
-    )
+    executable = odm.Optional(odm.Keyword(description="Absolute path to the process executable."))
+    exit_code = odm.Optional(odm.Integer(description="The exit code of the process, if this is a termination event."))
+    interactive = odm.Optional(odm.Boolean(description="Whether the process is connected to an interactive shell."))
     name = odm.Optional(odm.Keyword(description="Process name."))
     pid = odm.Optional(odm.Integer(description="Process id."))
     same_as_process = odm.Optional(
@@ -105,9 +79,7 @@ class ParentProcess(odm.Model):
         )
     )
     start = odm.Optional(odm.Date(description="The time the process started."))
-    user = odm.Optional(
-        odm.Compound(ShortUser, description="The effective user (euid).")
-    )
+    user = odm.Optional(odm.Compound(ShortUser, description="The effective user (euid)."))
 
 
 @odm.model(
@@ -122,9 +94,7 @@ class Process(odm.Model):
             description="Array of process arguments, starting with the absolute path to the executable.",
         )
     )
-    args_count = odm.Optional(
-        odm.Integer(description="Length of the process.args array.")
-    )
+    args_count = odm.Optional(odm.Integer(description="Length of the process.args array."))
     command_line = odm.Optional(
         odm.Keyword(
             description="Full command line that started the process, including the absolute path to the "
@@ -132,9 +102,7 @@ class Process(odm.Model):
         )
     )
     end = odm.Optional(odm.Date(odm.Keyword(description="The time the process ended.")))
-    entity_id = odm.Optional(
-        odm.Keyword(description="Unique identifier for the process.")
-    )
+    entity_id = odm.Optional(odm.Keyword(description="Unique identifier for the process."))
     env_vars = odm.Optional(
         odm.Mapping(
             odm.Keyword(),
@@ -142,19 +110,9 @@ class Process(odm.Model):
             "protect sensitive information.",
         )
     )
-    executable = odm.Optional(
-        odm.Keyword(description="Absolute path to the process executable.")
-    )
-    exit_code = odm.Optional(
-        odm.Integer(
-            description="The exit code of the process, if this is a termination event."
-        )
-    )
-    interactive = odm.Optional(
-        odm.Boolean(
-            description="Whether the process is connected to an interactive shell."
-        )
-    )
+    executable = odm.Optional(odm.Keyword(description="Absolute path to the process executable."))
+    exit_code = odm.Optional(odm.Integer(description="The exit code of the process, if this is a termination event."))
+    interactive = odm.Optional(odm.Boolean(description="Whether the process is connected to an interactive shell."))
     name = odm.Optional(odm.Keyword(description="Process name."))
     parent = odm.Optional(
         odm.List(
@@ -171,9 +129,5 @@ class Process(odm.Model):
     start = odm.Optional(odm.Date(description="The time the process started."))
     title = odm.Optional(odm.Keyword(description="Process title."))
     uptime = odm.Optional(odm.Integer(description="Seconds the process has been up."))
-    user = odm.Optional(
-        odm.Compound(ShortUser, description="The effective user (euid).")
-    )
-    working_directory = odm.Optional(
-        odm.Keyword(description="The working directory of the process.")
-    )
+    user = odm.Optional(odm.Compound(ShortUser, description="The effective user (euid)."))
+    working_directory = odm.Optional(odm.Keyword(description="The working directory of the process."))

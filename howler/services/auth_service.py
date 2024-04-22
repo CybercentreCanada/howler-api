@@ -72,9 +72,7 @@ def create_token(user: str, priv: list[str]) -> str:
     Returns:
         str: The new token
     """
-    token = hashlib.sha256(
-        str(generate_random_secret()).encode("utf-8", errors="replace")
-    ).hexdigest()
+    token = hashlib.sha256(str(generate_random_secret()).encode("utf-8", errors="replace")).hexdigest()
 
     _get_token_store(user).add(token)
     priv_store = _get_priv_store(user, token)
@@ -127,9 +125,7 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 
 @elasticapm.capture_span(span_type="authentication")
-def bearer_auth(
-    data: str, skip_jwt=False, skip_internal=False
-) -> tuple[Optional[User], Optional[list[str]]]:
+def bearer_auth(data: str, skip_jwt=False, skip_internal=False) -> tuple[Optional[User], Optional[list[str]]]:
     """This function handles Bearer type Authorization headers.
 
     Args:
@@ -148,9 +144,7 @@ def bearer_auth(
                     cause=e,
                 )
 
-            cur_user = user_service.parse_user_data(
-                jwt_data, jwt_service.get_provider(data)
-            )
+            cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
 
             if cur_user:
                 logger.debug("User successfully authenticated using JWT.")
@@ -159,9 +153,7 @@ def bearer_auth(
 
             return None, None
         else:
-            raise InvalidDataException(
-                "Not a valid authentication type for this endpoint."
-            )
+            raise InvalidDataException("Not a valid authentication type for this endpoint.")
     else:
         if not skip_internal:
             [username, token] = data.split(":", maxsplit=1)
@@ -173,9 +165,7 @@ def bearer_auth(
 
             return None, None
         else:
-            raise InvalidDataException(
-                "Not a valid authentication type for this endpoint."
-            )
+            raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
 @elasticapm.capture_span(span_type="authentication")
@@ -216,9 +206,7 @@ def validate_apikey(
                 # a) someone is trying to impersonate as this user, and the apikey can be used for that, AND the
                 #    impersonator is on the list of people allowed to use it
                 # b) The user is not being impersonated, and the api key isn't specifically meant for impersonation
-                if impersonator and (
-                    "I" not in key.acl or impersonator["uname"] not in key.agents
-                ):
+                if impersonator and ("I" not in key.acl or impersonator["uname"] not in key.agents):
                     raise AccessDeniedException("Not a valid impersonation api key")
                 elif not impersonator and "I" in key.acl:
                     raise AccessDeniedException(
@@ -237,9 +225,7 @@ def validate_apikey(
         raise AccessDeniedException("API Key authentication disabled")
 
 
-def validate_userpass(
-    username: str, password: str
-) -> tuple[Optional[User], Optional[list[str]]]:
+def validate_userpass(username: str, password: str) -> tuple[Optional[User], Optional[list[str]]]:
     """This function identifies the user via the user/pass functionality
 
     Args:
@@ -278,9 +264,7 @@ def decode_b64(b64_str: str) -> str:
     try:
         return base64.b64decode(b64_str).decode("utf-8")
     except UnicodeDecodeError as e:
-        raise InvalidDataException(
-            "Basic authentication data must be base64 encoded"
-        ) from e
+        raise InvalidDataException("Basic authentication data must be base64 encoded") from e
 
 
 @elasticapm.capture_span(span_type="authentication")
@@ -311,9 +295,7 @@ def basic_auth(
         validated_user, priv = validate_apikey(username, data)
 
     # Bruteforce protection
-    auth_fail_queue: NamedQueue = NamedQueue(
-        f"ui-failed-{username}", **nonpersistent_config  # type: ignore
-    )
+    auth_fail_queue: NamedQueue = NamedQueue(f"ui-failed-{username}", **nonpersistent_config)  # type: ignore
     if auth_fail_queue.length() >= config.auth.internal.max_failures:
         # Failed 'max_failures' times, stop trying... This will timeout in 'failure_ttl' seconds
         raise AuthenticationException(

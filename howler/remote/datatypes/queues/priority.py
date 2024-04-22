@@ -60,10 +60,7 @@ class PriorityQueue(Generic[T]):
             return []
 
         if num:
-            return [
-                decode(s[0][SORTING_KEY_LEN:])
-                for s in retry_call(self.c.zpopmin, self.name, num)
-            ]
+            return [decode(s[0][SORTING_KEY_LEN:]) for s in retry_call(self.c.zpopmin, self.name, num)]
         else:
             ret_val = retry_call(self.c.zpopmin, self.name, 1)
             if ret_val:
@@ -117,10 +114,7 @@ class PriorityQueue(Generic[T]):
             return []
 
         if num:
-            return [
-                decode(s[0][SORTING_KEY_LEN:])
-                for s in retry_call(self.c.zpopmax, self.name, num)
-            ]
+            return [decode(s[0][SORTING_KEY_LEN:]) for s in retry_call(self.c.zpopmax, self.name, num)]
         else:
             ret_val = retry_call(self.c.zpopmax, self.name, 1)
             if ret_val:

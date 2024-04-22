@@ -12,17 +12,11 @@ scheduler = BackgroundScheduler()
 
 def setup_jobs():
     module_path = Path(__file__).parent
-    modules_to_import = [
-        _file
-        for _file in os.listdir(module_path)
-        if _file.endswith(".py") and _file != "__init__.py"
-    ]
+    modules_to_import = [_file for _file in os.listdir(module_path) if _file.endswith(".py") and _file != "__init__.py"]
 
     for module in modules_to_import:
         try:
-            job = importlib.import_module(
-                f"howler.cronjobs.{module.replace('.py', '')}"
-            )
+            job = importlib.import_module(f"howler.cronjobs.{module.replace('.py', '')}")
 
             job.setup_job(scheduler)
         except Exception as e:

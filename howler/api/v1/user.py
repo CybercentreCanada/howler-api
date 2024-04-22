@@ -126,9 +126,7 @@ def add_user_account(username, **_):
 
     new_pass = data.pop("new_pass", None)
     if new_pass:
-        password_requirements = (
-            config.auth.internal.password_requirements.as_primitives()
-        )
+        password_requirements = config.auth.internal.password_requirements.as_primitives()
         if not check_password_requirements(new_pass, **password_requirements):
             error_msg = get_password_requirement_message(**password_requirements)
             return bad_request(err=error_msg)
@@ -142,9 +140,7 @@ def add_user_account(username, **_):
         data["name"] = data["uname"]
 
     # Add dynamic classification group
-    data["classification"] = user_service.get_dynamic_classification(
-        data.get("classification", None), data["email"]
-    )
+    data["classification"] = user_service.get_dynamic_classification(data.get("classification", None), data["email"])
 
     # Clear non user account data
     avatar = data.pop("avatar", None)
@@ -226,9 +222,7 @@ def remove_user_account(username, **_):
         avatar_deleted = storage.user_avatar.delete(username)
 
         if not user_deleted or not avatar_deleted:
-            return internal_error(
-                err="Failed to delete user or avatar. Contact your administrator."
-            )
+            return internal_error(err="Failed to delete user or avatar. Contact your administrator.")
 
         return no_content()
     else:
@@ -293,23 +287,17 @@ def set_user_account(username, **kwargs):
             return bad_request(err="Cannot update user's username")
 
         if new_pass:
-            password_requirements = (
-                config.auth.internal.password_requirements.as_primitives()
-            )
+            password_requirements = config.auth.internal.password_requirements.as_primitives()
             if not check_password_requirements(new_pass, **password_requirements):
                 error_msg = get_password_requirement_message(**password_requirements)
                 return bad_request(err=error_msg)
             data["password"] = get_password_hash(new_pass)
             data.pop("new_pass_confirm", None)
         else:
-            data["password"] = (
-                old_user.get("password", "__NO_PASSWORD__") or "__NO_PASSWORD__"
-            )
+            data["password"] = old_user.get("password", "__NO_PASSWORD__") or "__NO_PASSWORD__"
 
         # Apply dynamic classification
-        data["classification"] = user_service.get_dynamic_classification(
-            data["classification"], data["email"]
-        )
+        data["classification"] = user_service.get_dynamic_classification(data["classification"], data["email"])
 
         ret_val = user_service.save_user_account(username, data, kwargs["user"])
         return ok({"success": ret_val})

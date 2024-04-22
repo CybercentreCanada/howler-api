@@ -12,9 +12,7 @@ logger = get_logger(__file__)
 def execute():
     from howler.common.loader import datastore
 
-    delta_kwargs = {
-        config.system.retention.limit_unit: config.system.retention.limit_amount
-    }
+    delta_kwargs = {config.system.retention.limit_unit: config.system.retention.limit_amount}
 
     cutoff = (datetime.now() - timedelta(**delta_kwargs)).strftime("%Y-%m-%d")
 
@@ -31,15 +29,11 @@ def execute():
 def setup_job(sched: BaseScheduler):
     if not config.system.retention.enabled:
         if not DEBUG or config.system.type == "production":
-            logger.warn(
-                "Retention cronjob disabled! This is not recommended for a production settings."
-            )
+            logger.warn("Retention cronjob disabled! This is not recommended for a production settings.")
 
         return
 
-    logger.debug(
-        f"Initializing retention cronjob with cron {config.system.retention.crontab}"
-    )
+    logger.debug(f"Initializing retention cronjob with cron {config.system.retention.crontab}")
 
     if DEBUG:
         _kwargs: dict[str, Any] = {"next_run_time": datetime.now()}

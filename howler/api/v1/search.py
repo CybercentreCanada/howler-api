@@ -286,16 +286,10 @@ def sigma_search(index, **kwargs):
 
     es_collection = collection()
 
-    lucene_queries = LuceneBackend(index_names=[es_collection.index_name]).convert_rule(
-        rule
-    )
+    lucene_queries = LuceneBackend(index_names=[es_collection.index_name]).convert_rule(rule)
 
     try:
-        return ok(
-            es_collection.search(
-                "*:*", **params, filters=[*params.get("filters", []), *lucene_queries]
-            )
-        )
+        return ok(es_collection.search("*:*", **params, filters=[*params.get("filters", []), *lucene_queries]))
     except (SearchException, BadRequestError) as e:
         logger.error("SearchException: %s", str(e), exc_info=True)
         return bad_request(err=f"SearchException: {e}")
@@ -506,9 +500,7 @@ def facet(index, field, **kwargs):
 
     field_info = collection().fields().get(field, None)
     if field_info is None:
-        return bad_request(
-            err=f"Field '{field}' is not a valid field in index: {index}"
-        )
+        return bad_request(err=f"Field '{field}' is not a valid field in index: {index}")
 
     fields = ["query", "mincount", "rows"]
     multi_fields = ["filters"]
@@ -572,9 +564,7 @@ def histogram(index, field, **kwargs):
     field_info = collection().fields().get(field, None)
     params: dict[str, Union[str, int]] = {}
     if field_info is None:
-        return bad_request(
-            err=f"Field '{field}' is not a valid field in index: {index}"
-        )
+        return bad_request(err=f"Field '{field}' is not a valid field in index: {index}")
     elif field_info["type"] == "integer":
         params = {"start": 0, "end": 2000, "gap": 100}
     elif field_info["type"] == "date":
@@ -637,9 +627,7 @@ def stats(index, int_field, **kwargs):
 
     field_info = collection().fields().get(int_field, None)
     if field_info is None:
-        return bad_request(
-            err=f"Field '{int_field}' is not a valid field in index: {index}"
-        )
+        return bad_request(err=f"Field '{int_field}' is not a valid field in index: {index}")
 
     if field_info["type"] not in ["integer", "float"]:
         return bad_request(err=f"Field '{int_field}' is not a numeric field.")

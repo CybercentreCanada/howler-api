@@ -35,9 +35,7 @@ class Lock(object):
         self._release = self.c.register_script(lock_release_script)
 
     def __enter__(self):
-        while not retry_call(
-            self._acquire, args=[self.lock_holder, self.uuid, self.timeout]
-        ):
+        while not retry_call(self._acquire, args=[self.lock_holder, self.uuid, self.timeout]):
             retry_call(self.c.blpop, self.lock_release, 1)
 
     def __exit__(self, unused1, unused2, unused3):

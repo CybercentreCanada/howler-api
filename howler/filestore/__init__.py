@@ -95,15 +95,11 @@ def create_transport(url: str | Host, connection_attempts=None):
     try:
         if scheme == "ftp" or scheme == "ftps":
             valid_bool_keys = ["use_tls"]
-            extras = _get_extras(
-                parse_qs(parsed.query), valid_bool_keys=valid_bool_keys
-            )
+            extras = _get_extras(parse_qs(parsed.query), valid_bool_keys=valid_bool_keys)
             if scheme == "ftps":
                 extras["use_tls"] = True
 
-            transport: Transport = TransportFTP(
-                base=base, host=host, password=password, user=user, port=port, **extras
-            )
+            transport: Transport = TransportFTP(base=base, host=host, password=password, user=user, port=port, **extras)
 
         elif scheme == "sftp":
             valid_str_keys = ["private_key", "private_key_pass"]
@@ -114,9 +110,7 @@ def create_transport(url: str | Host, connection_attempts=None):
                 valid_bool_keys=valid_bool_keys,
             )
 
-            transport = TransportSFTP(
-                base=base, host=host, password=password, user=user, **extras
-            )
+            transport = TransportSFTP(base=base, host=host, password=password, user=user, **extras)
 
         elif scheme == "http" or scheme == "https":
             valid_str_keys = ["pki"]
@@ -139,9 +133,7 @@ def create_transport(url: str | Host, connection_attempts=None):
 
         elif scheme == "file":
             valid_bool_keys = ["normalize"]
-            extras = _get_extras(
-                parse_qs(parsed.query), valid_bool_keys=valid_bool_keys
-            )
+            extras = _get_extras(parse_qs(parsed.query), valid_bool_keys=valid_bool_keys)
 
             transport = TransportLocal(base=base, **extras)
 
@@ -172,16 +164,12 @@ def create_transport(url: str | Host, connection_attempts=None):
             valid_str_keys = ["access_key", "tenant_id", "client_id", "client_secret"]
             extras = _get_extras(parse_qs(parsed.query), valid_str_keys=valid_str_keys)
 
-            transport = TransportAzure(
-                base=base, host=host, connection_attempts=connection_attempts, **extras
-            )
+            transport = TransportAzure(base=base, host=host, connection_attempts=connection_attempts, **extras)
 
         else:
             raise FileStoreException(f"Unknown transport: {scheme}")
     except TransportException as e:
-        raise FileStoreException(
-            f"Failed to connect to {url if isinstance(url, str) else url.host}", cause=e
-        )
+        raise FileStoreException(f"Failed to connect to {url if isinstance(url, str) else url.host}", cause=e)
 
     return transport
 
@@ -189,12 +177,8 @@ def create_transport(url: str | Host, connection_attempts=None):
 class FileStore(object):
     def __init__(self, *transport_urls, connection_attempts=None):
         self.log = logging.getLogger(f"{APP_NAME}.transport")
-        self.transports = [
-            create_transport(url, connection_attempts) for url in transport_urls
-        ]
-        self.local_transports = [
-            t for t in self.transports if isinstance(t, TransportLocal)
-        ]
+        self.transports = [create_transport(url, connection_attempts) for url in transport_urls]
+        self.local_transports = [t for t in self.transports if isinstance(t, TransportLocal)]
 
     def __enter__(self):
         return self
@@ -215,9 +199,7 @@ class FileStore(object):
 
     @elasticapm.capture_span(span_type="filestore")
     def delete(self, path: str, location="all"):
-        with elasticapm.capture_span(
-            name="delete", span_type="filestore", labels={"path": path}
-        ):
+        with elasticapm.capture_span(name="delete", span_type="filestore", labels={"path": path}):
             for t in self.slice(location):
                 try:
                     t.delete(path)
@@ -240,9 +222,7 @@ class FileStore(object):
                 download_errors.append((str(t), str(ex)))
 
         if not successful:
-            raise FileStoreException(
-                "No transport succeeded => %s" % json.dumps(download_errors)
-            )
+            raise FileStoreException("No transport succeeded => %s" % json.dumps(download_errors))
         return transports
 
     @elasticapm.capture_span(span_type="filestore")
@@ -271,9 +251,7 @@ class FileStore(object):
         return None
 
     @elasticapm.capture_span(span_type="filestore")
-    def put(
-        self, dst_path: str, content: AnyStr, location="all", force=False
-    ) -> list[Transport]:
+    def put(self, dst_path: str, content: AnyStr, location="all", force=False) -> list[Transport]:
         transports = []
         for t in self.slice(location):
             if force or not t.exists(dst_path):
@@ -299,9 +277,7 @@ class FileStore(object):
         return transports
 
     @elasticapm.capture_span(span_type="filestore")
-    def upload(
-        self, src_path: str, dst_path: str, location="all", force=False, verify=False
-    ) -> list[Transport]:
+    def upload(self, src_path: str, dst_path: str, location="all", force=False, verify=False) -> list[Transport]:
         transports = []
         for t in self.slice(location):
             if force or not t.exists(dst_path):
@@ -315,9 +291,7 @@ class FileStore(object):
         return transports
 
     @elasticapm.capture_span(span_type="filestore")
-    def upload_batch(
-        self, local_remote_tuples, location="all"
-    ) -> list[Tuple[str, str, str]]:
+    def upload_batch(self, local_remote_tuples, location="all") -> list[Tuple[str, str, str]]:
         failed_tuples = []
         for src_path, dst_path in local_remote_tuples:
             try:

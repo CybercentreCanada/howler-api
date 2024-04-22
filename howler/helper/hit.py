@@ -45,9 +45,7 @@ def assess_hit(
     else:
         if assessment not in Assessment:
             assessment_list = ", ".join(Assessment)
-            raise InvalidDataException(
-                f"Must set assessment to one of {assessment_list}."
-            )
+            raise InvalidDataException(f"Must set assessment to one of {assessment_list}.")
 
         escalation = AssessmentEscalationMap[assessment]
 
@@ -89,9 +87,7 @@ def unassign_hit(
     Returns:
         list[OdmUpdateOperation]: A list of the operations necessary to update the hit
     """
-    if user and hit["howler"]["assignment"] == user.get(
-        "uname", user.get("username", None)
-    ):
+    if user and hit["howler"]["assignment"] == user.get("uname", user.get("username", None)):
         return [odm_helper.update("howler.assignment", "unassigned")]
 
     raise InvalidDataException("Cannot release hit that isn't assigned to you.")
@@ -120,19 +116,13 @@ def assign_hit(
     """
     if transition["transition"] == HitStatusTransition.ASSIGN_TO_OTHER:
         if not assignee:
-            raise InvalidDataException(
-                "Must specify an assignee when assigning to another user."
-            )
+            raise InvalidDataException("Must specify an assignee when assigning to another user.")
 
         if hit and hit["howler"]["assignment"] == assignee:
-            raise InvalidDataException(
-                "Must specify an assignee that is different from the current assigned user."
-            )
+            raise InvalidDataException("Must specify an assignee that is different from the current assigned user.")
 
     if not user and not assignee:
-        raise InvalidDataException(
-            "Could not assign Hit to user a no 'user_id' was provided"
-        )
+        raise InvalidDataException("Could not assign Hit to user a no 'user_id' was provided")
 
     return [
         odm_helper.update(
@@ -159,12 +149,8 @@ def check_ownership(
     Returns:
         list[OdmUpdateOperation]: An empty list
     """
-    if user and hit["howler"]["assignment"] != user.get(
-        "uname", user.get("username", None)
-    ):
-        raise InvalidDataException(
-            "Cannot use this transition when the hit is not assigned to you."
-        )
+    if user and hit["howler"]["assignment"] != user.get("uname", user.get("username", None)):
+        raise InvalidDataException("Cannot use this transition when the hit is not assigned to you.")
 
     return []
 
@@ -175,11 +161,7 @@ def promote_hit(**kwargs) -> list[OdmUpdateOperation]:
     Returns:
         list[OdmUpdateOperation]: The update to run to promote
     """
-    return [
-        odm_helper.update(
-            "howler.escalation", kwargs.get("escalation", Escalation.ALERT)
-        )
-    ]
+    return [odm_helper.update("howler.escalation", kwargs.get("escalation", Escalation.ALERT))]
 
 
 def demote_hit(**kwargs) -> list[OdmUpdateOperation]:
@@ -188,9 +170,7 @@ def demote_hit(**kwargs) -> list[OdmUpdateOperation]:
     Returns:
         list[OdmUpdateOperation]: The update to run to demote
     """
-    return [
-        odm_helper.update("howler.escalation", kwargs.get("escalation", Escalation.HIT))
-    ]
+    return [odm_helper.update("howler.escalation", kwargs.get("escalation", Escalation.HIT))]
 
 
 def vote_hit(
@@ -218,9 +198,7 @@ def vote_hit(
         raise InvalidDataException("Could not vote on Hit as no email was provided")
 
     if vote not in Vote or vote == "" or vote is None:
-        raise InvalidDataException(
-            f"vote is not optional. Provide a value from: {', '.join(Vote)}"
-        )
+        raise InvalidDataException(f"vote is not optional. Provide a value from: {', '.join(Vote)}")
 
     actions = []
 
@@ -241,13 +219,9 @@ def vote_hit(
 
     if not old_vote or old_vote != vote:
         logger.debug("Adding vote of %s to %s", vote, id)
-        actions.append(
-            odm_helper.list_add(f"howler.votes.{vote}", email, if_missing=True)
-        )
+        actions.append(odm_helper.list_add(f"howler.votes.{vote}", email, if_missing=True))
 
-    if user and hit["howler"]["assignment"] == user.get(
-        "uname", user.get("username", None)
-    ):
+    if user and hit["howler"]["assignment"] == user.get("uname", user.get("username", None)):
         if hit["howler"]["status"] in [
             HitStatus.IN_PROGRESS,
             HitStatus.OPEN,

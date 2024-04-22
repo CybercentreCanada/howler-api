@@ -92,9 +92,7 @@ def add_apikey(**kwargs):
         return bad_request(err="Extended permissions are disabled.")
 
     if "E" in privs and "I" in privs:
-        return bad_request(
-            err="Extended permission is not allowed on impersonation keys."
-        )
+        return bad_request(err="Extended permission is not allowed on impersonation keys.")
 
     expiry_date = apikey_data.get("expiry_date", None)
     max_expiry = None
@@ -103,9 +101,7 @@ def add_apikey(**kwargs):
             return bad_request(err="API keys must have an expiry date.")
 
         max_expiry = datetime.now() + timedelta(
-            **{
-                config.auth.max_apikey_duration_unit: config.auth.max_apikey_duration_amount
-            }
+            **{config.auth.max_apikey_duration_unit: config.auth.max_apikey_duration_amount}
         )
 
     if config.auth.oauth.strict_apikeys:
@@ -127,17 +123,11 @@ def add_apikey(**kwargs):
             return bad_request(err="Invalid expiry date format. Please use ISO format.")
 
         if max_expiry and max_expiry < expiry:
-            return bad_request(
-                err=f"Expiry date must be before {max_expiry.isoformat()}."
-            )
+            return bad_request(err=f"Expiry date must be before {max_expiry.isoformat()}.")
 
     try:
         random_pass = generate_random_secret(length=50)
-        key_name = (
-            apikey_data["name"]
-            if "I" not in privs
-            else f"impersonate_{apikey_data['name']}"
-        )
+        key_name = apikey_data["name"] if "I" not in privs else f"impersonate_{apikey_data['name']}"
 
         new_key = {
             "password": bcrypt.encrypt(random_pass),
@@ -345,16 +335,12 @@ def login(**_):
             )
 
             if not user_data:
-                raise AuthenticationException(
-                    "User does not exist, or authentication was invalid"
-                )
+                raise AuthenticationException("User does not exist, or authentication was invalid")
 
             logged_in_uname = user_data["uname"]
 
         else:
-            raise AuthenticationException(
-                "Not enough information to proceed with authentication"
-            )
+            raise AuthenticationException("Not enough information to proceed with authentication")
 
     # For sanity's sake, we throw exceptions throughout the authentication code and simply catch the exceptions here to
     # return the corresponding HTTP Code to the user

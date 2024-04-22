@@ -132,9 +132,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
         name = ".".join(path)
 
         if isinstance(field, Classification):
-            mappings[name.strip(".")] = set_mapping(
-                field, {"type": __type_mapping[field.__class__]}
-            )
+            mappings[name.strip(".")] = set_mapping(field, {"type": __type_mapping[field.__class__]})
             if "." not in name:
                 mappings.update(
                     {
@@ -146,9 +144,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
                 )
 
         elif isinstance(field, (Boolean, Integer, Float, Text)):
-            mappings[name.strip(".")] = set_mapping(
-                field, {"type": __type_mapping[field.__class__]}
-            )
+            mappings[name.strip(".")] = set_mapping(field, {"type": __type_mapping[field.__class__]})
 
         elif field.__class__ in __analyzer_mapping:
             mappings[name.strip(".")] = set_mapping(
@@ -163,9 +159,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
             es_data_type = __type_mapping[field.__class__]
             data: dict[str, Union[str, int]] = {"type": es_data_type}
             if es_data_type == "keyword":
-                data[
-                    "ignore_above"
-                ] = 8191  # The maximum always safe value in elasticsearch
+                data["ignore_above"] = 8191  # The maximum always safe value in elasticsearch
             if field.__class__ in __normalizer_mapping:
                 data["normalizer"] = __normalizer_mapping[field.__class__]  # type: ignore
             mappings[name.strip(".")] = set_mapping(field, data)
@@ -193,16 +187,12 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
                 )
 
         elif isinstance(field, List):
-            temp_mappings, temp_dynamic = build_mapping(
-                [field.child_type], prefix=path, allow_refuse_implicit=False
-            )
+            temp_mappings, temp_dynamic = build_mapping([field.child_type], prefix=path, allow_refuse_implicit=False)
             mappings.update(temp_mappings)
             dynamic.extend(temp_dynamic)
 
         elif isinstance(field, Optional):
-            temp_mappings, temp_dynamic = build_mapping(
-                [field.child_type], prefix=prefix, allow_refuse_implicit=False
-            )
+            temp_mappings, temp_dynamic = build_mapping([field.child_type], prefix=prefix, allow_refuse_implicit=False)
             mappings.update(temp_mappings)
             dynamic.extend(temp_dynamic)
 
@@ -217,9 +207,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
             if not field.index or isinstance(field.child_type, Any):
                 mappings[name.strip(".")] = {"type": "object", "enabled": False}
             else:
-                dynamic.extend(
-                    build_templates(f"{name}.*", field.child_type, index=field.index)
-                )
+                dynamic.extend(build_templates(f"{name}.*", field.child_type, index=field.index))
 
         elif isinstance(field, Any):
             if field.index:
@@ -232,9 +220,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
             }
 
         else:
-            raise HowlerNotImplementedError(
-                f"Unknown type for elasticsearch schema: {field.__class__}"
-            )
+            raise HowlerNotImplementedError(f"Unknown type for elasticsearch schema: {field.__class__}")
 
     # The final template must match everything and disable indexing
     # this effectively disables dynamic indexing EXCEPT for the templates
@@ -310,6 +296,4 @@ def build_templates(name, field, nested_template=False, index=True) -> list:
         return build_templates(name, field.child_type, nested_template=nested_template)
 
     else:
-        raise HowlerNotImplementedError(
-            f"Unknown type for elasticsearch dynamic mapping: {field.__class__}"
-        )
+        raise HowlerNotImplementedError(f"Unknown type for elasticsearch dynamic mapping: {field.__class__}")

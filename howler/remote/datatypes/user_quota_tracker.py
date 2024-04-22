@@ -20,9 +20,7 @@ end
 
 
 class UserQuotaTracker(object):
-    def __init__(
-        self, prefix, timeout=120, redis=None, host=None, port=None, private=False
-    ):
+    def __init__(self, prefix, timeout=120, redis=None, host=None, port=None, private=False):
         self.c = redis or get_client(host, port, private)
         self.bs = self.c.register_script(begin_script)
         self.prefix = prefix
@@ -33,22 +31,12 @@ class UserQuotaTracker(object):
 
     def begin(self, user, max_quota):
         try:
-            return (
-                retry_call(
-                    self.bs, args=[self._queue_name(user), max_quota, self.timeout]
-                )
-                == 1
-            )
+            return retry_call(self.bs, args=[self._queue_name(user), max_quota, self.timeout]) == 1
         except redis.exceptions.ResponseError as er:
             # TODO: This is a failsafe for upgrade purposes could be removed in a future version
             if "WRONGTYPE" in str(er):
                 retry_call(self.c.delete, self._queue_name(user))
-                return (
-                    retry_call(
-                        self.bs, args=[self._queue_name(user), max_quota, self.timeout]
-                    )
-                    == 1
-                )
+                return retry_call(self.bs, args=[self._queue_name(user), max_quota, self.timeout]) == 1
             else:
                 raise
 

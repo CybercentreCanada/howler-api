@@ -39,13 +39,16 @@ from howler.datastore.support.schemas import (
 )
 from howler.odm.base import (
     BANNED_FIELDS,
+    IP,
     ClassificationObject,
+    Enum,
     Integer,
     Keyword,
     List,
     Mapping,
     Model,
     _Field,
+    ValidatedKeyword,
 )
 from howler.utils.dict_utils import prune, recursive_update
 
@@ -200,16 +203,12 @@ class ESCollection(Generic[ModelType]):
     }
     IGNORE_ENSURE_COLLECTION = False
 
-    def __init__(
-        self, datastore: ESStore, name, model_class=None, validate=True, max_attempts=10
-    ):
+    def __init__(self, datastore: ESStore, name, model_class=None, validate=True, max_attempts=10):
         self.replicas = environ.get(
             f"ELASTIC_{name.upper()}_REPLICAS",
             environ.get("ELASTIC_DEFAULT_REPLICAS", 0),
         )
-        self.shards = environ.get(
-            f"ELASTIC_{name.upper()}_SHARDS", environ.get("ELASTIC_DEFAULT_SHARDS", 1)
-        )
+        self.shards = environ.get(f"ELASTIC_{name.upper()}_SHARDS", environ.get("ELASTIC_DEFAULT_SHARDS", 1))
         self._index_list: list[str] = []
 
         if name in datastore.ilm_config:
@@ -227,9 +226,7 @@ class ESCollection(Generic[ModelType]):
         if not ESCollection.IGNORE_ENSURE_COLLECTION:
             self._ensure_collection()
         else:
-            log.warning(
-                "Skipping ensure collection! This is dangerous. Waiting five seconds before continuing."
-            )
+            log.warning("Skipping ensure collection! This is dangerous. Waiting five seconds before continuing.")
             time.sleep(5)
 
         self.stored_fields = {}
@@ -247,11 +244,7 @@ class ESCollection(Generic[ModelType]):
     @property
     def index_list_full(self):
         if not self._index_list:
-            self._index_list = list(
-                self.with_retries(
-                    self.datastore.client.indices.get, index=f"{self.name}-*"
-                ).keys()
-            )
+            self._index_list = list(self.with_retries(self.datastore.client.indices.get, index=f"{self.name}-*").keys())
 
         return [self.index_name] + sorted(self._index_list, reverse=True)
 
@@ -264,9 +257,7 @@ class ESCollection(Generic[ModelType]):
         """
         if self.archive_access:
             if not self._index_list:
-                index_data = self.with_retries(
-                    self.datastore.client.indices.get, index=f"{self.name}-*"
-                )
+                index_data = self.with_retries(self.datastore.client.indices.get, index=f"{self.name}-*")
                 self._index_list = list(index_data.keys())
 
             return [self.index_name] + sorted(self._index_list, reverse=True)
@@ -313,9 +304,7 @@ class ESCollection(Generic[ModelType]):
                 if (shards_successful + shards_skipped) < shards_total:
                     shards_message = f"{scroll_id}: Scroll request has only succeeded on {shards_successful} (+{shards_skipped} skipped) shards out of {shards_total}."
                     raise HowlerScanError(shards_message)
-                resp = self.with_retries(
-                    self.datastore.client.scroll, scroll_id=scroll_id, scroll=scroll
-                )
+                resp = self.with_retries(self.datastore.client.scroll, scroll_id=scroll_id, scroll=scroll)
                 scroll_id = resp.get("_scroll_id")
 
         finally:
@@ -343,9 +332,7 @@ class ESCollection(Generic[ModelType]):
 
         while True:
             if retries >= self.max_attempts:
-                raise HowlerRuntimeError(
-                    f"Maximum of {self.max_attempts} retries reached. Aborting ES connection"
-                )
+                raise HowlerRuntimeError(f"Maximum of {self.max_attempts} retries reached. Aborting ES connection")
 
             try:
                 ret_val = func(*args, **kwargs)
@@ -412,24 +399,20 @@ class ESCollection(Generic[ModelType]):
             except elasticsearch.exceptions.TransportError as e:
                 err_code, msg, cause = e.args
                 if err_code == 503 or err_code == "503":
-                    log.warning(
-                        f"Looks like index {self.name} is not ready yet, retrying..."
-                    )
+                    log.warning(f"Looks like index {self.name} is not ready yet, retrying...")
                     time.sleep(min(retries, self.MAX_RETRY_BACKOFF))
                     self.datastore.connection_reset()
                     retries += 1
                 elif err_code == 429 or err_code == "429":
                     log.warning(
-                        "Elasticsearch is too busy to perform the requested "
-                        f"task on index {self.name}, retrying..."
+                        "Elasticsearch is too busy to perform the requested " f"task on index {self.name}, retrying..."
                     )
                     time.sleep(min(retries, self.MAX_RETRY_BACKOFF))
                     self.datastore.connection_reset()
                     retries += 1
                 elif err_code == 403 or err_code == "403":
                     log.warning(
-                        "Elasticsearch cluster is preventing writing operations "
-                        f"on index {self.name}, retrying..."
+                        "Elasticsearch cluster is preventing writing operations " f"on index {self.name}, retrying..."
                     )
                     time.sleep(min(retries, self.MAX_RETRY_BACKOFF))
                     self.datastore.connection_reset()
@@ -455,9 +438,7 @@ class ESCollection(Generic[ModelType]):
                 )
             except elasticsearch.exceptions.TransportError as e:
                 err_code, msg, _ = e.args
-                if (
-                    err_code == 500 or err_code == "500"
-                ) and msg == "timeout_exception":
+                if (err_code == 500 or err_code == "500") and msg == "timeout_exception":
                     pass
                 else:
                     raise
@@ -470,11 +451,7 @@ class ESCollection(Generic[ModelType]):
     def _get_current_alias(self, index: str) -> typing.Optional[str]:
         if self.with_retries(self.datastore.client.indices.exists_alias, name=index):
             return next(
-                iter(
-                    self.with_retries(
-                        self.datastore.client.indices.get_alias, index=index
-                    )
-                ),
+                iter(self.with_retries(self.datastore.client.indices.get_alias, index=index)),
                 None,
             )
         return None
@@ -483,23 +460,17 @@ class ESCollection(Generic[ModelType]):
         status_ok = False
         while not status_ok:
             try:
-                res = self.datastore.client.cluster.health(
-                    index=index, timeout="5s", wait_for_status=min_status
-                )
+                res = self.datastore.client.cluster.health(index=index, timeout="5s", wait_for_status=min_status)
                 status_ok = not res["timed_out"]
             except elasticsearch.exceptions.TransportError as e:
                 err_code, _, _ = e.args
                 if err_code == 408 or err_code == "408":
-                    log.warning(
-                        f"Waiting for index {index} to get to status {min_status}..."
-                    )
+                    log.warning(f"Waiting for index {index} to get to status {min_status}...")
                     pass
                 else:
                     raise
 
-    def _safe_index_copy(
-        self, copy_function, src, target, body=None, min_status="yellow"
-    ):
+    def _safe_index_copy(self, copy_function, src, target, body=None, min_status="yellow"):
         ret = copy_function(index=src, target=target, body=body, request_timeout=60)
         if not ret["acknowledged"]:
             raise DataStoreException(f"Failed to create index {target} from {src}.")
@@ -568,16 +539,12 @@ class ESCollection(Generic[ModelType]):
         if sort:
             reindex_body["source"]["sort"] = parse_sort(sort)
 
-        r_task = self.with_retries(
-            self.datastore.client.reindex, body=reindex_body, wait_for_completion=False
-        )
+        r_task = self.with_retries(self.datastore.client.reindex, body=reindex_body, wait_for_completion=False)
         res = self._get_task_results(r_task)
         total_archived = res["updated"] + res["created"]
         if res["total"] == total_archived or max_docs == total_archived:
             if total_archived != 0:
-                delete_body = {
-                    "query": {"bool": {"must": {"query_string": {"query": query}}}}
-                }
+                delete_body = {"query": {"bool": {"must": {"query_string": {"query": query}}}}}
                 info = self._delete_async(
                     self.name,
                     delete_body,
@@ -600,9 +567,7 @@ class ESCollection(Generic[ModelType]):
         if not isinstance(operations, ElasticBulkPlan):
             return TypeError("Operations must be of type ElasticBulkPlan")
 
-        return self.with_retries(
-            self.datastore.client.bulk, body=operations.get_plan_data()
-        )
+        return self.with_retries(self.datastore.client.bulk, body=operations.get_plan_data())
 
     def get_bulk_plan(self):
         """
@@ -620,16 +585,10 @@ class ESCollection(Generic[ModelType]):
         :return: Should return True of the commit was successful on all hosts
         """
         self.with_retries(self.datastore.client.indices.refresh, index=self.index_name)
-        self.with_retries(
-            self.datastore.client.indices.clear_cache, index=self.index_name
-        )
+        self.with_retries(self.datastore.client.indices.clear_cache, index=self.index_name)
         if self.archive_access:
-            self.with_retries(
-                self.datastore.client.indices.refresh, index=f"{self.name}-archive"
-            )
-            self.with_retries(
-                self.datastore.client.indices.clear_cache, index=f"{self.name}-archive"
-            )
+            self.with_retries(self.datastore.client.indices.refresh, index=f"{self.name}-archive")
+            self.with_retries(self.datastore.client.indices.clear_cache, index=f"{self.name}-archive")
         return True
 
     def fix_ilm(self):
@@ -649,12 +608,8 @@ class ESCollection(Generic[ModelType]):
                     pass
 
             # Create WARM index template
-            if not self.with_retries(
-                self.datastore.client.indices.exists_template, name=self.name
-            ):
-                log.debug(
-                    f"Index template {self.name.upper()} does not exists. Creating it now..."
-                )
+            if not self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
+                log.debug(f"Index template {self.name.upper()} does not exists. Creating it now...")
 
                 index: dict[str, Any] = {
                     "mappings": self._get_index_mappings(),
@@ -664,9 +619,7 @@ class ESCollection(Generic[ModelType]):
                 index["index_patterns"] = [f"{self.name}-*"]
                 index["order"] = 1
                 index["settings"]["index.lifecycle.name"] = f"{self.name}_policy"
-                index["settings"][
-                    "index.lifecycle.rollover_alias"
-                ] = f"{self.name}-archive"
+                index["settings"]["index.lifecycle.rollover_alias"] = f"{self.name}-archive"
 
                 try:
                     self.with_retries(
@@ -677,16 +630,10 @@ class ESCollection(Generic[ModelType]):
                 except elasticsearch.exceptions.RequestError as e:
                     if "resource_already_exists_exception" not in str(e):
                         raise
-                    log.warning(
-                        f"Tried to create an index template that already exists: {self.name.upper()}"
-                    )
+                    log.warning(f"Tried to create an index template that already exists: {self.name.upper()}")
 
-            if not self.with_retries(
-                self.datastore.client.indices.exists_alias, name=f"{self.name}-archive"
-            ):
-                log.debug(
-                    f"Index alias {self.name.upper()}-archive does not exists. Creating it now..."
-                )
+            if not self.with_retries(self.datastore.client.indices.exists_alias, name=f"{self.name}-archive"):
+                log.debug(f"Index alias {self.name.upper()}-archive does not exists. Creating it now...")
 
                 try:
                     self.with_retries(
@@ -697,9 +644,7 @@ class ESCollection(Generic[ModelType]):
                 except elasticsearch.exceptions.RequestError as e:
                     if "resource_already_exists_exception" not in str(e):
                         raise
-                    log.warning(
-                        f"Tried to create an index template that already exists: {self.name.upper()}-000001"
-                    )
+                    log.warning(f"Tried to create an index template that already exists: {self.name.upper()}-000001")
         else:
             for idx in self.index_list_full:
                 if idx != self.index_name:
@@ -715,24 +660,16 @@ class ESCollection(Generic[ModelType]):
                     )
                     self._get_task_results(r_task)
 
-                    self.with_retries(
-                        self.datastore.client.indices.refresh, index=self.index_name
-                    )
-                    self.with_retries(
-                        self.datastore.client.indices.clear_cache, index=self.index_name
-                    )
+                    self.with_retries(self.datastore.client.indices.refresh, index=self.index_name)
+                    self.with_retries(self.datastore.client.indices.clear_cache, index=self.index_name)
 
                     self.with_retries(self.datastore.client.indices.delete, index=idx)
 
             if self._ilm_policy_exists():
                 self.with_retries(self._delete_ilm_policy)
 
-            if self.with_retries(
-                self.datastore.client.indices.exists_template, name=self.name
-            ):
-                self.with_retries(
-                    self.datastore.client.indices.delete_template, name=self.name
-                )
+            if self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
+                self.with_retries(self.datastore.client.indices.delete_template, name=self.name)
 
         return True
 
@@ -745,9 +682,9 @@ class ESCollection(Generic[ModelType]):
         """
         replicas = self._get_index_settings()["index"]["number_of_replicas"]
         body = {"number_of_replicas": replicas}
-        return self.with_retries(
-            self.datastore.client.indices.put_settings, index=self.index_name, body=body
-        )["acknowledged"]
+        return self.with_retries(self.datastore.client.indices.put_settings, index=self.index_name, body=body)[
+            "acknowledged"
+        ]
 
     def fix_shards(self, logger=None):
         """
@@ -768,9 +705,7 @@ class ESCollection(Generic[ModelType]):
         temp_name = f"{self.name}__fix_shards"
 
         indexes_settings = self.with_retries(self.datastore.client.indices.get_settings)
-        current_settings = indexes_settings.get(
-            self._get_current_alias(self.name), None
-        )
+        current_settings = indexes_settings.get(self._get_current_alias(self.name), None)
         if not current_settings:
             raise DataStoreException(
                 "Could not get current index settings. Something is wrong and requires manual intervention..."
@@ -792,14 +727,10 @@ class ESCollection(Generic[ModelType]):
                 "we will be shrinking the index."
             )
             if cur_shards % target_shards != 0:
-                logger.info(
-                    "The target shards is not a factor of the current shards, aborting..."
-                )
+                logger.info("The target shards is not a factor of the current shards, aborting...")
                 return
             else:
-                target_node = self.with_retries(
-                    self.datastore.client.cat.nodes, format="json"
-                )[0]["name"]
+                target_node = self.with_retries(self.datastore.client.cat.nodes, format="json")[0]["name"]
                 clone_setup_settings = {
                     "settings": {
                         "index.number_of_replicas": 0,
@@ -813,9 +744,7 @@ class ESCollection(Generic[ModelType]):
                 "we will be splitting the index."
             )
             if target_shards % cur_shards != 0:
-                logger.warn(
-                    "The current shards is not a factor of the target shards, aborting..."
-                )
+                logger.warn("The current shards is not a factor of the target shards, aborting...")
                 return
             else:
                 method = self.datastore.client.indices.split
@@ -832,14 +761,10 @@ class ESCollection(Generic[ModelType]):
 
             # Block all indexes to be written to
             logger.info("Set a datastore wide write block on Elastic.")
-            self.with_retries(
-                self.datastore.client.indices.put_settings, body=write_block_settings
-            )
+            self.with_retries(self.datastore.client.indices.put_settings, body=write_block_settings)
 
             # Clone it onto a temporary index
-            if not self.with_retries(
-                self.datastore.client.indices.exists, index=temp_name
-            ):
+            if not self.with_retries(self.datastore.client.indices.exists, index=temp_name):
                 # if there are specific settings to be applied to the index, apply them
                 if clone_setup_settings:
                     logger.info(f"Rellocating index to node {target_node.upper()}.")
@@ -850,18 +775,11 @@ class ESCollection(Generic[ModelType]):
                     )
 
                     # Make sure no shard are relocating
-                    while (
-                        self.datastore.client.cluster.health(index=self.index_name)[
-                            "relocating_shards"
-                        ]
-                        != 0
-                    ):
+                    while self.datastore.client.cluster.health(index=self.index_name)["relocating_shards"] != 0:
                         time.sleep(1)
 
                 # Make a clone of the current index
-                logger.info(
-                    f"Cloning {self.index_name.upper()} into {temp_name.upper()}."
-                )
+                logger.info(f"Cloning {self.index_name.upper()} into {temp_name.upper()}.")
                 self._safe_index_copy(
                     self.datastore.client.indices.clone,
                     self.index_name,
@@ -887,23 +805,15 @@ class ESCollection(Generic[ModelType]):
                         {"remove_index": {"index": self.index_name}},
                     ]
                 }
-                self.with_retries(
-                    self.datastore.client.indices.update_aliases, body=alias_body
-                )
+                self.with_retries(self.datastore.client.indices.update_aliases, body=alias_body)
 
             # Make sure the original index is deleted
-            if self.with_retries(
-                self.datastore.client.indices.exists, index=self.index_name
-            ):
+            if self.with_retries(self.datastore.client.indices.exists, index=self.index_name):
                 logger.info(f"Delete extra {self.index_name.upper()} index.")
-                self.with_retries(
-                    self.datastore.client.indices.delete, index=self.index_name
-                )
+                self.with_retries(self.datastore.client.indices.delete, index=self.index_name)
 
             # Shrink/split the temporary index into the original index
-            logger.info(
-                f"Perform shard fix operation from {temp_name.upper()} to {self.index_name.upper()}."
-            )
+            logger.info(f"Perform shard fix operation from {temp_name.upper()} to {self.index_name.upper()}.")
             self._safe_index_copy(method, temp_name, self.index_name, body=body)
 
             # Make the original index the new alias
@@ -917,15 +827,11 @@ class ESCollection(Generic[ModelType]):
                     {"remove_index": {"index": temp_name}},
                 ]
             }
-            self.with_retries(
-                self.datastore.client.indices.update_aliases, body=alias_body
-            )
+            self.with_retries(self.datastore.client.indices.update_aliases, body=alias_body)
 
         # Restore writes
         logger.debug("Restore datastore wide write operation on Elastic.")
-        self.with_retries(
-            self.datastore.client.indices.put_settings, body=write_unblock_settings
-        )
+        self.with_retries(self.datastore.client.indices.put_settings, body=write_unblock_settings)
 
         # Restore normal routing and replicas
         logger.debug(f"Restore original routing table for {self.name.upper()}.")
@@ -944,15 +850,11 @@ class ESCollection(Generic[ModelType]):
         """
         for index in self.index_list:
             new_name = f"{index}__reindex"
-            if self.with_retries(
-                self.datastore.client.indices.exists, index=index
-            ) and not self.with_retries(
+            if self.with_retries(self.datastore.client.indices.exists, index=index) and not self.with_retries(
                 self.datastore.client.indices.exists, index=new_name
             ):
                 # Get information about the index to reindex
-                index_data = self.with_retries(
-                    self.datastore.client.indices.get, index=index
-                )[index]
+                index_data = self.with_retries(self.datastore.client.indices.get, index=index)[index]
 
                 # Create reindex target
                 self.with_retries(
@@ -985,25 +887,17 @@ class ESCollection(Generic[ModelType]):
                             ]
                         }
                     else:
-                        alias_body = {
-                            "actions": [{"add": {"index": new_name, "alias": alias}}]
-                        }
-                    self.with_retries(
-                        self.datastore.client.indices.update_aliases, body=alias_body
-                    )
+                        alias_body = {"actions": [{"add": {"index": new_name, "alias": alias}}]}
+                    self.with_retries(self.datastore.client.indices.update_aliases, body=alias_body)
 
                 # Reindex data into target
                 body = {"source": {"index": index}, "dest": {"index": new_name}}
-                r_task = self.with_retries(
-                    self.datastore.client.reindex, body=body, wait_for_completion=False
-                )
+                r_task = self.with_retries(self.datastore.client.reindex, body=body, wait_for_completion=False)
                 self._get_task_results(r_task)
 
                 # Commit reindexed data
                 self.with_retries(self.datastore.client.indices.refresh, index=new_name)
-                self.with_retries(
-                    self.datastore.client.indices.clear_cache, index=new_name
-                )
+                self.with_retries(self.datastore.client.indices.clear_cache, index=new_name)
 
                 # Delete old index
                 self.with_retries(self.datastore.client.indices.delete, index=index)
@@ -1046,12 +940,8 @@ class ESCollection(Generic[ModelType]):
                             )
 
                     # Delete the reindex target if it still exists
-                    if self.with_retries(
-                        self.datastore.client.indices.exists, index=new_name
-                    ):
-                        self.with_retries(
-                            self.datastore.client.indices.delete, index=new_name
-                        )
+                    if self.with_retries(self.datastore.client.indices.exists, index=new_name):
+                        self.with_retries(self.datastore.client.indices.delete, index=new_name)
                 finally:
                     # Unblock write to the index
                     self.with_retries(
@@ -1061,9 +951,7 @@ class ESCollection(Generic[ModelType]):
 
         return True
 
-    def multiget(
-        self, key_list, as_dictionary=True, as_obj=True, error_on_missing=True
-    ):
+    def multiget(self, key_list, as_dictionary=True, as_obj=True, error_on_missing=True):
         """
         Get a list of documents from the datastore and make sure they are normalized using
         the model class
@@ -1095,9 +983,7 @@ class ESCollection(Generic[ModelType]):
             out = []
 
         if key_list:
-            data = self.with_retries(
-                self.datastore.client.mget, body={"ids": key_list}, index=self.name
-            )
+            data = self.with_retries(self.datastore.client.mget, body={"ids": key_list}, index=self.name)
 
             for row in data.get("docs", []):
                 if "found" in row and not row["found"]:
@@ -1110,16 +996,12 @@ class ESCollection(Generic[ModelType]):
                     log.error(f'MGet returned multiple documents for id: {row["_id"]}')
 
             if key_list and self.archive_access:
-                for row in self.scan_with_retry(
-                    query={"ids": {"values": key_list}}, index=f"{self.name}-*"
-                ):
+                for row in self.scan_with_retry(query={"ids": {"values": key_list}}, index=f"{self.name}-*"):
                     try:
                         key_list.remove(row["_id"])
                         add_to_output(row["_source"], row["_id"])
                     except ValueError:
-                        log.error(
-                            f'MGet returned multiple documents for id: {row["_id"]}'
-                        )
+                        log.error(f'MGet returned multiple documents for id: {row["_id"]}')
 
         if key_list and error_on_missing:
             raise MultiKeyError(key_list, out)
@@ -1134,12 +1016,7 @@ class ESCollection(Generic[ModelType]):
         :param data: data to normalize
         :return: instance of the model class
         """
-        if (
-            as_obj
-            and data is not None
-            and self.model_class
-            and not isinstance(data, self.model_class)
-        ):
+        if as_obj and data is not None and self.model_class and not isinstance(data, self.model_class):
             return self.model_class(data)
 
         if isinstance(data, dict):
@@ -1158,9 +1035,7 @@ class ESCollection(Generic[ModelType]):
         if archive_access is None:
             archive_access = self.archive_access
 
-        found = self.with_retries(
-            self.datastore.client.exists, index=self.name, id=key, _source=False
-        )
+        found = self.with_retries(self.datastore.client.exists, index=self.name, id=key, _source=False)
 
         if not found and self.ilm_config and archive_access:
             res = self.with_retries(
@@ -1202,9 +1077,7 @@ class ESCollection(Generic[ModelType]):
         done = False
         while not done:
             try:
-                doc = self.with_retries(
-                    self.datastore.client.get, index=self.name, id=key
-                )
+                doc = self.with_retries(self.datastore.client.get, index=self.name, id=key)
                 if version:
                     return (
                         normalize_output(doc["_source"]),
@@ -1252,9 +1125,7 @@ class ESCollection(Generic[ModelType]):
         :param version: should the version number be returned by the call
         :return: an instance of the model class loaded with the document data
         """
-        data = self._get(
-            key, self.RETRY_NORMAL, archive_access=archive_access, version=version
-        )
+        data = self._get(key, self.RETRY_NORMAL, archive_access=archive_access, version=version)
         if version:
             data, version = data
             return self.normalize(data, as_obj=as_obj), version
@@ -1273,9 +1144,7 @@ class ESCollection(Generic[ModelType]):
         :param version: should the version number be returned by the call
         :return: an instance of the model class loaded with the document data
         """
-        data = self._get(
-            key, self.RETRY_NONE, archive_access=archive_access, version=version
-        )
+        data = self._get(key, self.RETRY_NONE, archive_access=archive_access, version=version)
         if version:
             data, version = data
             return self.normalize(data, as_obj=as_obj), version
@@ -1296,9 +1165,7 @@ class ESCollection(Generic[ModelType]):
         :param version: should the version number be returned by the call
         :return: an instance of the model class loaded with the document data
         """
-        data = self._get(
-            key, self.RETRY_INFINITY, archive_access=archive_access, version=version
-        )
+        data = self._get(key, self.RETRY_INFINITY, archive_access=archive_access, version=version)
         if version:
             data, version = data
             return self.normalize(data, as_obj=as_obj), version
@@ -1316,9 +1183,7 @@ class ESCollection(Generic[ModelType]):
         :return: True if the document was saved properly
         """
         if " " in key:
-            raise DataStoreException(
-                "You are not allowed to use spaces in datastore keys."
-            )
+            raise DataStoreException("You are not allowed to use spaces in datastore keys.")
 
         data = self.normalize(data)
 
@@ -1363,9 +1228,7 @@ class ESCollection(Generic[ModelType]):
         """
         deleted = False
         try:
-            info = self.with_retries(
-                self.datastore.client.delete, id=key, index=self.name
-            )
+            info = self.with_retries(self.datastore.client.delete, id=key, index=self.name)
             deleted = info["result"] == "deleted"
         except elasticsearch.NotFoundError:
             pass
@@ -1393,9 +1256,7 @@ class ESCollection(Generic[ModelType]):
         if self.archive_access:
             index = f"{index},{self.name}-*"
         query_body = {"query": {"bool": {"must": {"query_string": {"query": query}}}}}
-        info = self._delete_async(
-            index, query_body, sort=sort_str(parse_sort(sort)), max_docs=max_docs
-        )
+        info = self._delete_async(index, query_body, sort=sort_str(parse_sort(sort)), max_docs=max_docs)
         return info.get("deleted", 0) != 0
 
     def _create_scripts_from_operations(self, operations):
@@ -1493,12 +1354,8 @@ class ESCollection(Generic[ModelType]):
                 if doc_key not in fields:
                     if "." in doc_key:
                         prev_key = doc_key[: doc_key.rindex(".")]
-                        if prev_key in fields and not isinstance(
-                            fields[prev_key], Mapping
-                        ):
-                            raise DataStoreException(
-                                f"Invalid field for model: {prev_key}"
-                            )
+                        if prev_key in fields and not isinstance(fields[prev_key], Mapping):
+                            raise DataStoreException(f"Invalid field for model: {prev_key}")
                     else:
                         raise DataStoreException(f"Invalid field for model: {doc_key}")
 
@@ -1515,17 +1372,13 @@ class ESCollection(Generic[ModelType]):
                     try:
                         value = field.check(value)
                     except (ValueError, TypeError, AttributeError):
-                        raise DataStoreException(
-                            f"Invalid value for field {doc_key}: {value}"
-                        )
+                        raise DataStoreException(f"Invalid value for field {doc_key}: {value}")
 
                 elif op in [self.UPDATE_SET, self.UPDATE_DEC, self.UPDATE_INC]:
                     try:
                         value = field.check(value)
                     except (ValueError, TypeError):
-                        raise DataStoreException(
-                            f"Invalid value for field {doc_key}: {value}"
-                        )
+                        raise DataStoreException(f"Invalid value for field {doc_key}: {value}")
 
                 if isinstance(value, Model):
                     value = value.as_primitives()
@@ -1574,14 +1427,10 @@ class ESCollection(Generic[ModelType]):
                 f"{res['_seq_no']}---{res['_primary_term']}",
             )
         except elasticsearch.NotFoundError as e:
-            log.warning(
-                "Update - elasticsearch.NotFoundError: %s %s", e.message, e.info
-            )
+            log.warning("Update - elasticsearch.NotFoundError: %s %s", e.message, e.info)
             pass
         except elasticsearch.BadRequestError as e:
-            log.warning(
-                "Update - elasticsearch.BadRequestError: %s %s", e.message, e.info
-            )
+            log.warning("Update - elasticsearch.BadRequestError: %s %s", e.message, e.info)
             return False
         except VersionConflictException as e:
             log.warning("Update - elasticsearch.ConflictError: %s", e.message)
@@ -1597,9 +1446,7 @@ class ESCollection(Generic[ModelType]):
 
         return False
 
-    def update_by_query(
-        self, query, operations, filters=None, access_control=None, max_docs=None
-    ):
+    def update_by_query(self, query, operations, filters=None, access_control=None, max_docs=None):
         """
         This function performs an atomic update on some fields from the
         underlying documents matching the query and the filters using a list of operations.
@@ -1670,13 +1517,9 @@ class ESCollection(Generic[ModelType]):
                     extra_fields["_index"] = result["_index"]
                 if "*" in fields:
                     fields = None
-                return self.model_class(
-                    source_data, mask=fields, docid=item_id, extra_fields=extra_fields
-                )
+                return self.model_class(source_data, mask=fields, docid=item_id, extra_fields=extra_fields)
             else:
-                source_data = recursive_update(
-                    source_data, extra_fields, allow_recursion=False
-                )
+                source_data = recursive_update(source_data, extra_fields, allow_recursion=False)
                 if "id" in fields:
                     source_data["id"] = item_id
                 if "_index" in fields and "_index" in result:
@@ -1693,9 +1536,7 @@ class ESCollection(Generic[ModelType]):
 
         return prune(source_data, fields)
 
-    def _search(
-        self, args=None, deep_paging_id=None, use_archive=False, track_total_hits=None
-    ):
+    def _search(self, args=None, deep_paging_id=None, use_archive=False, track_total_hits=None):
         index = self.name
         if self.archive_access and use_archive:
             index = f"{index},{self.name}-*"
@@ -1714,13 +1555,8 @@ class ESCollection(Generic[ModelType]):
         # TODO: we should validate values for max rows, group length, history length...
         for key, value in args:
             if key not in parsed_values:
-                all_args = "; ".join(
-                    "%s=%s" % (field_name, field_value)
-                    for field_name, field_value in args
-                )
-                raise HowlerValueError(
-                    "Unknown query argument: %s %s of [%s]" % (key, value, all_args)
-                )
+                all_args = "; ".join("%s=%s" % (field_name, field_value) for field_name, field_value in args)
+                raise HowlerValueError("Unknown query argument: %s %s of [%s]" % (key, value, all_args))
 
             parsed_values[key] = value
 
@@ -1730,10 +1566,7 @@ class ESCollection(Generic[ModelType]):
             "query": {
                 "bool": {
                     "must": {"query_string": {"query": parsed_values["query"]}},
-                    "filter": [
-                        {"query_string": {"query": ff}}
-                        for ff in parsed_values["filters"]
-                    ],
+                    "filter": [{"query_string": {"query": ff}} for ff in parsed_values["filters"]],
                 }
             },
             "from_": parsed_values["start"],
@@ -1749,9 +1582,7 @@ class ESCollection(Generic[ModelType]):
             query_body["script_fields"] = fields
 
         if parsed_values["df"]:
-            query_body["query"]["bool"]["must"]["query_string"]["default_field"] = (
-                parsed_values["df"]
-            )
+            query_body["query"]["bool"]["must"]["query_string"]["default_field"] = parsed_values["df"]
 
         # Time limit for the query
         if parsed_values["timeout"]:
@@ -1812,11 +1643,9 @@ class ESCollection(Generic[ModelType]):
                 "field": parsed_values["group_field"],
                 "inner_hits": {
                     "name": "group",
-                    "_source": parsed_values["field_list"]
-                    or list(self.stored_fields.keys()),
+                    "_source": parsed_values["field_list"] or list(self.stored_fields.keys()),
                     "size": parsed_values["group_limit"],
-                    "sort": parse_sort(parsed_values["group_sort"])
-                    or [{parsed_values["group_field"]: "asc"}],
+                    "sort": parse_sort(parsed_values["group_sort"]) or [{parsed_values["group_field"]: "asc"}],
                 },
             }
 
@@ -1843,10 +1672,7 @@ class ESCollection(Generic[ModelType]):
             elasticsearch.ConnectionError,
             elasticsearch.ConnectionTimeout,
         ) as error:
-            raise SearchRetryException(
-                "collection: %s, query: %s, error: %s"
-                % (self.name, query_body, str(error))
-            )
+            raise SearchRetryException("collection: %s, query: %s, error: %s" % (self.name, query_body, str(error)))
 
         except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
             try:
@@ -1857,10 +1683,7 @@ class ESCollection(Generic[ModelType]):
             raise SearchException(err_msg)
 
         except Exception as error:
-            raise SearchException(
-                "collection: %s, query: %s, error: %s"
-                % (self.name, query_body, str(error))
-            )
+            raise SearchException("collection: %s, query: %s, error: %s" % (self.name, query_body, str(error)))
 
     def search(
         self,
@@ -1961,10 +1784,7 @@ class ESCollection(Generic[ModelType]):
             "offset": int(offset),
             "rows": int(rows),
             "total": int(result["hits"]["total"]["value"]),
-            "items": [
-                self._format_output(doc, field_list, as_obj=as_obj)
-                for doc in result["hits"]["hits"]
-            ],
+            "items": [self._format_output(doc, field_list, as_obj=as_obj) for doc in result["hits"]["hits"]],
         }
 
         new_deep_paging_id = result.get("_scroll_id", None)
@@ -2023,9 +1843,7 @@ class ESCollection(Generic[ModelType]):
         :return: a generator of dictionary of field list results
         """
         if item_buffer_size > 2000 or item_buffer_size < 50:
-            raise SearchException(
-                "Variable item_buffer_size must be between 50 and 2000."
-            )
+            raise SearchException("Variable item_buffer_size must be between 50 and 2000.")
 
         index = self.name
         if self.archive_access and use_archive:
@@ -2104,23 +1922,17 @@ class ESCollection(Generic[ModelType]):
                 fields=fields,
                 filter=parsed_filters,
                 size=rows,
-                wait_for_completion_timeout=(
-                    f"{timeout}ms" if timeout is not None else None
-                ),
+                wait_for_completion_timeout=(f"{timeout}ms" if timeout is not None else None),
             )
 
             ret_data: dict[str, Any] = {
                 "rows": int(rows),
                 "total": int(result["hits"]["total"]["value"]),
                 "items": [
-                    self._format_output(doc, fl.split(","), as_obj=as_obj)
-                    for doc in result["hits"].get("events", [])
+                    self._format_output(doc, fl.split(","), as_obj=as_obj) for doc in result["hits"].get("events", [])
                 ],
                 "sequences": [
-                    [
-                        self._format_output(doc, fl.split(","), as_obj=as_obj)
-                        for doc in sequence.get("events", [])
-                    ]
+                    [self._format_output(doc, fl.split(","), as_obj=as_obj) for doc in sequence.get("events", [])]
                     for sequence in result["hits"].get("sequences", [])
                 ],
             }
@@ -2177,10 +1989,7 @@ class ESCollection(Generic[ModelType]):
 
                     parsed_start = dm(self.datastore.to_pydatemath(start)).int_timestamp
                     parsed_end = dm(self.datastore.to_pydatemath(end)).int_timestamp
-                    parsed_gap = (
-                        dm(self.datastore.to_pydatemath(f"+{t_gap}")).int_timestamp
-                        - dm("now").int_timestamp
-                    )
+                    parsed_gap = dm(self.datastore.to_pydatemath(f"+{t_gap}")).int_timestamp - dm("now").int_timestamp
 
                     gaps_count = int((parsed_end - parsed_start) / parsed_gap)
                     ret_type = str
@@ -2190,8 +1999,7 @@ class ESCollection(Generic[ModelType]):
             if gaps_count is None:
                 raise SearchException(
                     "Could not parse histogram ranges. Either you've mix integer and dates values or you "
-                    "have invalid date math values. (start='%s', end='%s', gap='%s')"
-                    % (start, end, gap)
+                    "have invalid date math values. (start='%s', end='%s', gap='%s')" % (start, end, gap)
                 )
 
             if gaps_count > self.MAX_FACET_LIMIT:
@@ -2225,12 +2033,10 @@ class ESCollection(Generic[ModelType]):
         if self.archive_access and use_archive:
             index = f"{index},{self.name}-*"
 
-        result = self.with_retries(
-            self.datastore.client.count, index=index, q=query
-        )
+        result = self.with_retries(self.datastore.client.count, index=index, q=query)
 
         ret_data: dict[str, Any] = {
-            "count": result['count'],
+            "count": result["count"],
         }
 
         return ret_data
@@ -2259,9 +2065,7 @@ class ESCollection(Generic[ModelType]):
             filters = []
         elif isinstance(filters, str):
             filters = [filters]
-        filters.append(
-            "{field}:[{min} TO {max}]".format(field=field, min=start, max=end)
-        )
+        filters.append("{field}:[{min} TO {max}]".format(field=field, min=start, max=end))
 
         args = [
             ("query", query),
@@ -2343,8 +2147,7 @@ class ESCollection(Generic[ModelType]):
 
         # Convert the histogram into a dictionary
         return {
-            row.get("key_as_string", row["key"]): row["doc_count"]
-            for row in result["aggregations"][field]["buckets"]
+            row.get("key_as_string", row["key"]): row["doc_count"] for row in result["aggregations"][field]["buckets"]
         }
 
     def stats(
@@ -2435,9 +2238,7 @@ class ESCollection(Generic[ModelType]):
         if filters:
             args.append(("filters", filters))
 
-        result = self._search(
-            args, use_archive=use_archive, track_total_hits=track_total_hits
-        )
+        result = self._search(args, use_archive=use_archive, track_total_hits=track_total_hits)
 
         return {
             "offset": offset,
@@ -2446,9 +2247,7 @@ class ESCollection(Generic[ModelType]):
             "items": [
                 {
                     "value": collapsed["fields"][group_field][0],
-                    "total": int(
-                        collapsed["inner_hits"]["group"]["hits"]["total"]["value"]
-                    ),
+                    "total": int(collapsed["inner_hits"]["group"]["hits"]["total"]["value"]),
                     "items": [
                         self._format_output(row, field_list, as_obj=as_obj)
                         for row in collapsed["inner_hits"]["group"]["hits"]["hits"]
@@ -2504,24 +2303,30 @@ class ESCollection(Generic[ModelType]):
 
             if "." in p_name:
                 parent_p_name = re.sub(r"^(.+)\..+?$", r"\1", p_name)
-                if parent_p_name in model_fields and isinstance(
-                    model_fields.get(parent_p_name), Mapping
-                ):
+                if parent_p_name in model_fields and isinstance(model_fields.get(parent_p_name), Mapping):
                     if parent_p_name not in collection_data:
                         field_model = model_fields.get(parent_p_name, None)
-                        f_type = self._get_odm_type(
-                            p_val.get("analyzer", None) or p_val["type"]
-                        )
+                        f_type = self._get_odm_type(p_val.get("analyzer", None) or p_val["type"])
+
                         collection_data[parent_p_name] = {
-                            "default": self.DEFAULT_SEARCH_FIELD
-                            in p_val.get("copy_to", []),
+                            "default": self.DEFAULT_SEARCH_FIELD in p_val.get("copy_to", []),
                             "indexed": p_val.get("index", p_val.get("enabled", True)),
                             "list": field_model.multivalued if field_model else False,
                             "stored": field_model.store if field_model else False,
                             "type": f_type,
-                            "description": (
-                                field_model.description if field_model else ""
+                            "description": (field_model.description if field_model else ""),
+                            "regex": (
+                                field_model.child_type.validation_regex.pattern
+                                if issubclass(type(field_model.child_type), ValidatedKeyword)
+                                or issubclass(type(field_model.child_type), IP)
+                                else None
                             ),
+                            "values": (
+                                list(field_model.child_type.values)
+                                if issubclass(type(field_model.child_type), Enum)
+                                else None
+                            ),
+                            "deprecated_description": (field_model.deprecated_description if field_model else ""),
                         }
                     else:
                         continue
@@ -2535,9 +2340,13 @@ class ESCollection(Generic[ModelType]):
                 "deprecated": field_model.deprecated if field_model else False,
                 "type": f_type,
                 "description": field_model.description if field_model else "",
-                "deprecated_description": (
-                    field_model.deprecated_description if field_model else ""
+                "regex": (
+                    field_model.validation_regex.pattern
+                    if issubclass(type(field_model), ValidatedKeyword) or issubclass(type(field_model), IP)
+                    else None
                 ),
+                "values": list(field_model.values) if issubclass(type(field_model), Enum) else None,
+                "deprecated_description": (field_model.deprecated_description if field_model else ""),
             }
 
         collection_data.pop("id", None)
@@ -2565,9 +2374,7 @@ class ESCollection(Generic[ModelType]):
                     "min_age": "0ms",
                     "actions": {
                         "set_priority": {"priority": 100},
-                        "rollover": {
-                            "max_age": f"{self.ilm_config['warm']}{self.ilm_config['unit']}"
-                        },
+                        "rollover": {"max_age": f"{self.ilm_config['warm']}{self.ilm_config['unit']}"},
                     },
                 },
                 "warm": {"actions": {"set_priority": {"priority": 50}}},
@@ -2585,13 +2392,9 @@ class ESCollection(Generic[ModelType]):
             }
 
         try:
-            self.datastore.client.ilm.put_lifecycle(
-                name=f"{self.name}_policy", policy=data_base
-            )
+            self.datastore.client.ilm.put_lifecycle(name=f"{self.name}_policy", policy=data_base)
         except elasticsearch.ApiError:
-            raise ILMException(
-                f"ERROR: Failed to create ILM policy: {self.name}_policy"
-            )
+            raise ILMException(f"ERROR: Failed to create ILM policy: {self.name}_policy")
 
     def _get_index_settings(self) -> dict:
         default_stub: dict = deepcopy(default_index)
@@ -2606,9 +2409,7 @@ class ESCollection(Generic[ModelType]):
     def _get_index_mappings(self) -> dict:
         mappings: dict = deepcopy(default_mapping)
         if self.model_class:
-            mappings["properties"], mappings["dynamic_templates"] = build_mapping(
-                self.model_class.fields().values()
-            )
+            mappings["properties"], mappings["dynamic_templates"] = build_mapping(self.model_class.fields().values())
             mappings["dynamic_templates"].insert(0, default_dynamic_strings)
         else:
             mappings["dynamic_templates"] = deepcopy(default_dynamic_templates)
@@ -2655,17 +2456,10 @@ class ESCollection(Generic[ModelType]):
 
         matching = set(fields.keys()) & set(model.keys())
         for field_name in matching:
-            if (
-                fields[field_name]["indexed"] != model[field_name].index
-                and model[field_name].index
-            ):
-                raise HowlerRuntimeError(
-                    f"Field {field_name} should be indexed but is not."
-                )
+            if fields[field_name]["indexed"] != model[field_name].index and model[field_name].index:
+                raise HowlerRuntimeError(f"Field {field_name} should be indexed but is not.")
 
-            possible_field_types = self.__get_possible_fields(
-                model[field_name].__class__
-            )
+            possible_field_types = self.__get_possible_fields(model[field_name].__class__)
 
             if fields[field_name]["type"] not in possible_field_types:
                 raise HowlerRuntimeError(
@@ -2694,9 +2488,7 @@ class ESCollection(Generic[ModelType]):
             except elasticsearch.exceptions.RequestError as e:
                 if "resource_already_exists_exception" not in str(e):
                     raise
-                log.warning(
-                    f"Tried to create an index template that already exists: {self.name.upper()}"
-                )
+                log.warning(f"Tried to create an index template that already exists: {self.name.upper()}")
 
             self.with_retries(
                 self.datastore.client.indices.put_alias,
@@ -2705,18 +2497,12 @@ class ESCollection(Generic[ModelType]):
             )
         elif not self.with_retries(
             self.datastore.client.indices.exists, index=self.index_name
-        ) and not self.with_retries(
-            self.datastore.client.indices.exists_alias, name=self.name
-        ):
+        ) and not self.with_retries(self.datastore.client.indices.exists_alias, name=self.name):
             # Turn on write block
-            self.with_retries(
-                self.datastore.client.indices.put_settings, body=write_block_settings
-            )
+            self.with_retries(self.datastore.client.indices.put_settings, body=write_block_settings)
 
             # Create a copy on the result index
-            self._safe_index_copy(
-                self.datastore.client.indices.clone, self.name, self.index_name
-            )
+            self._safe_index_copy(self.datastore.client.indices.clone, self.name, self.index_name)
 
             # Make the hot index the new clone
             alias_body = {
@@ -2725,13 +2511,9 @@ class ESCollection(Generic[ModelType]):
                     {"remove_index": {"index": self.name}},
                 ]
             }
-            self.with_retries(
-                self.datastore.client.indices.update_aliases, body=alias_body
-            )
+            self.with_retries(self.datastore.client.indices.update_aliases, body=alias_body)
 
-            self.with_retries(
-                self.datastore.client.indices.put_settings, body=write_unblock_settings
-            )
+            self.with_retries(self.datastore.client.indices.put_settings, body=write_unblock_settings)
 
         if self.ilm_config:
             # Create ILM policy
@@ -2743,12 +2525,8 @@ class ESCollection(Generic[ModelType]):
                     pass
 
             # Create WARM index template
-            if not self.with_retries(
-                self.datastore.client.indices.exists_template, name=self.name
-            ):
-                log.debug(
-                    f"Index template {self.name.upper()} does not exists. Creating it now..."
-                )
+            if not self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
+                log.debug(f"Index template {self.name.upper()} does not exists. Creating it now...")
 
                 index: dict[str, Any] = {
                     "mappings": self._get_index_mappings(),
@@ -2758,9 +2536,7 @@ class ESCollection(Generic[ModelType]):
                 index["index_patterns"] = [f"{self.name}-*"]
                 index["order"] = 1
                 index["settings"]["index.lifecycle.name"] = f"{self.name}_policy"
-                index["settings"][
-                    "index.lifecycle.rollover_alias"
-                ] = f"{self.name}-archive"
+                index["settings"]["index.lifecycle.rollover_alias"] = f"{self.name}-archive"
 
                 try:
                     self.with_retries(
@@ -2771,16 +2547,10 @@ class ESCollection(Generic[ModelType]):
                 except elasticsearch.exceptions.RequestError as e:
                     if "resource_already_exists_exception" not in str(e):
                         raise
-                    log.warning(
-                        f"Tried to create an index template that already exists: {self.name.upper()}"
-                    )
+                    log.warning(f"Tried to create an index template that already exists: {self.name.upper()}")
 
-            if not self.with_retries(
-                self.datastore.client.indices.exists_alias, name=f"{self.name}-archive"
-            ):
-                log.debug(
-                    f"Index alias {self.name.upper()}-archive does not exists. Creating it now..."
-                )
+            if not self.with_retries(self.datastore.client.indices.exists_alias, name=f"{self.name}-archive"):
+                log.debug(f"Index alias {self.name.upper()}-archive does not exists. Creating it now...")
 
                 try:
                     self.with_retries(
@@ -2791,9 +2561,7 @@ class ESCollection(Generic[ModelType]):
                 except elasticsearch.exceptions.RequestError as e:
                     if "resource_already_exists_exception" not in str(e):
                         raise
-                    log.warning(
-                        f"Tried to create an index template that already exists: {self.name.upper()}-000001"
-                    )
+                    log.warning(f"Tried to create an index template that already exists: {self.name.upper()}-000001")
 
         self._check_fields()
 
@@ -2808,9 +2576,7 @@ class ESCollection(Generic[ModelType]):
                 prefix = prefix[:-1]
 
             # Build the fields and templates for this new mapping
-            sub_properties, sub_templates = build_mapping(
-                [field], prefix=prefix, allow_refuse_implicit=False
-            )
+            sub_properties, sub_templates = build_mapping([field], prefix=prefix, allow_refuse_implicit=False)
             properties.update(sub_properties)
             if sub_templates:
                 no_fix.append(name)
@@ -2820,24 +2586,17 @@ class ESCollection(Generic[ModelType]):
         # simply raise an exception
         if no_fix:
             raise HowlerValueError(
-                f"Can't update database mapping for {self.name}, "
-                f"couldn't safely amend mapping for {no_fix}"
+                f"Can't update database mapping for {self.name}, " f"couldn't safely amend mapping for {no_fix}"
             )
 
         # If we got this far, the missing fields have been described in properties, upload them to the
         # server, and we should be able to move on.
         mappings = {"properties": properties}
         for index in self.index_list_full:
-            self.with_retries(
-                self.datastore.client.indices.put_mapping, index=index, body=mappings
-            )
+            self.with_retries(self.datastore.client.indices.put_mapping, index=index, body=mappings)
 
-        if self.with_retries(
-            self.datastore.client.indices.exists_template, name=self.name
-        ):
-            current_template = self.with_retries(
-                self.datastore.client.indices.get_template, name=self.name
-            )[self.name]
+        if self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
+            current_template = self.with_retries(self.datastore.client.indices.get_template, name=self.name)[self.name]
             recursive_update(current_template, {"mappings": mappings})
             self.with_retries(
                 self.datastore.client.indices.put_template,
@@ -2859,11 +2618,7 @@ class ESCollection(Generic[ModelType]):
             if self.with_retries(self.datastore.client.indices.exists, index=index):
                 self.with_retries(self.datastore.client.indices.delete, index=index)
 
-        if self.with_retries(
-            self.datastore.client.indices.exists_template, name=self.name
-        ):
-            self.with_retries(
-                self.datastore.client.indices.delete_template, name=self.name
-            )
+        if self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
+            self.with_retries(self.datastore.client.indices.delete_template, name=self.name)
 
         self._ensure_collection()

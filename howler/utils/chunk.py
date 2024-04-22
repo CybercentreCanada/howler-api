@@ -1,4 +1,5 @@
 """Sequence manipulation methods used in parsing raw datastore output."""
+
 from __future__ import annotations
 from typing import Sequence, Generator, TypeVar, overload
 
@@ -6,18 +7,15 @@ _T = TypeVar("_T")
 
 
 @overload
-def chunk(items: bytes, n: int) -> Generator[bytes, None, None]:
-    ...
+def chunk(items: bytes, n: int) -> Generator[bytes, None, None]: ...
 
 
 @overload
-def chunk(items: str, n: int) -> Generator[str, None, None]:
-    ...
+def chunk(items: str, n: int) -> Generator[str, None, None]: ...
 
 
 @overload
-def chunk(items: Sequence[_T], n: int) -> Generator[Sequence[_T], None, None]:
-    ...
+def chunk(items: Sequence[_T], n: int) -> Generator[Sequence[_T], None, None]: ...
 
 
 def chunk(items, n: int):

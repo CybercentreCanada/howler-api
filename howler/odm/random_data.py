@@ -92,7 +92,7 @@ def create_users(ds):
             },
             "classification": classification.RESTRICTED,
             "name": "Michael Scott",
-            "email": "admin@example.com",
+            "email": "admin@howler.cyber.gc.ca",
             "password": admin_hash,
             "uname": "admin",
             "type": ["admin", "user", "automation_basic", "automation_advanced"],
@@ -127,7 +127,7 @@ def create_users(ds):
     user_data = User(
         {
             "name": "Dwight Schrute",
-            "email": "user@example.com",
+            "email": "user@howler.cyber.gc.ca",
             "apikeys": {
                 "devkey": {"acl": ["R", "W"], "password": user_hash},
                 "impersonate_admin": {
@@ -170,7 +170,7 @@ def create_users(ds):
     huey_data = User(
         {
             "name": "Huey Guy",
-            "email": "huey@example.com",
+            "email": "huey@howler.cyber.gc.ca",
             "apikeys": {
                 "devkey": {"acl": ["R", "W"], "password": huey_hash},
                 "impersonate_admin": {
@@ -238,7 +238,7 @@ def create_users(ds):
     goose_data = User(
         {
             "name": "Mister Goose",
-            "email": "goose@example.com",
+            "email": "goose@howler.cyber.gc.ca",
             "apikeys": {},
             "type": ["admin", "user"],
             "groups": ["group1", "group2"],
@@ -272,9 +272,7 @@ def create_templates(ds: HowlerDatastore):
         for detection in ["Detection 1", "Detection 2"]:
             template = Template(
                 {
-                    "analytic": choice(
-                        ["Password Checker", "Bad Guy Finder", "SecretAnalytic"]
-                    ),
+                    "analytic": choice(["Password Checker", "Bad Guy Finder", "SecretAnalytic"]),
                     "detection": detection,
                     "type": "global",
                     "keys": keys,
@@ -393,9 +391,7 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
     lookups = loader.get_lookups()
     users = ds.user.search("*:*")["items"]
     for hit_idx in range(hit_count):
-        hit = generate_useful_hit(
-            lookups, [user["uname"] for user in users], prune_hit=False
-        )
+        hit = generate_useful_hit(lookups, [user["uname"] for user in users], prune_hit=False)
 
         if hit_idx + 1 == hit_count:
             hit.howler.analytic = "SecretAnalytic"
@@ -440,18 +436,14 @@ def create_bundles(ds: HowlerDatastore):
         bundle_hit: Hit = generate_useful_hit(lookups, users)
         bundle_hit.howler.is_bundle = True
 
-        for hit in ds.hit.search(
-            "howler.is_bundle:false", rows=randint(3, 10), offset=(i * 2)
-        )["items"]:
+        for hit in ds.hit.search("howler.is_bundle:false", rows=randint(3, 10), offset=(i * 2))["items"]:
             if hit.howler.id not in hits:
                 hits[hit.howler.id] = hit
 
             bundle_hit.howler.hits.append(hit.howler.id)
             hits[hit.howler.id].howler.bundles.append(bundle_hit.howler.id)
 
-        analytic_service.save_from_hit(
-            bundle_hit, random.choice(ds.user.search("*:*")["items"])
-        )
+        analytic_service.save_from_hit(bundle_hit, random.choice(ds.user.search("*:*")["items"]))
         ds.hit.save(bundle_hit.howler.id, bundle_hit)
 
     for hit in hits.values():
@@ -494,9 +486,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
     key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
     for _ in range(num_analytics):
         a: Analytic = random_model_obj(Analytic)
-        a.name = " ".join(
-            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
-        )
+        a.name = " ".join([get_random_word().capitalize() for _ in range(random.randint(1, 3))])
         a.detections = list(set(a.detections))
         a.owner = random.choice(users)
         a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
@@ -509,13 +499,13 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
     for rule_type in ["lucene", "eql", "sigma"]:
         a: Analytic = random_model_obj(Analytic)
         a.rule_type = rule_type
-        a.name = " ".join(
-            [get_random_word().capitalize() for _ in range(random.randint(1, 3))]
-        )
+        a.name = " ".join([get_random_word().capitalize() for _ in range(random.randint(1, 3))])
         a.detections = ["Rule"]
         a.owner = random.choice(users)
         a.contributors = list(set(random.sample(users, k=random.randint(1, 3))))
-        a.rule_crontab = f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(2, 5)))])} * * * *"
+        a.rule_crontab = (
+            f"{','.join([str(k) for k in sorted(random.sample(list(range(60)), k=random.randint(2, 5)))])} * * * *"
+        )
 
         if a.rule_type == "lucene":
             a.rule = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
@@ -582,11 +572,7 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
                     if potential_values:
                         if isinstance(potential_values, dict):
                             try:
-                                action_data[key] = choice(
-                                    potential_values[
-                                        choice(list(potential_values.keys()))
-                                    ]
-                                )
+                                action_data[key] = choice(potential_values[choice(list(potential_values.keys()))])
                             except IndexError:
                                 continue
                         else:
@@ -597,9 +583,7 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
             if operation_id == "prioritization":
                 action_data["value"] = float(random.randint(0, 10000)) / 10
 
-            operations.append(
-                {"operation_id": operation_id, "data_json": json.dumps((action_data))}
-            )
+            operations.append({"operation_id": operation_id, "data_json": json.dumps((action_data))})
 
         action = Action(
             {

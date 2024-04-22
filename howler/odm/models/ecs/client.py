@@ -12,9 +12,7 @@ from howler.odm.models.ecs.geo import Geo
 )
 class Nat(odm.Model):
     ip = odm.Optional(odm.IP(description="Translated IP of source based NAT sessions."))
-    port = odm.Optional(
-        odm.Integer(description="Translated port of source based NAT sessions.")
-    )
+    port = odm.Optional(odm.Integer(description="Translated port of source based NAT sessions."))
 
 
 @odm.model(
@@ -30,12 +28,8 @@ class Client(odm.Model):
             "a domain or a unix socket. You should always store the raw address in the .address field."
         )
     )
-    bytes: Optional[int] = odm.Optional(
-        odm.Integer(description="Bytes sent from the client to the server.")
-    )
-    domain: Optional[str] = odm.Optional(
-        odm.Domain(description="The domain name of the client system.")
-    )
+    bytes: Optional[int] = odm.Optional(odm.Integer(description="Bytes sent from the client to the server."))
+    domain: Optional[str] = odm.Optional(odm.Domain(description="The domain name of the client system."))
     geo: Geo = odm.Optional(
         odm.Compound(
             Geo,
@@ -50,7 +44,5 @@ class Client(odm.Model):
             description="Translated NAT sessions (e.g. internal client to internet).",
         )
     )
-    packets: Optional[int] = odm.Optional(
-        odm.Integer(description="Packets sent from the destination to the source.")
-    )
+    packets: Optional[int] = odm.Optional(odm.Integer(description="Packets sent from the destination to the source."))
     port: Optional[int] = odm.Optional(odm.Integer(description="Port of the client."))

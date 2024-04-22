@@ -122,15 +122,9 @@ class Cloud(odm.Model):
         )
     )
     provider = odm.Optional(
-        odm.Keyword(
-            description="Name of the cloud provider. Example values are aws, azure, gcp, or digitalocean."
-        )
+        odm.Keyword(description="Name of the cloud provider. Example values are aws, azure, gcp, or digitalocean.")
     )
-    region = odm.Optional(
-        odm.Keyword(
-            description="Region in which this host, resource, or service is located."
-        )
-    )
+    region = odm.Optional(odm.Keyword(description="Region in which this host, resource, or service is located."))
     service = odm.Optional(odm.Compound(Service, description="Service information."))
 
     # Extra fields not defined in ECS but added for outline purposes

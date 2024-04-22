@@ -72,16 +72,11 @@ def execute(query: str, bundle_id=None, **kwargs):
 
         hit_service.update_hit(
             bundle_id,
-            [
-                hit_helper.list_remove(f"howler.hits", h["howler"]["id"])
-                for h in ds.hit.search(safe_query)["items"]
-            ],
+            [hit_helper.list_remove(f"howler.hits", h["howler"]["id"]) for h in ds.hit.search(safe_query)["items"]],
         )
 
         if len(ds.hit.get(bundle_id).howler.hits) < 1:
-            hit_service.update_hit(
-                bundle_id, [hit_helper.update("howler.is_bundle", False)]
-            )
+            hit_service.update_hit(bundle_id, [hit_helper.update("howler.is_bundle", False)])
 
         report.append(
             {

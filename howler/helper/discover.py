@@ -35,31 +35,19 @@ def get_apps_list() -> list[dict[str, str]]:
                         if "howler" not in url:
                             apps.append(
                                 {
-                                    "alt": app["instance"][0]["metadata"][
-                                        "alternateText"
-                                    ],
+                                    "alt": app["instance"][0]["metadata"]["alternateText"],
                                     "name": app["name"],
-                                    "img_d": app["instance"][0]["metadata"][
-                                        "imageDark"
-                                    ],
-                                    "img_l": app["instance"][0]["metadata"][
-                                        "imageLight"
-                                    ],
+                                    "img_d": app["instance"][0]["metadata"]["imageDark"],
+                                    "img_l": app["instance"][0]["metadata"]["imageLight"],
                                     "route": url,
-                                    "classification": app["instance"][0]["metadata"][
-                                        "classification"
-                                    ],
+                                    "classification": app["instance"][0]["metadata"]["classification"],
                                 }
                             )
                     except Exception:
                         logger.exception(f"Failed to parse get app: {str(app)}")
             else:
-                logger.warning(
-                    f"Invalid response from server for apps discovery: {config.ui.discover_url}"
-                )
+                logger.warning(f"Invalid response from server for apps discovery: {config.ui.discover_url}")
         except Exception:
-            logger.exception(
-                f"Failed to get apps from discover URL: {config.ui.discover_url}"
-            )
+            logger.exception(f"Failed to get apps from discover URL: {config.ui.discover_url}")
 
     return sorted(apps, key=lambda k: k["name"])

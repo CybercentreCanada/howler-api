@@ -33,19 +33,11 @@ class Redis(odm.Model):
 DEFAULT_REDIS = {"nonpersistent": DEFAULT_REDIS_NP, "persistent": DEFAULT_REDIS_P}
 
 
-@odm.model(
-    index=False, store=False, description="Parameters associated to ILM Policies"
-)
+@odm.model(index=False, store=False, description="Parameters associated to ILM Policies")
 class ILMParams(odm.Model):
-    warm = odm.Integer(
-        description="How long, per unit of time, should a document remain in the 'warm' tier?"
-    )
-    cold = odm.Integer(
-        description="How long, per unit of time, should a document remain in the 'cold' tier?"
-    )
-    delete = odm.Integer(
-        description="How long, per unit of time, should a document remain before being deleted?"
-    )
+    warm = odm.Integer(description="How long, per unit of time, should a document remain in the 'warm' tier?")
+    cold = odm.Integer(description="How long, per unit of time, should a document remain in the 'cold' tier?")
+    delete = odm.Integer(description="How long, per unit of time, should a document remain before being deleted?")
     unit = odm.Enum(
         ["d", "h", "m"],
         description="Unit of time used by `warm`, `cold`, `delete` phases",
@@ -64,9 +56,7 @@ class ILM(odm.Model):
         default=DEFAULT_ILM_PARAMS,
         description="Index-specific ILM policies",
     )
-    update_archive = odm.Boolean(
-        description="Do we want to update documents in the archive?"
-    )
+    update_archive = odm.Boolean(description="Do we want to update documents in the archive?")
 
 
 DEFAULT_ILM = {
@@ -80,21 +70,13 @@ DEFAULT_ILM = {
 @odm.model(index=False, store=False, description="Host Entries")
 class Host(odm.Model):
     name: str = odm.Keyword(description="Name of the host")
-    username: Optional[str] = odm.Keyword(
-        description="Username to login with", optional=True
-    )
-    password: Optional[str] = odm.Keyword(
-        description="Password to login with", optional=True
-    )
-    apikey_id: Optional[str] = odm.Keyword(
-        description="ID of the API Key to use when connecting", optional=True
-    )
+    username: Optional[str] = odm.Keyword(description="Username to login with", optional=True)
+    password: Optional[str] = odm.Keyword(description="Password to login with", optional=True)
+    apikey_id: Optional[str] = odm.Keyword(description="ID of the API Key to use when connecting", optional=True)
     apikey_secret: Optional[str] = odm.Keyword(
         description="Secret data of the API Key to use when connecting", optional=True
     )
-    scheme: Optional[str] = odm.Keyword(
-        description="Scheme to use when connecting", optional=True, default="http"
-    )
+    scheme: Optional[str] = odm.Keyword(description="Scheme to use when connecting", optional=True, default="http")
     host: str = odm.Keyword(description="URL to connect to")
 
     def __repr__(self):
@@ -116,15 +98,9 @@ class Host(odm.Model):
 
 @odm.model(index=False, store=False, description="Datastore Configuration")
 class Datastore(odm.Model):
-    hosts: list[Host] = odm.List(
-        odm.Compound(Host), description="List of hosts used for the datastore"
-    )
-    ilm = odm.Compound(
-        ILM, default=DEFAULT_ILM, description="Index Lifecycle Management Policy"
-    )
-    type = odm.Enum(
-        {"elasticsearch"}, description="Type of application used for the datastore"
-    )
+    hosts: list[Host] = odm.List(odm.Compound(Host), description="List of hosts used for the datastore")
+    ilm = odm.Compound(ILM, default=DEFAULT_ILM, description="Index Lifecycle Management Policy")
+    type = odm.Enum({"elasticsearch"}, description="Type of application used for the datastore")
 
 
 DEFAULT_DATASTORE = {
@@ -144,9 +120,7 @@ DEFAULT_DATASTORE = {
 
 @odm.model(index=False, store=False, description="Filestore Configuration")
 class Filestore(odm.Model):
-    storage: list[Host] = odm.List(
-        odm.Compound(Host), description="List of filestores used for storage"
-    )
+    storage: list[Host] = odm.List(odm.Compound(Host), description="List of filestores used for storage")
 
 
 DEFAULT_FILESTORE = {
@@ -174,21 +148,11 @@ class Logging(odm.Model):
     )
     log_to_console: bool = odm.Boolean(description="Should we log to console?")
     log_to_file: bool = odm.Boolean(description="Should we log to files on the server?")
-    log_directory: str = odm.Keyword(
-        description="If `log_to_file: true`, what is the directory to store logs?"
-    )
-    log_to_syslog: bool = odm.Boolean(
-        description="Should logs be sent to a syslog server?"
-    )
-    syslog_host: str = odm.Keyword(
-        description="If `log_to_syslog: true`, provide hostname/IP of the syslog server?"
-    )
-    syslog_port: int = odm.Integer(
-        description="If `log_to_syslog: true`, provide port of the syslog server?"
-    )
-    export_interval: int = odm.Integer(
-        description="How often, in seconds, should counters log their values?"
-    )
+    log_directory: str = odm.Keyword(description="If `log_to_file: true`, what is the directory to store logs?")
+    log_to_syslog: bool = odm.Boolean(description="Should logs be sent to a syslog server?")
+    syslog_host: str = odm.Keyword(description="If `log_to_syslog: true`, provide hostname/IP of the syslog server?")
+    syslog_port: int = odm.Integer(description="If `log_to_syslog: true`, provide port of the syslog server?")
+    export_interval: int = odm.Integer(description="How often, in seconds, should counters log their values?")
     log_as_json: bool = odm.Boolean(description="Log in JSON format?")
 
 
@@ -223,17 +187,11 @@ DEFAULT_PASSWORD_REQUIREMENTS = {
 }
 
 
-@odm.model(
-    index=False, store=False, description="Internal Authentication Configuration"
-)
+@odm.model(index=False, store=False, description="Internal Authentication Configuration")
 class Internal(odm.Model):
     enabled: bool = odm.Boolean(description="Internal authentication allowed?")
-    failure_ttl: int = odm.Integer(
-        description="How long to wait after `max_failures` before re-attempting login?"
-    )
-    max_failures: int = odm.Integer(
-        description="Maximum number of fails allowed before timeout"
-    )
+    failure_ttl: int = odm.Integer(description="How long to wait after `max_failures` before re-attempting login?")
+    max_failures: int = odm.Integer(description="Maximum number of fails allowed before timeout")
     password_requirements: PasswordRequirement = odm.Compound(
         PasswordRequirement,
         default=DEFAULT_PASSWORD_REQUIREMENTS,
@@ -262,12 +220,8 @@ class OAuthAutoProperty(odm.Model):
 
 @odm.model(index=False, store=False, description="OAuth Provider Configuration")
 class OAuthProvider(odm.Model):
-    auto_create: bool = odm.Boolean(
-        default=True, description="Auto-create users if they are missing"
-    )
-    auto_sync: bool = odm.Boolean(
-        default=False, description="Should we automatically sync with OAuth provider?"
-    )
+    auto_create: bool = odm.Boolean(default=True, description="Auto-create users if they are missing")
+    auto_sync: bool = odm.Boolean(default=False, description="Should we automatically sync with OAuth provider?")
     auto_properties: list[OAuthAutoProperty] = odm.List(
         odm.Compound(OAuthAutoProperty),
         default=[],
@@ -301,12 +255,8 @@ class OAuthProvider(odm.Model):
         odm.Keyword(),
         description="Password to your application to authenticate to the OAuth provider",
     )
-    request_token_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="URL to request token"
-    )
-    request_token_params: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Parameters to request token"
-    )
+    request_token_url: Optional[str] = odm.Optional(odm.Keyword(), description="URL to request token")
+    request_token_params: Optional[str] = odm.Optional(odm.Keyword(), description="Parameters to request token")
     required_groups: list[str] = odm.List(
         odm.Keyword(),
         default=[],
@@ -317,15 +267,9 @@ class OAuthProvider(odm.Model):
         default={},
         description="A mapping of OAuth groups to howler roles",
     )
-    access_token_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="URL to get access token"
-    )
-    access_token_params: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Parameters to get access token"
-    )
-    authorize_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="URL used to authorize access to a resource"
-    )
+    access_token_url: Optional[str] = odm.Optional(odm.Keyword(), description="URL to get access token")
+    access_token_params: Optional[str] = odm.Optional(odm.Keyword(), description="Parameters to get access token")
+    authorize_url: Optional[str] = odm.Optional(odm.Keyword(), description="URL used to authorize access to a resource")
     authorize_params: Optional[str] = odm.Optional(
         odm.Keyword(), description="Parameters used to authorize access to a resource"
     )
@@ -337,9 +281,7 @@ class OAuthProvider(odm.Model):
         description="The audience to validate against. Only must be set if audience is different than the client id.",
     )
     scope: str = odm.Keyword(description="The scope to validate against")
-    picture_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="URL for downloading the user's profile"
-    )
+    picture_url: Optional[str] = odm.Optional(odm.Keyword(), description="URL for downloading the user's profile")
     groups_url: Optional[str] = odm.Optional(
         odm.Keyword(),
         description="URL for accessing additional data about the user's groups",
@@ -348,15 +290,9 @@ class OAuthProvider(odm.Model):
         odm.Keyword(),
         description="Path to the list of groups in the response returned from groups_url",
     )
-    iss: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Optional issuer field for JWT validation"
-    )
-    jwks_uri: str = odm.Keyword(
-        description="URL used to verify if a returned JWKS token is valid"
-    )
-    user_get: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Path from the base_url to fetch the user info"
-    )
+    iss: Optional[str] = odm.Optional(odm.Keyword(), description="Optional issuer field for JWT validation")
+    jwks_uri: str = odm.Keyword(description="URL used to verify if a returned JWKS token is valid")
+    user_get: Optional[str] = odm.Optional(odm.Keyword(), description="Path from the base_url to fetch the user info")
 
 
 DEFAULT_OAUTH_PROVIDERS = {}
@@ -402,9 +338,7 @@ class Auth(odm.Model):
         default=DEFAULT_INTERNAL,
         description="Internal authentication settings",
     )
-    oauth: OAuth = odm.Compound(
-        OAuth, default=DEFAULT_OAUTH, description="OAuth settings"
-    )
+    oauth: OAuth = odm.Compound(OAuth, default=DEFAULT_OAUTH, description="OAuth settings")
 
 
 DEFAULT_AUTH = {
@@ -417,12 +351,8 @@ DEFAULT_AUTH = {
 
 @odm.model(index=False, store=False)
 class APMServer(odm.Model):
-    server_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="URL to API server"
-    )
-    token: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Authentication token for server"
-    )
+    server_url: Optional[str] = odm.Optional(odm.Keyword(), description="URL to API server")
+    token: Optional[str] = odm.Optional(odm.Keyword(), description="Authentication token for server")
 
 
 DEFAULT_APM_SERVER = {"server_url": None, "token": None}
@@ -430,9 +360,7 @@ DEFAULT_APM_SERVER = {"server_url": None, "token": None}
 
 @odm.model(index=False, store=False, description="Metrics Configuration")
 class Metrics(odm.Model):
-    apm_server: APMServer = odm.Compound(
-        APMServer, default=DEFAULT_APM_SERVER, description="APM server configuration"
-    )
+    apm_server: APMServer = odm.Compound(APMServer, default=DEFAULT_APM_SERVER, description="APM server configuration")
 
 
 DEFAULT_METRICS = {
@@ -479,12 +407,8 @@ DEFAULT_RETENTION = {
 
 @odm.model(index=False, store=False, description="System Configuration")
 class System(odm.Model):
-    type: str = odm.Enum(
-        values=["production", "staging", "development"], description="Type of system"
-    )
-    retention: Retention = odm.Compound(
-        Retention, default=DEFAULT_RETENTION, description="Retention Configuration"
-    )
+    type: str = odm.Enum(values=["production", "staging", "development"], description="Type of system")
+    retention: Retention = odm.Compound(Retention, default=DEFAULT_RETENTION, description="Retention Configuration")
 
 
 DEFAULT_SYSTEM = {"type": "development"}
@@ -492,9 +416,7 @@ DEFAULT_SYSTEM = {"type": "development"}
 
 @odm.model(index=False, store=False, description="UI Configuration")
 class UI(odm.Model):
-    audit: bool = odm.Boolean(
-        description="Should API calls be audited and saved to a separate log file?"
-    )
+    audit: bool = odm.Boolean(description="Should API calls be audited and saved to a separate log file?")
     banner: dict[str, str] = odm.Optional(
         odm.Mapping(odm.Keyword()),
         description="Banner message display on the main page (format: {<language_code>: message})",
@@ -507,12 +429,8 @@ class UI(odm.Model):
     static_folder: Optional[str] = odm.Keyword(
         optional=True, description="The directory where static assets are stored."
     )
-    discover_url: Optional[str] = odm.Optional(
-        odm.Keyword(), description="Discover URL"
-    )
-    email: Optional[str] = odm.Optional(
-        odm.Email(), description="Assemblyline admins email address"
-    )
+    discover_url: Optional[str] = odm.Optional(odm.Keyword(), description="Discover URL")
+    email: Optional[str] = odm.Optional(odm.Email(), description="Assemblyline admins email address")
     enforce_quota: bool = odm.Boolean(description="Enforce the user's quotas?")
     secret_key: str = odm.Keyword(description="Flask secret key to store cookies, etc.")
     validate_session_ip: bool = odm.Boolean(
@@ -541,6 +459,7 @@ DEFAULT_UI = {
     "static_folder": os.path.dirname(__file__) + "/../../../static",
 }
 
+
 @odm.model(index=False, store=False, description="Howler Core Component Configuration")
 class Core(odm.Model):
     metrics: Metrics = odm.Compound(
@@ -549,10 +468,7 @@ class Core(odm.Model):
         description="Configuration for Metrics Collection",
     )
 
-    redis: Redis = odm.Compound(
-        Redis, default=DEFAULT_REDIS, description="Configuration for Redis instances"
-    )
-
+    redis: Redis = odm.Compound(Redis, default=DEFAULT_REDIS, description="Configuration for Redis instances")
 
 
 DEFAULT_CORE = {"metrics": DEFAULT_METRICS, "redis": DEFAULT_REDIS}
@@ -560,27 +476,13 @@ DEFAULT_CORE = {"metrics": DEFAULT_METRICS, "redis": DEFAULT_REDIS}
 
 @odm.model(index=False, store=False, description="Howler Deployment Configuration")
 class Config(odm.Model):
-    auth: Auth = odm.Compound(
-        Auth, default=DEFAULT_AUTH, description="Authentication module configuration"
-    )
-    core: Core = odm.Compound(
-        Core, default=DEFAULT_CORE, description="Core component configuration"
-    )
-    datastore: Datastore = odm.Compound(
-        Datastore, default=DEFAULT_DATASTORE, description="Datastore configuration"
-    )
-    filestore: Filestore = odm.Compound(
-        Filestore, default=DEFAULT_FILESTORE, description="Filestore configuration"
-    )
-    logging: Logging = odm.Compound(
-        Logging, default=DEFAULT_LOGGING, description="Logging configuration"
-    )
-    system: System = odm.Compound(
-        System, default=DEFAULT_SYSTEM, description="System configuration"
-    )
-    ui: UI = odm.Compound(
-        UI, default=DEFAULT_UI, description="UI configuration parameters"
-    )
+    auth: Auth = odm.Compound(Auth, default=DEFAULT_AUTH, description="Authentication module configuration")
+    core: Core = odm.Compound(Core, default=DEFAULT_CORE, description="Core component configuration")
+    datastore: Datastore = odm.Compound(Datastore, default=DEFAULT_DATASTORE, description="Datastore configuration")
+    filestore: Filestore = odm.Compound(Filestore, default=DEFAULT_FILESTORE, description="Filestore configuration")
+    logging: Logging = odm.Compound(Logging, default=DEFAULT_LOGGING, description="Logging configuration")
+    system: System = odm.Compound(System, default=DEFAULT_SYSTEM, description="System configuration")
+    ui: UI = odm.Compound(UI, default=DEFAULT_UI, description="UI configuration parameters")
 
 
 DEFAULT_CONFIG = {

@@ -75,9 +75,7 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
     hit.gcp.resource_id = get_random_id()
     hit.user.name = get_random_word()
     hit.user_agent.original = get_random_user_agent()
-    hit.howler.analytic = choice(
-        ["Password Checker", "Bad Guy Finder", "Exploit Patcher"]
-    )
+    hit.howler.analytic = choice(["Password Checker", "Bad Guy Finder", "Exploit Patcher"])
     hit.howler.detection = hit.threat.tactic.name
 
     for i in range(len(hit.howler.comment)):
@@ -85,12 +83,12 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
 
     hit.howler.labels.assignments = sample(
         [
-            "Team 1",
-            "Team 2",
-            "Team 3",
-            "Team 4",
-            "Team 5",
-            "Team 6",
+            "APA2B",
+            "CCID1A",
+            "ACE1C",
+            "APA1B",
+            "ADS4B",
+            "ADS2A",
         ],
         1,
     )
@@ -163,14 +161,14 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
                 "array": ["a", "b", "c"],
             }
         ),
-        json.dumps(
-            {"key": "value1", "boolean": False, "number": 34, "float": 10678.098}
-        ),
+        json.dumps({"key": "value1", "boolean": False, "number": 34, "float": 10678.098}),
         "not json just a string",
         json.dumps(
             {
                 "KQLQuery": (
-                    "StormEvents\n| take 5\n| project State, EventType, DamageProperty"
+                    "\n    let ioc_lookBack = 14d;\n    let deviceActionAllowed = datatable (action:string) [\n"
+                    'NetworkIP\n    | parse kind=regex flags = U SourceZoneURI_CF with * "[\\\\s\\\\S-]+/" Department '
+                    "summarize Summary=make_list(Source_Overview) by Indicator\n"
                 ),
             }
         ),
@@ -259,7 +257,7 @@ def create_users_with_username(ds: HowlerDatastore, usernames: list[str]):
         user_data = User(
             {
                 "name": f"{username}",
-                "email": f"{username}@example.com",
+                "email": f"{username}@howler.cyber.gc.ca",
                 "apikeys": {
                     "devkey": {
                         "acl": ["R", "W"],

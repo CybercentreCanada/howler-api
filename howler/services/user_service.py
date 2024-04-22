@@ -132,9 +132,7 @@ def parse_user_data(
     current_user: Optional[dict[str, Any]] = None
     if has_access and user_data["email"] is not None:
         # Find if user already exists
-        users: list[dict[str, Any]] = storage.user.search(
-            f"email:{user_data['email']}", fl="*", as_obj=False
-        )["items"]
+        users: list[dict[str, Any]] = storage.user.search(f"email:{user_data['email']}", fl="*", as_obj=False)["items"]
 
         if users:
             current_user = users[0]
@@ -158,9 +156,7 @@ def parse_user_data(
         username = user_data["uname"]
 
         # Add add dynamic classification group
-        user_data["classification"] = get_dynamic_classification(
-            user_data["classification"], user_data["email"]
-        )
+        user_data["classification"] = get_dynamic_classification(user_data["classification"], user_data["email"])
 
         # Make sure the user exists in howler and is in sync
         if (not current_user and oauth_provider_config.auto_create) or (
@@ -265,11 +261,7 @@ def add_access_control(user: dict[str, Any]):
     )
     gl1_query = f"({gl1_query}) AND "
 
-    req = list(
-        set(Classification.get_access_control_req()).difference(
-            set(user["__access_req__"])
-        )
-    )
+    req = list(set(Classification.get_access_control_req()).difference(set(user["__access_req__"])))
     req_query = " OR ".join([f'__access_req__:"{r}"' for r in req])
     if req_query:
         req_query = f"-({req_query}) AND "
@@ -280,9 +272,7 @@ def add_access_control(user: dict[str, Any]):
     user["access_control"] = safe_str(query)
 
 
-def save_user_account(
-    username: str, data: dict[str, Any], user: dict[str, Any]
-) -> bool:
+def save_user_account(username: str, data: dict[str, Any], user: dict[str, Any]) -> bool:
     """Create or update a user in the database
 
     Args:
@@ -308,9 +298,7 @@ def save_user_account(
         raise AccessDeniedException("You are not allowed to change the username.")
 
     if username != user["uname"] and "admin" not in user["type"]:
-        raise AccessDeniedException(
-            "You are not allowed to change another user than yourself."
-        )
+        raise AccessDeniedException("You are not allowed to change another user than yourself.")
 
     storage = datastore()
     current = storage.user.get_if_exists(username, as_obj=False)
@@ -318,13 +306,9 @@ def save_user_account(
         if "admin" not in user["type"]:
             for key in current.keys():
                 if data[key] != current[key] and key not in ACCOUNT_USER_MODIFIABLE:
-                    raise AccessDeniedException(
-                        f"Only Administrators can change the value of the field [{key}]."
-                    )
+                    raise AccessDeniedException(f"Only Administrators can change the value of the field [{key}].")
     else:
-        raise InvalidDataException(
-            f"You cannot save a user that does not exists [{username}]."
-        )
+        raise InvalidDataException(f"You cannot save a user that does not exists [{username}].")
 
     if avatar == "DELETE":
         storage.user_avatar.delete(username)
@@ -347,7 +331,5 @@ def get_dynamic_classification(current_c12n: str, email: str) -> str:
 
     if Classification.dynamic_groups and email:
         dyn_group = email.upper().split("@")[1]
-        return Classification.build_user_classification(
-            current_c12n, f"{Classification.UNRESTRICTED}//{dyn_group}"
-        )
+        return Classification.build_user_classification(current_c12n, f"{Classification.UNRESTRICTED}//{dyn_group}")
     return current_c12n

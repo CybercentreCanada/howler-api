@@ -208,17 +208,14 @@ class _Field:
 
     def check(self, value, **kwargs):
         raise HowlerNotImplementedError(
-            "This function is not defined in the default field. "
-            "Each fields has to have their own definition"
+            "This function is not defined in the default field. " "Each fields has to have their own definition"
         )
 
     def __repr__(self) -> str:
         keys = [
             key
             for key in self.__dir__()
-            if not key.startswith("_")
-            and not callable(getattr(self, key))
-            and getattr(self, key) is not None
+            if not key.startswith("_") and not callable(getattr(self, key)) and getattr(self, key) is not None
         ]
         return f"{type(self).__name__}({', '.join([f'{key}={str(getattr(self, key))}' for key in keys])})"
 
@@ -293,9 +290,7 @@ class Keyword(_Field):
             return None
 
         if isinstance(value, bytes):
-            raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] Keyword doesn't accept bytes values"
-            )
+            raise HowlerValueError(f"[{'.'.join(context) or self.name}] Keyword doesn't accept bytes values")
 
         if value == "" or value is None:
             if self.default_set:
@@ -323,9 +318,7 @@ class EmptyableKeyword(_Field):
         # We have a special case for bytes here due to how often strings and bytes
         # get mixed up in python apis
         if isinstance(value, bytes):
-            raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] EmptyableKeyword doesn't accept bytes values"
-            )
+            raise HowlerValueError(f"[{'.'.join(context) or self.name}] EmptyableKeyword doesn't accept bytes values")
 
         if value is None and self.default_set:
             value = self.default
@@ -384,9 +377,7 @@ class ValidatedKeyword(Keyword):
                 **{k: v for k, v in self.__dict__.items() if k in valid_fields},
             )
         else:
-            return self.__class__(
-                **{k: v for k, v in self.__dict__.items() if k in valid_fields}
-            )
+            return self.__class__(**{k: v for k, v in self.__dict__.items() if k in valid_fields})
 
     def check(self, value, context=[], **kwargs):
         if self.optional and value is None:
@@ -446,9 +437,7 @@ class Domain(Keyword):
             )
 
         if not is_valid_domain(value):
-            raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] '{value}' has a non-valid TLD."
-            )
+            raise HowlerValueError(f"[{'.'.join(context) or self.name}] '{value}' has a non-valid TLD.")
 
         return value.lower()
 
@@ -471,8 +460,7 @@ class Email(Keyword):
 
         if not is_valid_domain(match.group(1)):
             raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] '{match.group(1)}' in email '{value}'"
-                " is not a valid Domain."
+                f"[{'.'.join(context) or self.name}] '{match.group(1)}' in email '{value}'" " is not a valid Domain."
             )
 
         return value.lower()
@@ -553,9 +541,7 @@ class Enum(Keyword):
     A field storing a short string that has predefined list of possible values
     """
 
-    def __init__(
-        self, values: PyEnum | list[typing.Any] | set[typing.Any], *args, **kwargs
-    ):
+    def __init__(self, values: PyEnum | list[typing.Any] | set[typing.Any], *args, **kwargs):
         super().__init__(*args, **kwargs)
         if isinstance(values, set):
             self.values = values
@@ -574,14 +560,10 @@ class Enum(Keyword):
             if self.default_set:
                 value = self.default
             else:
-                raise HowlerValueError(
-                    f"[{'.'.join(context)}] Empty enums are not allow without defaults"
-                )
+                raise HowlerValueError(f"[{'.'.join(context)}] Empty enums are not allow without defaults")
 
         if value not in self.values:
-            raise HowlerValueError(
-                f"[{'.'.join(context)}] {value} not in the possible values: {self.values}"
-            )
+            raise HowlerValueError(f"[{'.'.join(context)}] {value} not in the possible values: {self.values}")
 
         if value is None:
             return value
@@ -616,9 +598,7 @@ class Text(_Field):
             if self.default_set:
                 value = self.default
             else:
-                raise HowlerValueError(
-                    f"[{'.'.join(context)}] Empty strings are not allowed without defaults"
-                )
+                raise HowlerValueError(f"[{'.'.join(context)}] Empty strings are not allowed without defaults")
 
         if value is None:
             return None
@@ -676,9 +656,7 @@ class ClassificationObject(object):
         self.value = engine.normalize_classification(value, skip_auto_select=is_uc)
 
     def get_access_control_parts(self):
-        return self.engine.get_access_control_parts(
-            self.value, user_classification=self.is_uc
-        )
+        return self.engine.get_access_control_parts(self.value, user_classification=self.is_uc)
 
     def min(self, other):
         return ClassificationObject(
@@ -702,14 +680,10 @@ class ClassificationObject(object):
         )
 
     def long(self):
-        return self.engine.normalize_classification(
-            self.value, skip_auto_select=self.is_uc
-        )
+        return self.engine.normalize_classification(self.value, skip_auto_select=self.is_uc)
 
     def small(self):
-        return self.engine.normalize_classification(
-            self.value, long_format=False, skip_auto_select=self.is_uc
-        )
+        return self.engine.normalize_classification(self.value, long_format=False, skip_auto_select=self.is_uc)
 
     def __str__(self):
         return self.value
@@ -775,9 +749,7 @@ class ClassificationString(Keyword):
                 )
 
         if not self.engine.is_valid(value):
-            raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}]: Invalid classification: {value}"
-            )
+            raise HowlerValueError(f"[{'.'.join(context) or self.name}]: Invalid classification: {value}")
 
         return str(value)
 
@@ -787,9 +759,7 @@ class TypedList(list):
         self.context = context
         self.type = type_p
 
-        super().__init__(
-            [type_p.check(el, context=self.context, **kwargs) for el in items]
-        )
+        super().__init__([type_p.check(el, context=self.context, **kwargs) for el in items])
 
     def append(self, item):
         super().append(self.type.check(item, context=self.context))
@@ -863,9 +833,7 @@ class TypedMapping(dict):
             if not self.sanitizer.match(key):
                 raise HowlerKeyError(f"[{'.'.join(self.context)}]: Illegal key {key}")
 
-        super().__init__(
-            {key: type_p.check(el, context=self.context) for key, el in items.items()}
-        )
+        super().__init__({key: type_p.check(el, context=self.context) for key, el in items.items()})
         self.type = type_p
 
     def __setitem__(self, key, item):
@@ -880,43 +848,25 @@ class TypedMapping(dict):
         if len(args) == 1 and isinstance(args[0], dict):
             for key in args[0].keys():
                 if not self.sanitizer.match(key):
-                    raise HowlerKeyError(
-                        f"[{'.'.join(self.context)}]: Illegal key: {key}"
-                    )
+                    raise HowlerKeyError(f"[{'.'.join(self.context)}]: Illegal key: {key}")
 
-            return super().update(
-                {
-                    key: self.type.check(item, context=self.context)
-                    for key, item in args[0].items()
-                }
-            )
+            return super().update({key: self.type.check(item, context=self.context) for key, item in args[0].items()})
 
         # 2. A list of key value pairs as if you were constructing a dictionary
         elif args:
             for key, _ in args:
                 if not self.sanitizer.match(key):
-                    raise HowlerKeyError(
-                        f"[{'.'.join(self.context)}]: Illegal key: {key}"
-                    )
+                    raise HowlerKeyError(f"[{'.'.join(self.context)}]: Illegal key: {key}")
 
-            return super().update(
-                {key: self.type.check(item, context=self.context) for key, item in args}
-            )
+            return super().update({key: self.type.check(item, context=self.context) for key, item in args})
 
         # 3. Key values as arguments, can be combined with others
         if kwargs:
             for key in kwargs.keys():
                 if not self.sanitizer.match(key):
-                    raise HowlerKeyError(
-                        f"[{'.'.join(self.context)}]: Illegal key: {key}"
-                    )
+                    raise HowlerKeyError(f"[{'.'.join(self.context)}]: Illegal key: {key}")
 
-            return super().update(
-                {
-                    key: self.type.check(item, context=self.context)
-                    for key, item in kwargs.items()
-                }
-            )
+            return super().update({key: self.type.check(item, context=self.context) for key, item in kwargs.items()})
 
 
 class Mapping(_Field):
@@ -955,9 +905,7 @@ class FlattenedListObject(Mapping):
         if self.optional and value is None:
             return None
 
-        return TypedMapping(
-            self.child_type, self.index, self.store, FLATTENED_OBJECT_SANITIZER, **value
-        )
+        return TypedMapping(self.child_type, self.index, self.store, FLATTENED_OBJECT_SANITIZER, **value)
 
     def apply_defaults(self, index, store):
         """Initialize the default settings for the child field."""
@@ -1121,9 +1069,7 @@ class Model:
         return out
 
     @classmethod
-    def flat_fields(
-        cls, show_compound=False, skip_mappings=False
-    ) -> _Mapping[str, _Field]:
+    def flat_fields(cls, show_compound=False, skip_mappings=False) -> _Mapping[str, _Field]:
         """
         Describe the elements of the model.
 
@@ -1167,16 +1113,14 @@ class Model:
         )
 
         # Header
-        markdown_content += (
-            f"{'#'*toc_depth} {cls.__name__}\n\n> {cls.__description}\n\n"
-        )
+        markdown_content += f"{'#'*toc_depth} {cls.__name__}\n\n> {cls.__description}\n\n"
 
         # Table
         table = "| Field | Type | Description | Required | Default |\n| :--- | :--- | :--- | :--- | :--- |\n"
 
         # Determine the type of Field we're dealing with
         # if possible return the Model class if wrapped in Compound
-        def get_type(field_class: _Field) -> Tuple(str, Model):
+        def get_type(field_class: _Field) -> Tuple[str, Model]:
             if field_class.__class__ == Optional:
                 return get_type(field_class.child_type)
             elif field_class.__class__ == Compound:
@@ -1213,9 +1157,7 @@ class Model:
 
             # If field type is Enum, then show the possible values that can be used in the description
             if field_type == "Enum":
-                values = (
-                    info.child_type.values if info.__class__ != Enum else info.values
-                )
+                values = info.child_type.values if info.__class__ != Enum else info.values
                 none_value = False
                 if None in values:
                     none_value = True
@@ -1241,11 +1183,7 @@ class Model:
             # Determine the correct default values to display
             default = f"`{info.default}`"
             # If the field is a model, then provide a link to that documentation
-            if (
-                field_class
-                and issubclass(field_class, Model)
-                and isinstance(info.default, dict)
-            ):
+            if field_class and issubclass(field_class, Model) and isinstance(info.default, dict):
                 ref_link = field_type[field_type.index("(") : field_type.index(")") + 1]
                 default = f"See [{field_class.__name__}]{ref_link} for more details."
 
@@ -1255,9 +1193,7 @@ class Model:
                 default = f"`{val if not isinstance(val, dict) else info.default}`"
             elif isinstance(defaults, list):
                 default = f"`{defaults}`"
-            row = (
-                f"| {field} | {field_type} | {description} | {required} | {default} |\n"
-            )
+            row = f"| {field} | {field_type} | {description} | {required} | {default} |\n"
             table += row
 
         markdown_content += table + "\n\n"
@@ -1284,9 +1220,7 @@ class Model:
         if data is None:
             data = {}
         if not hasattr(data, "items"):
-            raise HowlerTypeError(
-                f"'{self.__class__.__name__}' object must be constructed with dict like"
-            )
+            raise HowlerTypeError(f"'{self.__class__.__name__}' object must be constructed with dict like")
         self._odm_py_obj = {}
         self._id = docid
         self.context = context
@@ -1319,8 +1253,7 @@ class Model:
         extra_keys = set(extra_fields.keys()) - set(data.keys())
         if self.unused_keys and not ignore_extra_values:
             raise HowlerValueError(
-                f"[{'.'.join(context)}]: object was created with invalid parameters: "
-                f"{', '.join(self.unused_keys)}"
+                f"[{'.'.join(context)}]: object was created with invalid parameters: " f"{', '.join(self.unused_keys)}"
             )
 
         # Pass each value through it's respective validator, and store it
@@ -1337,30 +1270,22 @@ class Model:
                 if field_type.default_set:
                     value = copy.copy(field_type.default)
                 elif not field_type.optional:
-                    raise HowlerValueError(
-                        f"[{'.'.join([*context, name])}]: value is missing from the object!"
-                    )
+                    raise HowlerValueError(f"[{'.'.join([*context, name])}]: value is missing from the object!")
                 else:
                     value = None
 
-            self._odm_py_obj[name.rstrip("_")] = field_type.check(
-                value, context=[*context, name], **params
-            )
+            self._odm_py_obj[name.rstrip("_")] = field_type.check(value, context=[*context, name], **params)
 
             value = None
 
         for key in extra_keys:
-            self._odm_py_obj[key.rstrip("_")] = Any().check(
-                extra_fields[key], context=[*context, name]
-            )
+            self._odm_py_obj[key.rstrip("_")] = Any().check(extra_fields[key], context=[*context, name])
 
         # Since the layout of model objects should be fixed, don't allow any further
         # attribute assignment
         self.__frozen = True
 
-    def as_primitives(
-        self, hidden_fields=False, strip_null=False
-    ) -> dict[str, typing.Any]:
+    def as_primitives(self, hidden_fields=False, strip_null=False) -> dict[str, typing.Any]:
         """Convert the object back into primitives that can be json serialized."""
         out = {}
 
@@ -1377,22 +1302,11 @@ class Model:
                     out[key] = value.strftime(DATEFORMAT)
                 elif isinstance(value, TypedMapping):
                     out[key] = {
-                        k: (
-                            v.as_primitives(strip_null=strip_null)
-                            if isinstance(v, Model)
-                            else v
-                        )
+                        k: (v.as_primitives(strip_null=strip_null) if isinstance(v, Model) else v)
                         for k, v in value.items()
                     }
                 elif isinstance(value, TypedList):
-                    out[key] = [
-                        (
-                            v.as_primitives(strip_null=strip_null)
-                            if isinstance(v, Model)
-                            else v
-                        )
-                        for v in value
-                    ]
+                    out[key] = [(v.as_primitives(strip_null=strip_null) if isinstance(v, Model) else v) for v in value]
                 elif isinstance(value, ClassificationObject):
                     out[key] = str(value)
                     if hidden_fields:

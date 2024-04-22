@@ -81,19 +81,12 @@ def execute(query: str, bundle_id=None, **kwargs):
 
         ds.hit.update_by_query(
             safe_query,
-            [
-                hit_helper.list_add(
-                    f"howler.bundles", sanitize_lucene_query(bundle_id), if_missing=True
-                )
-            ],
+            [hit_helper.list_add(f"howler.bundles", sanitize_lucene_query(bundle_id), if_missing=True)],
         )
 
         hit_service.update_hit(
             bundle_id,
-            [
-                hit_helper.list_add(f"howler.hits", h["howler"]["id"], if_missing=True)
-                for h in matching_hits
-            ],
+            [hit_helper.list_add(f"howler.hits", h["howler"]["id"], if_missing=True) for h in matching_hits],
         )
 
         report.append(
@@ -133,9 +126,7 @@ def specification():
                 "args": {"bundle_id": []},
                 "options": {},
                 "validation": {
-                    "warn": {
-                        "query": "howler.bundles:($bundle_id) OR howler.is_bundle:true"
-                    },
+                    "warn": {"query": "howler.bundles:($bundle_id) OR howler.is_bundle:true"},
                     "error": {
                         "query": "howler.id:$bundle_id AND howler.is_bundle:false",
                         "message": "The bundle id given must be a bundle.",

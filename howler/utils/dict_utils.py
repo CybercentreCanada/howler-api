@@ -27,9 +27,7 @@ def recursive_update(
 
     for k, v in u.items():
         if isinstance(v, Mapping) and allow_recursion:
-            d[k] = recursive_update(
-                d.get(k, {}), v, stop_keys=stop_keys, allow_recursion=k not in stop_keys
-            )
+            d[k] = recursive_update(d.get(k, {}), v, stop_keys=stop_keys, allow_recursion=k not in stop_keys)
         else:
             d[k] = v
 
@@ -125,9 +123,7 @@ def unflatten(data: _Mapping) -> _Mapping:
     return out
 
 
-def prune(
-    data: _Mapping, keys: list[str], parent_key: Optional[str] = None
-) -> dict[str, Any]:
+def prune(data: _Mapping, keys: list[str], parent_key: Optional[str] = None) -> dict[str, Any]:
     pruned_items: list[tuple[str, Any]] = []
 
     for key, val in data.items():
@@ -139,9 +135,7 @@ def prune(
             if len(child_keys) > 0:
                 pruned_items.append((key, prune(val, child_keys, cur_key)))
         elif isinstance(val, list):
-            if not cur_key in keys and not any(
-                _key.startswith(cur_key) for _key in keys
-            ):
+            if not cur_key in keys and not any(_key.startswith(cur_key) for _key in keys):
                 continue
 
             list_result = []

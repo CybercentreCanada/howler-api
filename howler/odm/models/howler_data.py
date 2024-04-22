@@ -13,9 +13,7 @@ class HowlerEnumMeta(EnumMeta):
         lowercase = str(obj)
         uppercase = lowercase.upper().replace("-", "_")
 
-        return uppercase in [e.name for e in self] or lowercase in [
-            e.value for e in self
-        ]
+        return uppercase in [e.name for e in self] or lowercase in [e.value for e in self]
 
     def __getitem__(self, name):
         return super().__getitem__(str(name).upper().replace("-", "_"))
@@ -142,12 +140,8 @@ class Link(odm.Model):
 @odm.model(index=True, store=True, description="Comment definition.")
 class Comment(odm.Model):
     id = odm.UUID(description="A unique ID for the comment.")
-    timestamp = odm.Date(
-        description="Timestamp at which the comment took place.", default="NOW"
-    )
-    modified = odm.Date(
-        description="Timestamp at which the comment was last edited.", default="NOW"
-    )
+    timestamp = odm.Date(description="Timestamp at which the comment took place.", default="NOW")
+    modified = odm.Date(description="Timestamp at which the comment was last edited.", default="NOW")
     value = odm.Text(description="The comment itself.")
     user = odm.Keyword(description="User ID who created the comment.")
     reactions: dict[str, str] = odm.Mapping(
@@ -161,23 +155,11 @@ class Comment(odm.Model):
 class Log(odm.Model):
     timestamp = odm.Date(description="Timestamp at which the Log event took place.")
     key = odm.Optional(odm.Keyword(description="The key whose value changed."))
-    explanation = odm.Optional(
-        odm.Text(description="A manual description of the changes made.")
-    )
-    previous_version = odm.Optional(
-        odm.Keyword(description="The version this action was applied to.")
-    )
-    new_value = odm.Optional(
-        odm.Keyword(description="The value the key is changing to.")
-    )
-    type = odm.Optional(
-        odm.Enum(
-            values=HitOperationType, description="The operation performed on the value."
-        )
-    )
-    previous_value = odm.Optional(
-        odm.Keyword(description="The value the key is changing from.")
-    )
+    explanation = odm.Optional(odm.Text(description="A manual description of the changes made."))
+    previous_version = odm.Optional(odm.Keyword(description="The version this action was applied to."))
+    new_value = odm.Optional(odm.Keyword(description="The value the key is changing to."))
+    type = odm.Optional(odm.Enum(values=HitOperationType, description="The operation performed on the value."))
+    previous_value = odm.Optional(odm.Keyword(description="The value the key is changing from."))
     user = odm.Keyword(description="User ID who created the log event.")
 
     def __init__(self, data: dict = None, *args, **kwargs):
@@ -195,51 +177,27 @@ class Log(odm.Model):
 class Header(odm.Model):
     threat: Optional[str] = odm.Optional(odm.Text(description="The IP of the threat."))
     target: Optional[str] = odm.Optional(odm.Text(description="The target of the hit."))
-    indicators: list[str] = odm.List(
-        odm.Text(description="Indicators of the hit."), default=[]
-    )
+    indicators: list[str] = odm.List(odm.Text(description="Indicators of the hit."), default=[])
     summary: Optional[str] = odm.Optional(odm.Text(description="Summary of the hit."))
 
 
 @odm.model(index=True, store=True, description="Labels for the hit")
 class Label(odm.Model):
-    assignments = odm.List(
-        odm.Text(description="List of assignments for the hit."), default=[]
-    )
-    generic = odm.List(
-        odm.Text(description="List of generic labels for the hit."), default=[]
-    )
-    insight = odm.List(
-        odm.Text(description="List of insight labels for the hit."), default=[]
-    )
-    mitigation = odm.List(
-        odm.Text(description="List of mitigation labels for the hit."), default=[]
-    )
-    victim = odm.List(
-        odm.Text(description="List of victim labels for the hit."), default=[]
-    )
-    campaign = odm.List(
-        odm.Text(description="List of campaign labels for the hit."), default=[]
-    )
-    threat = odm.List(
-        odm.Text(description="List of threat labels for the hit."), default=[]
-    )
-    operation = odm.List(
-        odm.Text(description="List of operation labels for the hit."), default=[]
-    )
+    assignments = odm.List(odm.Text(description="List of assignments for the hit."), default=[])
+    generic = odm.List(odm.Text(description="List of generic labels for the hit."), default=[])
+    insight = odm.List(odm.Text(description="List of insight labels for the hit."), default=[])
+    mitigation = odm.List(odm.Text(description="List of mitigation labels for the hit."), default=[])
+    victim = odm.List(odm.Text(description="List of victim labels for the hit."), default=[])
+    campaign = odm.List(odm.Text(description="List of campaign labels for the hit."), default=[])
+    threat = odm.List(odm.Text(description="List of threat labels for the hit."), default=[])
+    operation = odm.List(odm.Text(description="List of operation labels for the hit."), default=[])
 
 
 @odm.model(index=True, store=True, description="Votes for the hit")
 class Votes(odm.Model):
-    benign: list[str] = odm.List(
-        odm.Keyword(), default=[], description="List of users who voted benign."
-    )
-    obscure: list[str] = odm.List(
-        odm.Keyword(), default=[], description="List of users who voted obscure."
-    )
-    malicious: list[str] = odm.List(
-        odm.Keyword(), default=[], description="List of users who voted malicious."
-    )
+    benign: list[str] = odm.List(odm.Keyword(), default=[], description="List of users who voted benign.")
+    obscure: list[str] = odm.List(odm.Keyword(), default=[], description="List of users who voted obscure.")
+    malicious: list[str] = odm.List(odm.Keyword(), default=[], description="List of users who voted malicious.")
 
 
 DEFAULT_VOTES = {vote: [] for vote in Vote.list()}
@@ -274,21 +232,15 @@ class HowlerData(odm.Model):
         default=[],
         description="A list of links associated with this hit.",
     )
-    detection: Optional[str] = odm.Optional(
-        odm.Keyword(description="The detection that produced this hit.")
-    )
-    hash: str = odm.SHA256(
-        description="A hash of the event used for deduplicating hits."
-    )
+    detection: Optional[str] = odm.Optional(odm.Keyword(description="The detection that produced this hit."))
+    hash: str = odm.SHA256(description="A hash of the event used for deduplicating hits.")
     hits: list[str] = odm.List(
         odm.Keyword(
             description="A list of hit IDs this bundle represents. Corresponds to the howler.id of the child hit."
         ),
         default=[],
     )
-    is_bundle: bool = odm.Boolean(
-        description="Is this hit a bundle or a normal hit?", default=False
-    )
+    is_bundle: bool = odm.Boolean(description="Is this hit a bundle or a normal hit?", default=False)
     related: list[str] = odm.List(
         odm.Keyword(
             description="Related hits grouped by the enrichment that correlated them. Populated by enrichments."
@@ -296,31 +248,19 @@ class HowlerData(odm.Model):
         default=[],
     )
     reliability: Optional[float] = odm.Optional(
-        odm.Float(
-            description="Metric decoupled from the value in the detection information."
-        )
+        odm.Float(description="Metric decoupled from the value in the detection information.")
     )
     severity: Optional[float] = odm.Optional(
-        odm.Float(
-            description="Metric decoupled from the value in the detection information."
-        )
+        odm.Float(description="Metric decoupled from the value in the detection information.")
     )
     volume: Optional[float] = odm.Optional(
-        odm.Float(
-            description="Metric decoupled from the value in the detection information."
-        )
+        odm.Float(description="Metric decoupled from the value in the detection information.")
     )
     confidence: Optional[float] = odm.Optional(
-        odm.Float(
-            description="Metric decoupled from the value in the detection information."
-        )
+        odm.Float(description="Metric decoupled from the value in the detection information.")
     )
-    score: float = odm.Float(
-        description="A score assigned by an enrichment to help prioritize triage."
-    )
-    status = odm.Enum(
-        values=HitStatus, default=HitStatus.OPEN, description="Status of the hit."
-    )
+    score: float = odm.Float(description="A score assigned by an enrichment to help prioritize triage.")
+    status = odm.Enum(values=HitStatus, default=HitStatus.OPEN, description="Status of the hit.")
     scrutiny = odm.Enum(
         values=Scrutiny,
         default=Scrutiny.UNSEEN,
@@ -331,14 +271,11 @@ class HowlerData(odm.Model):
         default=Escalation.HIT,
         description="Level of escalation of this hit.",
     )
-    assessment: Optional[str] = odm.Optional(
-        odm.Enum(values=Assessment, description="Assessment of the hit.")
-    )
+    assessment: Optional[str] = odm.Optional(odm.Enum(values=Assessment, description="Assessment of the hit."))
     rationale: Optional[str] = odm.Optional(
         odm.Text(
             description=(
-                "The rationale behind the hit assessment. Allows it to be understood and"
-                " verified by other analysts."
+                "The rationale behind the hit assessment. Allows it to be understood and" " verified by other analysts."
             )
         )
     )
@@ -353,20 +290,12 @@ class HowlerData(odm.Model):
         description="A list of changes to the hit with timestamps and attribution.",
     )
     retained: Optional[str] = odm.Optional(
-        odm.Keyword(description="If the hit was retained, this is a link where.")
+        odm.Keyword(description="If the hit was retained, this is a link to it in Alfred.")
     )
-    monitored: Optional[str] = odm.Optional(
-        odm.Keyword(description="Link to the incident monitoring dashboard.")
-    )
-    reported: Optional[str] = odm.Optional(
-        odm.Keyword(description="Link to the incident report.")
-    )
-    mitigated: Optional[str] = odm.Optional(
-        odm.Keyword(description="Link to the mitigation record (tool dependent).")
-    )
-    outline: Optional[Header] = odm.Optional(
-        odm.Compound(Header), description="The user specified header of the hit"
-    )
+    monitored: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident monitoring dashboard."))
+    reported: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident report."))
+    mitigated: Optional[str] = odm.Optional(odm.Keyword(description="Link to the mitigation record (tool dependent)."))
+    outline: Optional[Header] = odm.Optional(odm.Compound(Header), description="The user specified header of the hit")
     labels: Label = odm.Optional(
         odm.Compound(Label),
         default=DEFAULT_LABELS,

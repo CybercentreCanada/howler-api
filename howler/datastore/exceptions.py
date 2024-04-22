@@ -36,9 +36,5 @@ class MultiKeyError(HowlerKeyError):
 
 
 class HowlerScanError(HowlerException, ScanError):
-    def __init__(
-        self, message: str = "Something went wrong", cause: Optional[Exception] = None
-    ) -> None:
-        HowlerException.__init__(
-            self, message, cause if cause is not None else ScanError(message)
-        )
+    def __init__(self, message: str = "Something went wrong", cause: Optional[Exception] = None) -> None:
+        HowlerException.__init__(self, message, cause if cause is not None else ScanError(message))

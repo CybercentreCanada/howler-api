@@ -89,9 +89,7 @@ def create_template(**kwargs):
         return bad_request(err="Invalid data format")
 
     if "keys" not in template_data:
-        return bad_request(
-            err="You must specify a list of keys when creating a template!"
-        )
+        return bad_request(err="You must specify a list of keys when creating a template!")
 
     storage = datastore()
 
@@ -151,14 +149,10 @@ def delete_template(id, user: User, **kwargs):
     existing_template: Template = storage.template.get_if_exists(id)
 
     if existing_template.type == "personal" and existing_template.owner != user.uname:
-        return forbidden(
-            err="You cannot delete a personal template that is not owned by you."
-        )
+        return forbidden(err="You cannot delete a personal template that is not owned by you.")
 
     if existing_template.type == "global" and "admin" not in user.type:
-        return forbidden(
-            err="You cannot delete a global template unless you are an administrator."
-        )
+        return forbidden(err="You cannot delete a global template unless you are an administrator.")
 
     result = storage.template.delete(id)
     if result:
@@ -197,17 +191,13 @@ def update_template_fields(id, user: User, **kwargs):
         return not_found(err="This template does not exist")
 
     new_fields = request.json
-    if not isinstance(new_fields, list) or not all(
-        isinstance(f, str) for f in new_fields
-    ):
+    if not isinstance(new_fields, list) or not all(isinstance(f, str) for f in new_fields):
         return bad_request(err="List of new fields must be a list of strings.")
 
     existing_template: Template = storage.template.get_if_exists(id)
 
     if existing_template.type == "personal" and existing_template.owner != user.uname:
-        return forbidden(
-            err="You cannot update a personal template that is not owned by you."
-        )
+        return forbidden(err="You cannot update a personal template that is not owned by you.")
 
     fields_to_add = set(new_fields) - set(existing_template.keys)
     fields_to_remove = set(existing_template.keys) - set(new_fields)
@@ -225,8 +215,6 @@ def update_template_fields(id, user: User, **kwargs):
     )
 
     try:
-        return ok(
-            storage.template.get_if_exists(existing_template.template_id, as_obj=False)
-        )
+        return ok(storage.template.get_if_exists(existing_template.template_id, as_obj=False))
     except HowlerException as e:
         return bad_request(err=str(e))

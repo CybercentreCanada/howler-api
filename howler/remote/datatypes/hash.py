@@ -62,9 +62,7 @@ class HashIterator(Generic[T]):
             self._load_next()
 
     def _load_next(self):
-        self.cursor, data = retry_call(
-            self.hash_object.c.hscan, self.hash_object.name, self.cursor
-        )
+        self.cursor, data = retry_call(self.hash_object.c.hscan, self.hash_object.name, self.cursor)
         for key, value in data.items():
             self.buffer.append((key.decode("utf-8"), json.loads(value)))
 

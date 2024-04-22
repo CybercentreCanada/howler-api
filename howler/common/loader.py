@@ -29,9 +29,7 @@ def env_substitute(buffer):
     Case insensitive.
     Variables that are found in the buffer, but are not defined as environment variables are ignored.
     """
-    return Template(buffer).safe_substitute(
-        os.environ, idpattern=None, bracedidpattern="(?a:[_a-z][_a-z0-9]*)"
-    )
+    return Template(buffer).safe_substitute(os.environ, idpattern=None, bracedidpattern="(?a:[_a-z][_a-z0-9]*)")
 
 
 _CLASSIFICATIONS: dict[Union[str, Path], "Classification"] = {}
@@ -44,9 +42,7 @@ def get_classification(yml_config: Optional[str] = None):
     log = logging.getLogger(f"{APP_NAME}.common.loader")
 
     if not yml_config:
-        yml_config_path = (
-            Path("/etc") / APP_NAME.replace("-dev", "") / "conf" / "classification.yml"
-        )
+        yml_config_path = Path("/etc") / APP_NAME.replace("-dev", "") / "conf" / "classification.yml"
         if yml_config_path.is_symlink():
             log.info("%s is a symbolic link!", yml_config_path)
             if str(yml_config_path.readlink()).startswith("..data"):
@@ -64,9 +60,7 @@ def get_classification(yml_config: Optional[str] = None):
 
         if not yml_config_path.exists():
             log.warning(f"{yml_config_path} does not exist!")
-            yml_config_path = (
-                Path("/etc") / APP_NAME.replace("-dev", "") / "classification.yml"
-            )
+            yml_config_path = Path("/etc") / APP_NAME.replace("-dev", "") / "classification.yml"
             log.warning(f"Checking at {yml_config_path} instead.")
     else:
         yml_config_path = Path(yml_config)
@@ -146,9 +140,7 @@ def _get_config(yml_config: Optional[str] = None):
     from howler.odm.models.config import Config
 
     if not yml_config:
-        yml_config_path = (
-            Path("/etc") / APP_NAME.replace("-dev", "") / "conf" / "config.yml"
-        )
+        yml_config_path = Path("/etc") / APP_NAME.replace("-dev", "") / "conf" / "config.yml"
         if not yml_config_path.exists():
             yml_config_path = Path("/etc") / APP_NAME.replace("-dev", "") / "config.yml"
     else:
@@ -165,9 +157,7 @@ def _get_config(yml_config: Optional[str] = None):
                 config = typing.cast(dict[str, Any], recursive_update(config, yml_data))
 
     # Override log level from environment variable
-    config["logging"]["log_level"] = os.environ.get(
-        f"{APP_PREFIX.upper()}_LOG_LEVEL", config["logging"]["log_level"]
-    )
+    config["logging"]["log_level"] = os.environ.get(f"{APP_PREFIX.upper()}_LOG_LEVEL", config["logging"]["log_level"])
 
     return Config(config)
 
@@ -193,9 +183,7 @@ def datastore(config=None, archive_access=True):
         config = get_config()
 
     if _datastore is None:
-        _datastore = HowlerDatastore(
-            ESStore(config=config, archive_access=archive_access)
-        )
+        _datastore = HowlerDatastore(ESStore(config=config, archive_access=archive_access))
 
     return _datastore
 

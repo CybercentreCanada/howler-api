@@ -26,10 +26,7 @@ def __sanitize_specification(spec: dict[str, Any]) -> dict[str, Any]:
             .replace("\n    ", "\n")
             .replace("Args:", "Args:\n"),
         },
-        "steps": [
-            {**step, "args": {k: list(v) for k, v in step["args"].items()}}
-            for step in spec["steps"]
-        ],
+        "steps": [{**step, "args": {k: list(v) for k, v in step["args"].items()}} for step in spec["steps"]],
     }
 
 
@@ -131,11 +128,7 @@ def specifications() -> list[dict[str, Any]]:
 
     module_path = Path(__file__).parent
 
-    for module in (
-        _file
-        for _file in module_path.iterdir()
-        if _file.suffix == ".py" and _file.name != "__init__.py"
-    ):
+    for module in (_file for _file in module_path.iterdir() if _file.suffix == ".py" and _file.name != "__init__.py"):
         try:
             automation = importlib.import_module(f"howler.actions.{module.stem}")
 

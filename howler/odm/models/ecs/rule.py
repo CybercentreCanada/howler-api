@@ -20,9 +20,7 @@ class Rule(odm.Model):
             "rule for detection of this event."
         )
     )
-    description = odm.Optional(
-        odm.Keyword(description="The description of the rule generating the event.")
-    )
+    description = odm.Optional(odm.Keyword(description="The description of the rule generating the event."))
     id = odm.Optional(
         odm.Keyword(
             description="A rule ID that is unique within the scope of an agent, observer, "
@@ -34,15 +32,9 @@ class Rule(odm.Model):
             description="Name of the license under which the rule used to generate this event is made available."
         )
     )
-    name = odm.Optional(
-        odm.Keyword(
-            description="The name of the rule or signature generating the event."
-        )
-    )
+    name = odm.Optional(odm.Keyword(description="The name of the rule or signature generating the event."))
     reference = odm.Optional(
-        odm.Keyword(
-            description="Reference URL to additional information about the rule used to generate this event."
-        )
+        odm.Keyword(description="Reference URL to additional information about the rule used to generate this event.")
     )
     ruleset = odm.Optional(
         odm.Keyword(
@@ -56,8 +48,4 @@ class Rule(odm.Model):
             "or other entities using the rule for detection of this event."
         )
     )
-    version = odm.Optional(
-        odm.Keyword(
-            description="The version / revision of the rule being used for analysis."
-        )
-    )
+    version = odm.Optional(odm.Keyword(description="The version / revision of the rule being used for analysis."))

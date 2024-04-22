@@ -34,11 +34,7 @@ def __parse_workflow_actions(workflow: Workflow):
 
         wf_args = flatten_list(
             [
-                [
-                    var
-                    for var in inspect.getfullargspec(m)[0]
-                    if var not in ["kwargs", "hit", "user", "transition"]
-                ]
+                [var for var in inspect.getfullargspec(m)[0] if var not in ["kwargs", "hit", "user", "transition"]]
                 for m in wf["actions"]
             ]
         )
@@ -74,9 +70,7 @@ def execute(
         transition (str): The transition to attempt to execute.
     """
     rows = 1000 if "automation_advanced" in user.type else 10
-    hits = datastore().hit.search(
-        f"({query}) AND howler.status:{status}", rows=rows, fl="howler.id"
-    )
+    hits = datastore().hit.search(f"({query}) AND howler.status:{status}", rows=rows, fl="howler.id")
 
     ids = [hit.howler.id for hit in hits["items"]]
 
@@ -102,9 +96,7 @@ def execute(
             }
         )
 
-    num_skipped = datastore().hit.search(
-        f"({query}) AND -howler.status:{status}", rows=1
-    )["total"]
+    num_skipped = datastore().hit.search(f"({query}) AND -howler.status:{status}", rows=1)["total"]
 
     if num_skipped > 0:
         report.append(
@@ -193,8 +185,7 @@ def specification():
                 "args": {"transition": []},
                 "options": {
                     "transition": {
-                        f"status:{status}": hit_service.get_transitions(status)
-                        for status in HitStatus.list()
+                        f"status:{status}": hit_service.get_transitions(status) for status in HitStatus.list()
                     },
                 },
             },

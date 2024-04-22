@@ -1,3 +1,4 @@
+from typing import Optional
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
@@ -7,7 +8,9 @@ from howler.odm.models.howler_data import (
     Assessment,
     AssessmentEscalationMap,
     Escalation,
+    HitStatus,
 )
+from howler.odm.models.user import User
 from howler.utils.str_utils import sanitize_lucene_query
 
 OPERATION_ID = "demote"
@@ -18,7 +21,12 @@ odm_helper = OdmHelper(Hit)
 
 
 def execute(
-    query: str, escalation=Escalation.HIT, assessment=None, rationale=None, **kwargs
+    query: str,
+    escalation=Escalation.HIT,
+    assessment=None,
+    rationale=None,
+    user: Optional[User] = None,
+    **kwargs,
 ):
     """Demote a hit.
 
@@ -80,7 +88,17 @@ def execute(
                 )
                 return report
 
-            ds.hit.update_by_query(query, hit_helper.assess_hit(assessment, rationale))
+            ds.hit.update_by_query(
+                query,
+                [
+                    *hit_helper.assess_hit(assessment, rationale),
+                    odm_helper.update(
+                        "howler.assignment",
+                        user.get("uname", "automation") if user else "automation",
+                    ),
+                    odm_helper.update("howler.status", HitStatus.RESOLVED),
+                ],
+            )
 
         report.append(
             {

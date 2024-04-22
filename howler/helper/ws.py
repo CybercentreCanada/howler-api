@@ -132,9 +132,7 @@ class Base:
         """
         if not self.connected:
             raise ConnectionClosed(self.close_reason, self.close_message)
-        out_data = self.ws.send(
-            CloseConnection(reason or CloseReason.NORMAL_CLOSURE, message)
-        )
+        out_data = self.ws.send(CloseConnection(reason or CloseReason.NORMAL_CLOSURE, message))
         try:
             self.sock.send(out_data)
         except BrokenPipeError:  # pragma: no cover
@@ -215,15 +213,8 @@ class Base:
                     self.pong_received = True
                 elif isinstance(event, (TextMessage, BytesMessage)):
                     self.incoming_message_len += len(event.data)
-                    if (
-                        self.max_message_size
-                        and self.incoming_message_len > self.max_message_size
-                    ):
-                        out_data += self.ws.send(
-                            CloseConnection(
-                                CloseReason.MESSAGE_TOO_BIG, "Message is too big"
-                            )
-                        )
+                    if self.max_message_size and self.incoming_message_len > self.max_message_size:
+                        out_data += self.ws.send(CloseConnection(CloseReason.MESSAGE_TOO_BIG, "Message is too big"))
                         self.event.set()
                         keep_going = False
                         break
@@ -237,18 +228,14 @@ class Base:
                     elif isinstance(event, TextMessage):
                         if not isinstance(self.incoming_message, bytearray):
                             # convert to bytearray and append
-                            self.incoming_message = bytearray(
-                                (self.incoming_message + event.data).encode()
-                            )
+                            self.incoming_message = bytearray((self.incoming_message + event.data).encode())
                         else:
                             # append to bytearray
                             self.incoming_message += event.data.encode()
                     else:
                         if not isinstance(self.incoming_message, bytearray):
                             # convert to mutable bytearray and append
-                            self.incoming_message = bytearray(
-                                self.incoming_message + event.data
-                            )
+                            self.incoming_message = bytearray(self.incoming_message + event.data)
                         else:
                             # append to bytearray
                             self.incoming_message += event.data
@@ -342,9 +329,7 @@ class Server(Base):
             # extract socket from Eventlet's WSGI environment
             sock = environ.get("eventlet.input").get_socket()
             self.mode = "eventlet"
-        elif environ.get("SERVER_SOFTWARE", "").startswith(
-            "gevent"
-        ):  # pragma: no cover
+        elif environ.get("SERVER_SOFTWARE", "").startswith("gevent"):  # pragma: no cover
             # extract socket from Gevent's WSGI environment
             wsgi_input = environ["wsgi.input"]
             if not hasattr(wsgi_input, "raw") and hasattr(wsgi_input, "rfile"):

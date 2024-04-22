@@ -12,9 +12,7 @@ from howler import odm
     ),
 )
 class Server(odm.Model):
-    ip: Optional[str] = odm.Optional(
-        odm.IP(description="IP address of the server (IPv4 or IPv6).")
-    )
+    ip: Optional[str] = odm.Optional(odm.IP(description="IP address of the server (IPv4 or IPv6)."))
     address: Optional[str] = odm.Optional(
         odm.Keyword(
             description=(
@@ -23,6 +21,4 @@ class Server(odm.Model):
             )
         )
     )
-    domain: Optional[str] = odm.Optional(
-        odm.Keyword(description="The domain name of the server system.")
-    )
+    domain: Optional[str] = odm.Optional(odm.Keyword(description="The domain name of the server system."))
