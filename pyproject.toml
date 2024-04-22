@@ -146,21 +146,6 @@ redis = "4.5.4"
 requests = "2.31.0"
 wsproto = "1.2.0"
 chevron = "0.14.0"
-# internal: begin
-alfred-client = "1.0.12056"
-hogwarts-auth = "2.0.3.14851"
-hogwarts-spellbook = "0.0.1.15222"
-
-[[tool.poetry.source]]
-name = "bagofholding"
-url = "https://bagofholding.cse-cst.gc.ca/repository/pypi/simple/"
-priority = "primary"
-
-[[tool.poetry.source]]
-name = "nexus-u"
-url = "https://nexus.u.azure.chimera.cyber.gc.ca/repository/pypi-group/simple"
-priority = "supplemental"
-# internal: end
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"
