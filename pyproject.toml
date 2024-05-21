@@ -143,7 +143,7 @@ python-baseconv = "1.2.2"
 python-datemath = "1.5.5"
 pyyaml = "6.0"
 redis = "4.5.4"
-requests = "2.31.0"
+requests = "2.32.0"
 wsproto = "1.2.0"
 chevron = "0.14.0"
 
