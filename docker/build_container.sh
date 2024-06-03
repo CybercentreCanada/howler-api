@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 # Get version
-version=$( (cd .. && python setup.py --version))
+version=$( (cd .. && poetry version --short))
 
 # Clean build dir
 (cd .. && python setup.py clean --all && rm -rf dist)
