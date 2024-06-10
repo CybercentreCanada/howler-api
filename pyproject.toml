@@ -119,7 +119,7 @@ repository = "https://github.com/CybercentreCanada/howler-api"
 [tool.poetry.dependencies]
 python = "^3.9"
 apscheduler = "3.10.4"
-authlib = "<1.0.0"
+authlib = "<2.0.0"
 azure-identity = "1.12.0"
 azure-storage-blob = "12.14.1"
 boto3 = "^1.34.81"
