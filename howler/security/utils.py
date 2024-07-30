@@ -168,6 +168,9 @@ def get_random_password(alphabet: Optional[List] = None, length=24) -> str:
 
 def get_disco_url(host_url: str):
     if type(host_url) is str and "localhost" not in host_url:
+        if not host_url.startswith("http"):
+            host_url = f"https://{host_url}"
+
         original_hostname = urlparse(host_url).hostname
 
         if original_hostname:
