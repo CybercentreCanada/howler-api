@@ -36,6 +36,7 @@ resources:
         - 6379:6379
       env:
         ALLOW_EMPTY_PASSWORD: yes
+
     - container: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:8.5.2
       env:
@@ -45,6 +46,7 @@ resources:
         xpack.security.enabled: "false"
       ports:
         - 9200:9200
+
     - container: minio
       image: bitnami/minio:2022.10.8-debian-11-r0
       env:
@@ -52,6 +54,13 @@ resources:
         MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
       ports:
         - 9000:9000
+
+    - container: keycloak
+      image: uchimera.azurecr.io/cccs/ap-mini/keycloak:1.0.1
+      ports:
+        - 9100:8080
+      registry: $(containerRegistry)
+      endpoint: uchimera
 
 stages:
   - stage: test

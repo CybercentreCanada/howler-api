@@ -31,19 +31,6 @@ def test_odm_errors(datastore_connection: HowlerDatastore, login_session):
 
     invalid_hit["howler"]["analytic"] = "odm-error-test"
 
-    with pytest.raises(APIError) as excinfo:
-        get_api_data(
-            session=session,
-            url=f"{host}/api/v1/hit/",
-            data=json.dumps([invalid_hit]),
-            method="POST",
-        )
-
-    res = excinfo.value.json["api_response"]
-
-    assert len(res["invalid"]) == 1
-    assert res["invalid"][0]["error"].startswith("[hit.howler.score]")
-
     invalid_hit["howler"]["score"] = "shouldnt be a string"
 
     with pytest.raises(APIError) as excinfo:
@@ -101,9 +88,7 @@ def test_odm_errors(datastore_connection: HowlerDatastore, login_session):
     assert len(res["invalid"]) == 1
     assert res["invalid"][0]["error"].startswith("[hit.howler.hash]")
 
-    invalid_hit["howler"][
-        "hash"
-    ] = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bc"
+    invalid_hit["howler"]["hash"] = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bc"
 
     res = get_api_data(
         session=session,

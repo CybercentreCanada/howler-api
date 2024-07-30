@@ -1,11 +1,11 @@
 import os
-from pathlib import Path
 import re
 import shlex
 import subprocess
 import sys
 import textwrap
 import time
+from pathlib import Path
 
 
 def prep_command(cmd: str):
@@ -74,6 +74,7 @@ def main():
                 print(
                     "##vso[task.setvariable variable=error_result]" + markdown_output.replace("\n", "%0D%0A") + "\n\n"
                 )
+
             raise subprocess.CalledProcessError(return_code, pytest.args, output=output, stderr=None)
 
         print("Shutting down background server")

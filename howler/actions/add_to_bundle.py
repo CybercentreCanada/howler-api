@@ -61,7 +61,7 @@ def execute(query: str, bundle_id=None, **kwargs):
                     "query": f"({query}) AND (howler.bundles:{sanitize_lucene_query(bundle_id)})",
                     "outcome": "skipped",
                     "title": "Skipped Hits",
-                    "message": f"These hits have already been added to the specified bundle.",
+                    "message": "These hits have already been added to the specified bundle.",
                 }
             )
 
@@ -74,19 +74,19 @@ def execute(query: str, bundle_id=None, **kwargs):
                     "query": safe_query,
                     "outcome": "skipped",
                     "title": "No Matching Hits",
-                    "message": f"There were no hits matching this query.",
+                    "message": "There were no hits matching this query.",
                 }
             )
             return report
 
         ds.hit.update_by_query(
             safe_query,
-            [hit_helper.list_add(f"howler.bundles", sanitize_lucene_query(bundle_id), if_missing=True)],
+            [hit_helper.list_add("howler.bundles", sanitize_lucene_query(bundle_id), if_missing=True)],
         )
 
         hit_service.update_hit(
             bundle_id,
-            [hit_helper.list_add(f"howler.hits", h["howler"]["id"], if_missing=True) for h in matching_hits],
+            [hit_helper.list_add("howler.hits", h["howler"]["id"], if_missing=True) for h in matching_hits],
         )
 
         report.append(
@@ -94,7 +94,7 @@ def execute(query: str, bundle_id=None, **kwargs):
                 "query": safe_query.replace("-howler.bundles", "howler.bundles"),
                 "outcome": "success",
                 "title": "Executed Successfully",
-                "message": f"The specified bundle has had all matching hits added.",
+                "message": "The specified bundle has had all matching hits added.",
             }
         )
     except Exception as e:

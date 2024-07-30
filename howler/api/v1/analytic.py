@@ -1,5 +1,5 @@
-from typing import Any, Optional
 import typing
+from typing import Any, Optional
 
 from flask import request
 
@@ -22,7 +22,6 @@ from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.security import api_login
 from howler.services import analytic_service, user_service
-
 
 MAX_COMMENT_LEN = 5000
 SUB_API = "analytic"

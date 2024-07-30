@@ -1,6 +1,6 @@
 import importlib
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any, Optional
 
 from howler.common.logging import get_logger
@@ -128,7 +128,11 @@ def specifications() -> list[dict[str, Any]]:
 
     module_path = Path(__file__).parent
 
-    for module in (_file for _file in module_path.iterdir() if _file.suffix == ".py" and _file.name != "__init__.py"):
+    for module in (
+        _file
+        for _file in module_path.iterdir()
+        if _file.suffix == ".py" and _file.name not in ["__init__.py", "example_plugin.py"]
+    ):
         try:
             automation = importlib.import_module(f"howler.actions.{module.stem}")
 

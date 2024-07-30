@@ -1,12 +1,12 @@
 import base64
 import json
-from typing import Any
 import uuid
+from typing import Any
 
 import pytest
 from conftest import APIError, get_api_data
-from howler.datastore.collection import ESCollection
 
+from howler.datastore.collection import ESCollection
 from howler.datastore.howler_store import HowlerDatastore
 from howler.odm.helper import create_users_with_username
 from howler.odm.models.hit import Hit
@@ -28,7 +28,6 @@ valid_hit_data = [
             "analytic": "A test hit 1",
             "assignment": "user",
             "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-            "score": "0.8",
             "labels": {"assignments": ["test", "test2"], "generic": ["test", "test2"]},
             "votes": {"benign": {}, "obscure": {}, "malicious": {}},
         },
@@ -39,7 +38,6 @@ valid_hit_data = [
             "analytic": "A test hit 2",
             "assignment": "user",
             "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-            "score": "0.2",
             "labels": {
                 "assignments": ["test", "banana"],
                 "generic": ["test", "banana"],
@@ -332,9 +330,7 @@ def test_create_tools_hits_invalid_hits(datastore: HowlerDatastore, login_sessio
         )
 
 
-def test_create_tools_hits_valid_hits_ignore_extra_values_true(
-    datastore: HowlerDatastore, login_session
-):
+def test_create_tools_hits_valid_hits_ignore_extra_values_true(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
     tool_name = "test"
@@ -378,9 +374,7 @@ def test_create_tools_hits_valid_hits_ignore_extra_values_true(
         assert isinstance(hit["id"], str)
 
 
-def test_create_tools_hits_valid_hits_ignore_extra_values_false(
-    datastore: HowlerDatastore, login_session
-):
+def test_create_tools_hits_valid_hits_ignore_extra_values_false(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
     tool_name = "test"
@@ -468,9 +462,7 @@ def test_create_valid_hits(datastore, login_session):
     ]
 
     # POST hits
-    response = get_api_data(
-        session=session, url=f"{host}/api/v1/hit/", data=json.dumps(data), method="POST"
-    )
+    response = get_api_data(session=session, url=f"{host}/api/v1/hit/", data=json.dumps(data), method="POST")
     assert len(response["invalid"]) == 0
 
     # All posts should be successful
@@ -542,9 +534,7 @@ def test_create_with_howler_data_field(datastore: HowlerDatastore, login_session
     assert len(response["valid"]) == 2
 
     for new_hit in response["valid"]:
-        for entry in datastore.hit.get_if_exists(new_hit["howler"]["id"])["howler"][
-            "data"
-        ]:
+        for entry in datastore.hit.get_if_exists(new_hit["howler"]["id"])["howler"]["data"]:
             assert isinstance(entry, str)
             assert json.loads(entry)["extra"]
 
@@ -578,9 +568,7 @@ def test_same_hash(datastore: HowlerDatastore, login_session):
     assert res["valid"][0]["howler"]["hash"] == res["valid"][1]["howler"]["hash"]
 
 
-def test_create_invalid_hits_ignore_invalid_values_false(
-    datastore: HowlerDatastore, login_session
-):
+def test_create_invalid_hits_ignore_invalid_values_false(datastore: HowlerDatastore, login_session):
     """Test that /api/v1/hit fails when it receives invalid data"""
     session, host = login_session
 
@@ -616,9 +604,7 @@ def test_create_invalid_hits_ignore_invalid_values_false(
             assert invalid_hit["error"] != ""
 
 
-def test_create_invalid_hits_ignore_invalid_values_true(
-    datastore: HowlerDatastore, login_session
-):
+def test_create_invalid_hits_ignore_invalid_values_true(datastore: HowlerDatastore, login_session):
     """Test that /api/v1/hit succeeds when it receives invalid data with ignore_extra_values set true"""
     session, host = login_session
 
@@ -805,9 +791,7 @@ def test_remove_labels(datastore: HowlerDatastore, login_session):
                 updated_hit: Hit = datastore.hit.get(hit["howler"]["id"])
                 assert len(updated_hit.howler.labels[label_set]) == 0
                 for removed_label in remove_labels:
-                    assert removed_label in [
-                        log.new_value for log in updated_hit.howler.log
-                    ]
+                    assert removed_label in [log.new_value for log in updated_hit.howler.log]
 
 
 def test_add_labels_missing(datastore: HowlerDatastore, login_session):
@@ -852,9 +836,7 @@ def test_update_hit(datastore: HowlerDatastore, login_session):
 
     assert result["howler"]["score"] == hit_to_update.howler.score + 100
 
-    result["howler"]["log"][len(result["howler"]["log"]) - 1][
-        "explanation"
-    ] == "Hit updated by admin"
+    result["howler"]["log"][len(result["howler"]["log"]) - 1]["explanation"] == "Hit updated by admin"
 
 
 def test_update_hit_fails(datastore: HowlerDatastore, login_session):
@@ -909,9 +891,7 @@ def test_update_by_query(datastore: HowlerDatastore, login_session):
 
     assert hit_to_check_after.howler.score == hit_to_check.howler.score + 100
 
-    hit_to_check_after.howler.log[
-        len(hit_to_check_after.howler.log) - 1
-    ].explanation == "Hit updated by admin"
+    hit_to_check_after.howler.log[len(hit_to_check_after.howler.log) - 1].explanation == "Hit updated by admin"
 
 
 def test_update_by_query_fails(datastore: HowlerDatastore, login_session):
@@ -1047,9 +1027,7 @@ def test_delete_by_admin(datastore: HowlerDatastore, login_session):
             session=session,
             url=f"{host}/api/v1/hit/",
             data=json.dumps(hit_ids),
-            headers={
-                "Authorization": f"Basic {base64.b64encode(b'user:devkey:user').decode('utf-8')}"
-            },
+            headers={"Authorization": f"Basic {base64.b64encode(b'user:devkey:user').decode('utf-8')}"},
             method="DELETE",
         )
 
@@ -1058,9 +1036,7 @@ def test_delete_by_admin(datastore: HowlerDatastore, login_session):
         assert datastore.hit.exists(id)
 
 
-def test_delete_existing_and_non_existing_hits(
-    datastore: HowlerDatastore, login_session
-):
+def test_delete_existing_and_non_existing_hits(datastore: HowlerDatastore, login_session):
     """Test that DELETE /api/v1/hit/ endpoint deletes all hits"""
     session, host = login_session
 
