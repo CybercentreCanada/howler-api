@@ -2,9 +2,12 @@ import base64
 import os
 import re
 from typing import List, Optional
+from urllib.parse import urlparse
 
 import elasticapm
 from passlib.hash import bcrypt
+
+from howler.config import config
 
 UPPERCASE = r"[A-Z]"
 LOWERCASE = r"[a-z]"
@@ -161,3 +164,17 @@ def get_random_password(alphabet: Optional[List] = None, length=24) -> str:
         a_list.append(alphabet[byte % len(alphabet)])
 
     return "".join(a_list)
+
+
+def get_disco_url(host_url: str):
+    if type(host_url) is str and "localhost" not in host_url:
+        original_hostname = urlparse(host_url).hostname
+
+        if original_hostname:
+            hostname = re.sub(r"^(.*?)howler(-stg)?(.+)$", r"\1discover\3", original_hostname)
+
+            return f"https://{hostname}/eureka/apps"
+        else:
+            return config.ui.discover_url
+    else:
+        return config.ui.discover_url

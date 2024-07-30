@@ -1,5 +1,6 @@
 import json
 from typing import Optional
+
 from howler import actions
 from howler.common.exceptions import HowlerValueError
 from howler.common.loader import datastore
@@ -25,6 +26,9 @@ def bulk_execute_on_query(query: str, trigger="create", user: Optional[User] = N
 
         logger.info("Running action %s on bulk query %s", action.action_id, query)
         for operation in action.operations:
+            if operation.operation_id == "example_plugin":
+                continue
+
             parsed_data = json.loads(operation.data_json) if operation.data_json else operation.data
 
             audit(

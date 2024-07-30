@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from howler.actions import execute, specifications
 from howler.odm.models.user import User
 from howler.odm.randomizer import random_model_obj
@@ -10,9 +11,10 @@ def test_specifications():
     result = specifications()
     files = list(path for path in folder.glob("*.py") if path.stem != "__init__")
 
-    assert len(result) == len(files)
+    # We ignore the example action, which isn't included in the list of valid actions
+    assert len(result) == len(files) - 1
 
-    assert sorted([data["id"] for data in result]) == sorted([f.stem for f in files])
+    assert sorted([data["id"] for data in result]) == sorted([f.stem for f in files if f.stem != "example_plugin"])
 
 
 def test_execute_bad_plugin():

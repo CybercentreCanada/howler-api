@@ -259,7 +259,9 @@ class HowlerData(odm.Model):
     confidence: Optional[float] = odm.Optional(
         odm.Float(description="Metric decoupled from the value in the detection information.")
     )
-    score: float = odm.Float(description="A score assigned by an enrichment to help prioritize triage.")
+    score: Optional[float] = odm.Optional(
+        odm.Float(description="A score assigned by an enrichment to help prioritize triage.", default=0)
+    )
     status = odm.Enum(values=HitStatus, default=HitStatus.OPEN, description="Status of the hit.")
     scrutiny = odm.Enum(
         values=Scrutiny,

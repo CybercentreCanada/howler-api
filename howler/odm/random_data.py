@@ -1,12 +1,12 @@
 import importlib
 import json
 import os
-from pathlib import Path
 import random
 import sys
-from datetime import datetime
-from random import choice, randint, sample
 import textwrap
+from datetime import datetime
+from pathlib import Path
+from random import choice, randint, sample
 from typing import Callable
 
 import yaml
@@ -23,12 +23,7 @@ from howler.odm.models.action import Action
 from howler.odm.models.analytic import Analytic, Comment
 from howler.odm.models.ecs.event import EVENT_CATEGORIES
 from howler.odm.models.hit import Hit
-from howler.odm.models.howler_data import (
-    Assessment,
-    Escalation,
-    HitStatus,
-    Scrutiny,
-)
+from howler.odm.models.howler_data import Assessment, Escalation, HitStatus, Scrutiny
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -363,7 +358,7 @@ def create_views(ds: HowlerDatastore):
     )
 
     fields = Hit.flat_fields()
-    key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
+    key_list = [key for key in fields.keys() if isinstance(fields[key], Keyword)]
     for _ in range(10):
         query = f"{choice(key_list)}:*{choice(VALID_CHARS)}* OR {choice(key_list)}:*{choice(VALID_CHARS)}*"
         view = View(
@@ -483,7 +478,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
         ds.analytic.save(analytic.analytic_id, analytic)
 
     fields = Hit.flat_fields()
-    key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
+    key_list = [key for key in fields.keys() if isinstance(fields[key], Keyword)]
     for _ in range(num_analytics):
         a: Analytic = random_model_obj(Analytic)
         a.name = " ".join([get_random_word().capitalize() for _ in range(random.randint(1, 3))])
@@ -543,7 +538,7 @@ def wipe_analytics(ds):
 
 def create_actions(ds: HowlerDatastore, num_actions=30):
     fields = Hit.flat_fields()
-    key_list = [key for key in fields.keys() if type(fields[key]) == Keyword]
+    key_list = [key for key in fields.keys() if isinstance(fields[key], Keyword)]
     users = ds.user.search("*:*")["items"]
 
     module_path = Path(__file__).parents[1] / "actions"

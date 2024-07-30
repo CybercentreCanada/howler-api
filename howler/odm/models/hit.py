@@ -1,5 +1,6 @@
 # mypy: ignore-errors
 from typing import Optional
+
 from howler import odm
 from howler.odm.models.assemblyline import AssemblyLine
 from howler.odm.models.aws import AWS

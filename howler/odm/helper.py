@@ -1,12 +1,13 @@
-from datetime import datetime, timedelta
 import json
-from math import ceil
 import random
-from hashlib import md5
-from random import choice, sample
 import sys
+from datetime import datetime, timedelta
+from hashlib import md5
+from math import ceil
+from random import choice, sample
 
 from howler.common.logging import get_logger
+from howler.config import config
 from howler.datastore.howler_store import HowlerDatastore
 from howler.helper.discover import get_apps_list
 from howler.odm.models.hit import Hit
@@ -24,8 +25,7 @@ from howler.odm.randomizer import (
 from howler.security.utils import get_password_hash
 from howler.utils.uid import get_random_id
 
-
-APPS = get_apps_list()
+APPS = get_apps_list(discovery_url=config.ui.discover_url)
 ESCALATIONS = Escalation.list()
 
 logger = get_logger(__file__)
