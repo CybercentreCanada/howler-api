@@ -291,9 +291,6 @@ class HowlerData(odm.Model):
         default=[],
         description="A list of changes to the hit with timestamps and attribution.",
     )
-    retained: Optional[str] = odm.Optional(
-        odm.Keyword(description="If the hit was retained, this is a link to it in Alfred.")
-    )
     monitored: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident monitoring dashboard."))
     reported: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident report."))
     mitigated: Optional[str] = odm.Optional(odm.Keyword(description="Link to the mitigation record (tool dependent)."))
