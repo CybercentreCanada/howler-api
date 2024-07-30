@@ -26,9 +26,9 @@ Take note of the different naming convention:
 
 ## Usage
 
-### Instanciating a datastore
+### Instantiating a datastore
 
-When instanciating an datastore object, there are no collection associated to it. You need to register each collection in the object so it be kept in sync and have access to it. After the collection is registered, you have access to this collection as a property of the datastore object.
+When instantiating an datastore object, there are no collection associated to it. You need to register each collection in the object so it be kept in sync and have access to it. After the collection is registered, you have access to this collection as a property of the datastore object.
 
 Example:
 
