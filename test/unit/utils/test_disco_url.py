@@ -2,6 +2,12 @@ from howler.config import config
 from howler.security.utils import get_disco_url
 
 
+def test_get_disco_url():
+    result = get_disco_url("https://howler.dev.analysis.cyber.gc.ca")
+
+    assert result == "https://discover.dev.analysis.cyber.gc.ca/eureka/apps"
+
+
 def test_valid_conversion():
     url = "howler.dev.analysis.cyber.gc.ca/extra/path?query=string"
 
