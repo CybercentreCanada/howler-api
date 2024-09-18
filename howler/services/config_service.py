@@ -3,7 +3,7 @@ from math import ceil
 from typing import Optional
 
 from flask import request
-from howler.services import jwt_service
+
 import howler.services.hit_service as hit_service
 from howler.common.loader import get_lookups
 from howler.config import CLASSIFICATION, config, get_branch, get_commit, get_version
@@ -11,20 +11,22 @@ from howler.helper.discover import get_apps_list
 from howler.helper.search import list_all_fields
 from howler.odm.models.howler_data import Assessment, Escalation, HitStatus, Scrutiny
 from howler.odm.models.user import User
+from howler.services import jwt_service
 from howler.utils.str_utils import default_string_value
 
 classification_definition = CLASSIFICATION.get_parsed_classification_definition()
 
 lookups = get_lookups()
-apps = get_apps_list()
 
 
-def get_configuration(user: User):
+def get_configuration(user: User, **kwargs):
     """Get system configration data for the Howler API
 
     Args:
         user (User): The user making the request
     """
+
+    apps = get_apps_list(discovery_url=kwargs.get("discovery_url", None))
 
     amount, unit = (
         config.auth.max_apikey_duration_amount,
