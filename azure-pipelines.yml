@@ -18,7 +18,9 @@ pr:
 variables:
   tag: "$(Build.BuildId)"
   containerRegistry: "uchimera"
-  branch: "$(Build.SourceBranchName)"
+  branch_name: "$(Build.SourceBranchName)"
+  git_branch: $(Build.SourceBranch)
+  pr_branch: $(System.PullRequest.targetBranchName)
   repoName: "howler-api"
   isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
   isPrBranch: $[eq(variables['Build.SourceBranchName'], 'merge')]
@@ -81,7 +83,7 @@ stages:
             fetchDepth: 100
             persistCredentials: true
           - script: |
-              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 $(System.PullRequest.targetBranchName)
+              git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1 $PR_BRANCH
             displayName: Fetch target branch for diff coverage
             condition: eq(variables.isPrBranch, true)
           - script: |
@@ -123,7 +125,7 @@ stages:
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
           - script: |
-              GIT_BRANCH=$(Build.SourceBranch) PR_BRANCH=$(System.PullRequest.targetBranchName) poetry run coverage_report
+              poetry run coverage_report
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Coverage Results
           - task: PublishTestResults@2
