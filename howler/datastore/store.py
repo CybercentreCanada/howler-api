@@ -8,8 +8,8 @@ from os import environ
 from urllib.parse import urlparse
 
 import elasticsearch
-import elasticsearch.helpers
 import elasticsearch.client
+import elasticsearch.helpers
 
 from howler.common import loader
 from howler.datastore.collection import ESCollection

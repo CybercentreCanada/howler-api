@@ -24,6 +24,7 @@ from howler.common.exceptions import (
 )
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.config import config
 from howler.helper.oauth import fetch_groups
 from howler.odm.models.user import User
@@ -41,11 +42,11 @@ user_api._doc = "Manage the different users of the system"
 logger = get_logger(__file__)
 
 
+@generate_swagger_docs()
 @user_api.route("/whoami", methods=["GET"])
 @api_login(required_priv=["R"], enforce_quota=False)
 def who_am_i(**kwargs):
-    """
-    Return the currently logged in user as well as the system configuration
+    """Return the currently logged in user as well as the system configuration
 
     Variables:
     None
@@ -84,11 +85,11 @@ def who_am_i(**kwargs):
     return ok(user_service.convert_user(kwargs["user"]))
 
 
+@generate_swagger_docs()
 @user_api.route("/<username>", methods=["POST"])
 @api_login(required_type=["admin"])
 def add_user_account(username, **_):
-    """
-    Add a user to the system
+    """Add a user to the system
 
     Variables:
     username    => Name of the user to add
@@ -112,7 +113,6 @@ def add_user_account(username, **_):
      "success": true             # Saving the user info succeded
     }
     """
-
     data = request.json
     if not isinstance(data, dict):
         return bad_request(err="Invalid data format")
@@ -154,12 +154,12 @@ def add_user_account(username, **_):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @user_api.route("/<username>", methods=["GET"])
 @api_login(audit=False, required_priv=["R"])
 @add_etag(getter=user_service.get_user, check_if_match=False)
-def get_user_account(username: str, server_version=None, **kwargs):
-    """
-    Load the user account information.
+def get_user_account(username: str, server_version: Optional[str] = None, **kwargs):
+    """Load the user account information.
 
     Variables:
     username       => Name of the user to get the account info
@@ -197,11 +197,11 @@ def get_user_account(username: str, server_version=None, **kwargs):
     return ok(user), server_version
 
 
+@generate_swagger_docs()
 @user_api.route("/<username>", methods=["DELETE"])
 @api_login(required_type=["admin"])
 def remove_user_account(username, **_):
-    """
-    Remove the account specified by the username.
+    """Remove the account specified by the username.
 
     Variables:
     username       => Name of the user to get the account info
@@ -214,7 +214,6 @@ def remove_user_account(username, **_):
      "success": true  # Was the remove successful?
     }
     """
-
     storage = datastore()
     user_data = storage.user.get(username)
     if user_data:
@@ -229,11 +228,11 @@ def remove_user_account(username, **_):
         return not_found(err=f"User {username} does not exist")
 
 
+@generate_swagger_docs()
 @user_api.route("/<username>", methods=["PUT"])
 @api_login(required_type=["admin", "user"], enforce_quota=False)
-def set_user_account(username, **kwargs):
-    """
-    Save the user account information.
+def set_user_account(username: str, **kwargs):  # noqa: C901
+    """Save the user account information.
 
     Variables:
     username    => Name of the user to get the account info
@@ -263,8 +262,7 @@ def set_user_account(username, **kwargs):
             return bad_request(err="Invalid data format")
 
         storage = datastore()
-        old_user = storage.user.get_if_exists(username, as_obj=False)
-        if not old_user:
+        if not (old_user := storage.user.get_if_exists(username, as_obj=False)):
             return not_found(err=f"User {username} does not exist")
 
         data = {**old_user, **new_data}
@@ -273,7 +271,7 @@ def set_user_account(username, **kwargs):
         # Don't allow the overwriting of api keys
         data["apikeys"] = old_user.get("apikeys", [])
 
-        # Don't allow overwriting of api qoute unless you're an admin
+        # Don't allow overwriting of api quota unless you're an admin
         if "admin" not in kwargs["user"]["type"]:
             data["api_quota"] = old_user["api_quota"]
 
@@ -286,15 +284,15 @@ def set_user_account(username, **kwargs):
         if data["uname"] != old_user["uname"]:
             return bad_request(err="Cannot update user's username")
 
-        if new_pass:
-            password_requirements = config.auth.internal.password_requirements.as_primitives()
-            if not check_password_requirements(new_pass, **password_requirements):
-                error_msg = get_password_requirement_message(**password_requirements)
-                return bad_request(err=error_msg)
+        password_requirements = config.auth.internal.password_requirements.as_primitives()
+        if not new_pass:
+            data["password"] = old_user.get("password", "__NO_PASSWORD__") or "__NO_PASSWORD__"
+        elif not check_password_requirements(new_pass, **password_requirements):
+            error_msg = get_password_requirement_message(**password_requirements)
+            return bad_request(err=error_msg)
+        else:
             data["password"] = get_password_hash(new_pass)
             data.pop("new_pass_confirm", None)
-        else:
-            data["password"] = old_user.get("password", "__NO_PASSWORD__") or "__NO_PASSWORD__"
 
         # Apply dynamic classification
         data["classification"] = user_service.get_dynamic_classification(data["classification"], data["email"])
@@ -312,11 +310,11 @@ def set_user_account(username, **kwargs):
 ######################################################
 
 
+@generate_swagger_docs()
 @user_api.route("/avatar/<username>", methods=["GET"])
 @api_login(audit=True, required_priv=["R"])
 def get_user_avatar(username, **_):
-    """
-    Loads the user's avatar.
+    """Loads the user's avatar.
 
     Variables:
     username    => Name of the user you want to get the avatar for
@@ -339,11 +337,11 @@ def get_user_avatar(username, **_):
         return not_found(err="No avatar for specified user")
 
 
+@generate_swagger_docs()
 @user_api.route("/avatar/<username>", methods=["POST"])
 @api_login(audit=True)
 def set_user_avatar(username, **kwargs):
-    """
-    Sets the user's Avatar
+    """Sets the user's Avatar
 
     Variables:
     username    => Name of the user you want to set the avatar for
@@ -376,11 +374,11 @@ def set_user_avatar(username, **kwargs):
     return ok()
 
 
+@generate_swagger_docs()
 @user_api.route("/groups", methods=["GET"])
 @api_login(audit=False)
 def get_user_groups(**kwargs):
-    """
-    Gets the user's groups from an oauth provider
+    """Gets the user's groups from an oauth provider
 
     Variables:
     None
@@ -397,7 +395,6 @@ def get_user_groups(**kwargs):
         ...
     ]
     """
-
     auth_header = request.headers.get("Authorization", None)
 
     if not auth_header:

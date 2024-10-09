@@ -21,7 +21,7 @@ PASS_BASIC = (
 )
 
 
-def generate_random_secret(length=25) -> str:
+def generate_random_secret(length: int = 25) -> str:
     """Generate a random secret
 
     Args:
@@ -50,6 +50,7 @@ def get_password_hash(password: Optional[str]) -> Optional[str]:
 
 @elasticapm.capture_span(span_type="authentication")
 def verify_password(password: str, pw_hash: str):
+    """Use bcrypt to verify a user's password against the hash"""
     try:
         return bcrypt.verify(password, pw_hash)
     except ValueError:
@@ -59,11 +60,11 @@ def verify_password(password: str, pw_hash: str):
 
 
 def get_password_requirement_message(
-    lower=True,
-    upper=True,
-    number=False,
-    special=False,
-    min_length=12,
+    lower: bool = True,
+    upper: bool = True,
+    number: bool = False,
+    special: bool = False,
+    min_length: int = 12,
 ) -> str:
     """Get a custom password requirement message based on the configuration values
 
@@ -98,11 +99,11 @@ def get_password_requirement_message(
 
 def check_password_requirements(
     password: str,
-    lower=True,
-    upper=True,
-    number=False,
-    special=False,
-    min_length=12,
+    lower: bool = True,
+    upper: bool = True,
+    number: bool = False,
+    special: bool = False,
+    min_length: int = 12,
 ) -> bool:
     """Validate the given password based on the password requirements
 
@@ -143,7 +144,7 @@ def check_password_requirements(
     return True
 
 
-def get_random_password(alphabet: Optional[List] = None, length=24) -> str:
+def get_random_password(alphabet: Optional[List] = None, length: int = 24) -> str:
     """Get a random password
 
     Args:
@@ -166,8 +167,12 @@ def get_random_password(alphabet: Optional[List] = None, length=24) -> str:
     return "".join(a_list)
 
 
-def get_disco_url(host_url: str):
+def get_disco_url(host_url: Optional[str]):
+    """Get the discovery URL based on the current host"""
     if type(host_url) is str and "localhost" not in host_url:
+        if not host_url.startswith("http"):
+            host_url = f"https://{host_url}"
+
         original_hostname = urlparse(host_url).hostname
 
         if original_hostname:

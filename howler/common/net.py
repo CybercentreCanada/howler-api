@@ -1,16 +1,12 @@
 import socket
-import subprocess
-import sys
-from typing import Optional
 import uuid
 from ipaddress import IPv4Network, ip_address
-
-import pr2modules.iproute as iproute
 
 from howler.common.net_static import TLDS_ALPHA_BY_DOMAIN
 
 
 def is_valid_port(value: int) -> bool:
+    "Check if a port is valid"
     try:
         if 1 <= int(value) <= 65535:
             return True
@@ -21,6 +17,7 @@ def is_valid_port(value: int) -> bool:
 
 
 def is_valid_domain(domain: str) -> bool:
+    "Check if a domain is valid"
     if "@" in domain:
         return False
 
@@ -32,6 +29,7 @@ def is_valid_domain(domain: str) -> bool:
 
 
 def is_valid_ip(ip: str) -> bool:
+    "Check if an ip is valid"
     parts = ip.split(".")
     if len(parts) == 4:
         for p in parts:
@@ -53,6 +51,7 @@ def is_valid_ip(ip: str) -> bool:
 
 
 def is_ip_in_network(ip: str, network: IPv4Network) -> bool:
+    "Check if an ip is in a given network"
     if not is_valid_ip(ip):
         return False
 
@@ -60,6 +59,7 @@ def is_ip_in_network(ip: str, network: IPv4Network) -> bool:
 
 
 def is_valid_email(email: str) -> bool:
+    "Check if an email is valid"
     parts = email.split("@")
     if len(parts) == 2:
         if is_valid_domain(parts[1]):
@@ -69,8 +69,10 @@ def is_valid_email(email: str) -> bool:
 
 
 def get_hostname() -> str:
+    "Get the hostname of the computer howler is running on"
     return socket.gethostname()
 
 
 def get_mac_address() -> str:
+    "Get the mac address of the computer howler is running on"
     return "".join(["{0:02x}".format((uuid.getnode() >> i) & 0xFF) for i in range(0, 8 * 6, 8)][::-1]).upper()

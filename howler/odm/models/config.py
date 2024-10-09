@@ -372,7 +372,10 @@ DEFAULT_METRICS = {
 class Retention(odm.Model):
     enabled: bool = odm.Boolean(
         default=True,
-        description="Whether to enable the hit retention limit. If enabled, hits will be purged after the specified duration.",
+        description=(
+            "Whether to enable the hit retention limit. If enabled, hits will "
+            "be purged after the specified duration."
+        ),
     )
     limit_unit: str = odm.Enum(
         values=[
@@ -453,7 +456,7 @@ DEFAULT_UI = {
     "discover_url": None,
     "email": None,
     "enforce_quota": True,
-    "secret_key": "This is the default flask secret key... you should change this!",
+    "secret_key": os.environ.get("FLASK_SECRET_KEY", "This is the default flask secret key... you should change this!"),
     "validate_session_ip": True,
     "validate_session_useragent": True,
     "static_folder": os.path.dirname(__file__) + "/../../../static",

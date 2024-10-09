@@ -1,8 +1,6 @@
-import io
 import os
 import random
 import re
-import zipfile
 from copy import deepcopy
 
 import pytest
@@ -12,7 +10,6 @@ from howler.common import loader
 from howler.common.classification import InvalidClassification
 from howler.common.hexdump import hexdump
 from howler.common.iprange import is_ip_private, is_ip_reserved
-from howler.common.memory_zip import InMemoryZip
 from howler.common.random_user import random_user
 from howler.security.utils import (
     get_password_hash,
@@ -44,42 +41,26 @@ def test_chunk():
 
 
 def test_classification():
-    yml_config = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "classification.yml"
-    )
+    yml_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), "classification.yml")
     cl_engine = loader.get_classification(yml_config=yml_config)
 
     u = "U//REL TO DEPTS"
     r = "R//GOD//REL TO G1"
 
-    assert (
-        cl_engine.normalize_classification(r, long_format=True)
-        == "RESTRICTED//ADMIN//ANY/GROUP 1"
-    )
+    assert cl_engine.normalize_classification(r, long_format=True) == "RESTRICTED//ADMIN//ANY/GROUP 1"
     assert cl_engine.is_accessible(r, u)
     assert cl_engine.is_accessible(u, u)
     assert not cl_engine.is_accessible(u, r)
-    assert (
-        cl_engine.min_classification(u, r)
-        == "UNRESTRICTED//REL TO DEPARTMENT 1, DEPARTMENT 2"
-    )
+    assert cl_engine.min_classification(u, r) == "UNRESTRICTED//REL TO DEPARTMENT 1, DEPARTMENT 2"
     assert cl_engine.max_classification(u, r) == "RESTRICTED//ADMIN//ANY/GROUP 1"
     assert cl_engine.intersect_user_classification(u, r) == "UNRESTRICTED//ANY"
-    assert (
-        cl_engine.normalize_classification(
-            "UNRESTRICTED//REL TO DEPARTMENT 2", long_format=False
-        )
-        == "U//REL TO D2"
-    )
+    assert cl_engine.normalize_classification("UNRESTRICTED//REL TO DEPARTMENT 2", long_format=False) == "U//REL TO D2"
     with pytest.raises(InvalidClassification):
         cl_engine.normalize_classification("D//BOB//REL TO SOUP")
 
     c1 = "U//REL TO D1"
     c2 = "U//REL TO D2"
-    assert (
-        cl_engine.min_classification(c1, c2)
-        == "UNRESTRICTED//REL TO DEPARTMENT 1, DEPARTMENT 2"
-    )
+    assert cl_engine.min_classification(c1, c2) == "UNRESTRICTED//REL TO DEPARTMENT 1, DEPARTMENT 2"
     assert cl_engine.intersect_user_classification(c1, c2) == "UNRESTRICTED"
     with pytest.raises(InvalidClassification):
         cl_engine.max_classification(c1, c2)
@@ -99,20 +80,10 @@ def test_classification():
     assert not cl_engine.is_accessible(dyn1, dyn2)
     assert not cl_engine.is_accessible(dyn3, dyn1)
     assert not cl_engine.is_accessible(dyn1, dyn3)
-    assert (
-        cl_engine.intersect_user_classification(dyn1, dyn1)
-        == "UNRESTRICTED//REL TO TEST"
-    )
-    assert (
-        cl_engine.max_classification(dyn1, dyn2) == "UNRESTRICTED//ADMIN//REL TO TEST"
-    )
-    assert (
-        cl_engine.normalize_classification(dyn1, long_format=True)
-        == "UNRESTRICTED//REL TO TEST"
-    )
-    assert (
-        cl_engine.normalize_classification(dyn1, long_format=False) == "U//REL TO TEST"
-    )
+    assert cl_engine.intersect_user_classification(dyn1, dyn1) == "UNRESTRICTED//REL TO TEST"
+    assert cl_engine.max_classification(dyn1, dyn2) == "UNRESTRICTED//ADMIN//REL TO TEST"
+    assert cl_engine.normalize_classification(dyn1, long_format=True) == "UNRESTRICTED//REL TO TEST"
+    assert cl_engine.normalize_classification(dyn1, long_format=False) == "U//REL TO TEST"
 
 
 def test_dict_flatten():
@@ -196,30 +167,22 @@ def test_iprange():
 
 def test_isotime_iso():
     iso_date = now_as_iso()
-    iso_format = re.compile(
-        r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z"
-    )
+    iso_format = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z")
 
     assert isinstance(iso_date, str)
     assert iso_format.match(iso_date)
     assert epoch_to_iso(iso_to_epoch(iso_date)) == iso_date
-    assert iso_date == epoch_to_iso(
-        local_to_epoch(epoch_to_local(iso_to_epoch(iso_date)))
-    )
+    assert iso_date == epoch_to_iso(local_to_epoch(epoch_to_local(iso_to_epoch(iso_date))))
 
 
 def test_isotime_local():
     local_date = now_as_local()
-    local_format = re.compile(
-        r"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}.*"
-    )
+    local_format = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}.*")
 
     assert isinstance(local_date, str)
     assert local_format.match(local_date)
     assert epoch_to_local(local_to_epoch(local_date)) == local_date
-    assert local_date == epoch_to_local(
-        iso_to_epoch(epoch_to_iso(local_to_epoch(local_date)))
-    )
+    assert local_date == epoch_to_local(iso_to_epoch(epoch_to_iso(local_to_epoch(local_date))))
 
 
 def test_isotime_epoch():
@@ -262,8 +225,7 @@ def test_translate_str():
     assert translate_str(b"fran\xc3\xa7ais \xc3\xa9l\xc3\xa8ve")["encoding"] == "utf-8"
     assert (
         translate_str(
-            b"\x83G\x83\x93\x83R\x81[\x83f\x83B\x83\x93\x83O\x82"
-            b"\xcd\x93\xef\x82\xb5\x82\xad\x82\xc8\x82\xa2"
+            b"\x83G\x83\x93\x83R\x81[\x83f\x83B\x83\x93\x83O\x82" b"\xcd\x93\xef\x82\xb5\x82\xad\x82\xc8\x82\xa2"
         )["language"]
         == "Japanese"
     )
@@ -293,14 +255,3 @@ def test_uid():
     for c_id in [rid, id_test, id_test_l, id_test_m, id_test_s, id_test_t]:
         for x in c_id:
             assert x in BASE62_ALPHABET
-
-
-def test_mem_zip():
-    obj = InMemoryZip()
-    obj.append("a.txt", "abc abc")
-    obj.append("b.txt", "11111111")
-
-    buffer = io.BytesIO(obj.read())
-    reader = zipfile.ZipFile(buffer)
-    assert reader.read("a.txt") == b"abc abc"
-    assert reader.read("b.txt") == b"11111111"

@@ -1,7 +1,8 @@
 from typing import Optional
+
 from redis.exceptions import ConnectionError
 
-from howler.remote.datatypes import get_client, retry_call, now_as_iso
+from howler.remote.datatypes import get_client, now_as_iso, retry_call
 from howler.remote.datatypes.hash import Hash
 
 

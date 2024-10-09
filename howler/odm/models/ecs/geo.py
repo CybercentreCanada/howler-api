@@ -25,6 +25,6 @@ class Geo(odm.Model):
         )
     )
     postal_code = odm.Optional(odm.Keyword(description="Postal code associated with the location."))
-    region_iso_code = odm.Optional(odm.Keyword(description="City name."))
+    region_iso_code = odm.Optional(odm.Keyword(description="Region ISO code."))
     region_name = odm.Optional(odm.Keyword(description="Region name."))
     timezone = odm.Optional(odm.Keyword(description="The time zone of the location, such as IANA time zone name."))

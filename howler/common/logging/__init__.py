@@ -5,9 +5,10 @@ import logging.handlers
 import os
 import re
 from traceback import format_exception
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from flask import request
+from typing_extensions import override  # type: ignore
 
 from howler.common import loader
 from howler.common.logging.format import (
@@ -28,8 +29,14 @@ LOG_LEVEL_MAP = {
 
 DEBUG = False
 
+if TYPE_CHECKING:
+    from howler.config import Config
+
 
 class JsonFormatter(logging.Formatter):
+    """logging Formatter to output in JSON"""
+
+    @override
     def formatMessage(self, record):
         if record.exc_info:
             record.exc_text = self.formatException(record.exc_info)
@@ -42,11 +49,63 @@ class JsonFormatter(logging.Formatter):
         record.message = json.dumps(record.message)
         return self._style.format(record)
 
+    @override
     def formatException(self, exc_info):
         return "".join(format_exception(*exc_info))
 
 
+def init_log_to_file(logger: logging.Logger, log_level: int, name: str, config: "Config"):
+    """Initialize file-based logging"""
+    if not os.path.isdir(config.logging.log_directory):
+        logger.warning(
+            "Log directory does not exist. Will try to create %s",
+            config.logging.log_directory,
+        )
+        os.makedirs(config.logging.log_directory)
+
+    if log_level <= logging.DEBUG:
+        dbg_file_handler = logging.handlers.RotatingFileHandler(
+            os.path.join(config.logging.log_directory, f"{name}.dbg"),
+            maxBytes=10485760,
+            backupCount=5,
+        )
+        dbg_file_handler.setLevel(logging.DEBUG)
+        if config.logging.log_as_json:
+            dbg_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
+        else:
+            dbg_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
+        logger.addHandler(dbg_file_handler)
+
+    if log_level <= logging.INFO:
+        op_file_handler = logging.handlers.RotatingFileHandler(
+            os.path.join(config.logging.log_directory, f"{name}.log"),
+            maxBytes=10485760,
+            backupCount=5,
+        )
+        op_file_handler.setLevel(logging.INFO)
+        if config.logging.log_as_json:
+            op_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
+        else:
+            op_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
+        logger.addHandler(op_file_handler)
+
+    if log_level <= logging.ERROR:
+        err_file_handler = logging.handlers.RotatingFileHandler(
+            os.path.join(config.logging.log_directory, f"{name}.err"),
+            maxBytes=10485760,
+            backupCount=5,
+        )
+        err_file_handler.setLevel(logging.ERROR)
+        if config.logging.log_as_json:
+            err_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
+        else:
+            err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
+        err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
+        logger.addHandler(err_file_handler)
+
+
 def init_logging(name: str, log_level: Optional[int] = None):
+    """Initialize the logger"""
     from howler.config import config
 
     logger = logging.getLogger(loader.APP_NAME)
@@ -61,8 +120,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
     if not config:
         config = loader.get_config()
 
-    DEBUG = config.ui.debug
-    config.logging.log_to_console = config.logging.log_to_console or DEBUG
+    config.logging.log_to_console = config.logging.log_to_console or config.ui.debug
 
     if log_level is None:
         log_level = LOG_LEVEL_MAP[config.logging.log_level]
@@ -75,52 +133,7 @@ def init_logging(name: str, log_level: Optional[int] = None):
         return logger.getChild(name)
 
     if config.logging.log_to_file:
-        if not os.path.isdir(config.logging.log_directory):
-            logger.warning(
-                "Log directory does not exist. Will try to create %s",
-                config.logging.log_directory,
-            )
-            os.makedirs(config.logging.log_directory)
-
-        if log_level <= logging.DEBUG:
-            dbg_file_handler = logging.handlers.RotatingFileHandler(
-                os.path.join(config.logging.log_directory, f"{name}.dbg"),
-                maxBytes=10485760,
-                backupCount=5,
-            )
-            dbg_file_handler.setLevel(logging.DEBUG)
-            if config.logging.log_as_json:
-                dbg_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
-            else:
-                dbg_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
-            logger.addHandler(dbg_file_handler)
-
-        if log_level <= logging.INFO:
-            op_file_handler = logging.handlers.RotatingFileHandler(
-                os.path.join(config.logging.log_directory, f"{name}.log"),
-                maxBytes=10485760,
-                backupCount=5,
-            )
-            op_file_handler.setLevel(logging.INFO)
-            if config.logging.log_as_json:
-                op_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
-            else:
-                op_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
-            logger.addHandler(op_file_handler)
-
-        if log_level <= logging.ERROR:
-            err_file_handler = logging.handlers.RotatingFileHandler(
-                os.path.join(config.logging.log_directory, f"{name}.err"),
-                maxBytes=10485760,
-                backupCount=5,
-            )
-            err_file_handler.setLevel(logging.ERROR)
-            if config.logging.log_as_json:
-                err_file_handler.setFormatter(JsonFormatter(HWL_JSON_FORMAT))
-            else:
-                err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
-            err_file_handler.setFormatter(logging.Formatter(HWL_LOG_FORMAT, HWL_DATE_FORMAT))
-            logger.addHandler(err_file_handler)
+        init_log_to_file(logger, log_level, name, config)
 
     if config.logging.log_to_console:
         console = logging.StreamHandler()
@@ -141,7 +154,8 @@ def init_logging(name: str, log_level: Optional[int] = None):
     return logger.getChild(name)
 
 
-def get_logger(name=None) -> logging.Logger:
+def get_logger(name: str = "default") -> logging.Logger:
+    """Get a logger with a useful name given a filename"""
     name = re.sub(r".+howler/", "", name).replace("/", ".").replace(".__init__", "").replace(".py", "")
     name = re.sub(r"^api\.?", "", name)
     logger = init_logging("api")
@@ -151,6 +165,7 @@ def get_logger(name=None) -> logging.Logger:
 
 
 def get_traceback_info(tb):
+    """Prase the traceback information for a given traceback"""
     tb_list = []
     tb_id = 0
     last_ui = None
@@ -186,7 +201,8 @@ def get_traceback_info(tb):
     return None
 
 
-def dumb_log(log, msg, is_exception=False):
+def __dumb_log(log, msg, is_exception=False):
+    """Dumb logger for use with log_with_traceback"""
     args: Union[str, bytes] = request.query_string
     if isinstance(args, bytes):
         args = args.decode()
@@ -202,6 +218,7 @@ def dumb_log(log, msg, is_exception=False):
 
 
 def log_with_traceback(traceback, msg, is_exception=False, audit=False):
+    """Log a message along with the stacktrace"""
     log = get_logger("traceback") if not audit else logging.getLogger("howler.api.audit")
 
     tb_info = get_traceback_info(traceback)
@@ -213,7 +230,6 @@ def log_with_traceback(traceback, msg, is_exception=False, audit=False):
         else:
             args = ""
 
-        # noinspection PyBroadException
         try:
             message = (
                 f'{tb_user["uname"]} [{tb_user["classification"]}] :: {msg} - {tb_file}:{tb_function}:{tb_line_no}'
@@ -224,6 +240,6 @@ def log_with_traceback(traceback, msg, is_exception=False, audit=False):
             else:
                 log.warning(message)
         except Exception:
-            dumb_log(log, msg, is_exception=is_exception)
+            __dumb_log(log, msg, is_exception=is_exception)
     else:
-        dumb_log(log, msg, is_exception=is_exception)
+        __dumb_log(log, msg, is_exception=is_exception)

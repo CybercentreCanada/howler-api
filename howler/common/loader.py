@@ -1,9 +1,9 @@
 import logging
 import os
+import typing
 from pathlib import Path
 from string import Template
 from typing import TYPE_CHECKING, Any, Optional, Union
-import typing
 
 import yaml
 
@@ -35,7 +35,8 @@ def env_substitute(buffer):
 _CLASSIFICATIONS: dict[Union[str, Path], "Classification"] = {}
 
 
-def get_classification(yml_config: Optional[str] = None):
+def get_classification(yml_config: Optional[str] = None):  # noqa: C901
+    "Get the classification from a given classification.yml file, caching results"
     if yml_config in _CLASSIFICATIONS:
         return _CLASSIFICATIONS[yml_config]
 
@@ -103,6 +104,7 @@ def get_classification(yml_config: Optional[str] = None):
 
 
 def get_lookups(lookup_folder: Optional[str] = None):
+    """Get lookups from the specified lookup folder"""
     from howler.config import config
 
     if not lookup_folder:
@@ -136,7 +138,8 @@ def get_lookups(lookup_folder: Optional[str] = None):
     return lookups
 
 
-def _get_config(yml_config: Optional[str] = None):
+def _get_config(yml_config: Optional[str] = None) -> "Config":
+    """Get the configuration file data from a given path"""
     from howler.odm.models.config import Config
 
     if not yml_config:
@@ -163,6 +166,7 @@ def _get_config(yml_config: Optional[str] = None):
 
 
 def get_config(yml_config: Optional[str] = None) -> "Config":
+    """Get config data from a given path, caching results"""
     if yml_config not in config_cache:
         config_cache[yml_config] = _get_config(yml_config=yml_config)
 
@@ -174,6 +178,7 @@ _datastore = None
 
 
 def datastore(config=None, archive_access=True):
+    """Get a datastore connection"""
     global _datastore
 
     from howler.datastore.howler_store import HowlerDatastore
@@ -189,6 +194,7 @@ def datastore(config=None, archive_access=True):
 
 
 def filestore(config=None, connection_attempts=None):
+    """Get a filestore connection"""
     from howler.filestore import FileStore
 
     if not config:

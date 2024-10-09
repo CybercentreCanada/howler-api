@@ -1,4 +1,6 @@
 import json
+from typing import Any, Optional
+
 from flask import Response, request
 
 import howler.actions as actions
@@ -15,6 +17,7 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging.audit import audit
+from howler.common.swagger import generate_swagger_docs
 from howler.config import CLASSIFICATION
 from howler.odm.models.action import Action
 from howler.odm.models.user import User
@@ -27,11 +30,11 @@ action_api = make_subapi_blueprint(SUB_API, api_version=1)
 action_api._doc = "Endpoints relating to bulk actions and automation"
 
 
+@generate_swagger_docs()
 @action_api.route("/")
 @api_login(audit=False, check_xsrf_token=False, required_type=["automation_basic"])
 def get_actions(**_) -> Response:
-    """
-    Get a list of existing actions
+    """Get a list of existing actions
 
     Variables:
     None
@@ -44,41 +47,11 @@ def get_actions(**_) -> Response:
         ...actions    # A list of actions the user can see
     ]
     """
-
     return ok(datastore().action.search("*:*", as_obj=False)["items"])
 
 
-@action_api.route("/", methods=["POST"])
-@api_login(audit=False, check_xsrf_token=False, required_type=["automation_basic"])
-def add_action(user: User, **_) -> Response:
-    """
-    Create a new action
-
-    Variables:
-    None
-
-    Optional Arguments:
-    None
-
-    Data Block:
-    {
-        "name": "New Action",               # An action name (human readable)
-        "query": "howler.id:*",             # The query to execute when triggering this action
-        "operations": [                     # A list of operations to execute
-            {
-                "operation_id": "add_label",          # The id of the operation to run
-                "data_json": "{ 'category': 'generic', 'label': 'assigned' }" # Various requisite values for the operation
-            }
-        ]
-    }
-
-    Result Example:
-    {
-        ...action   # The saved action data
-    }
-    """
-
-    new_action = request.json
+def validate_action(new_action: Any) -> Optional[Response]:
+    """Validate a new action"""
     if not isinstance(new_action, dict):
         return bad_request(err="Incorrect data structure!")
 
@@ -106,6 +79,46 @@ def add_action(user: User, **_) -> Response:
     if len(operation_ids) != len(set(operation_ids)):
         return bad_request(err="You must have a maximum of one operation of each type in the action.")
 
+    return None
+
+
+@generate_swagger_docs()
+@action_api.route("/", methods=["POST"])
+@api_login(audit=False, check_xsrf_token=False, required_type=["automation_basic"])
+def add_action(user: User, **_) -> Response:
+    """Create a new action
+
+    Variables:
+    None
+
+    Optional Arguments:
+    None
+
+    Data Block:
+    {
+        "name": "New Action",               # An action name (human readable)
+        "query": "howler.id:*",             # The query to execute when triggering this action
+        "operations": [                     # A list of operations to execute
+            {
+                "operation_id": "add_label",          # The id of the operation to run
+                "data_json": "{'category': 'generic', 'label': 'assigned'}" # Various requisite values for the operation
+            }
+        ]
+    }
+
+    Result Example:
+    {
+        ...action   # The saved action data
+    }
+    """
+    new_action = request.json
+
+    if new_action is None:
+        return bad_request(err="You must specify an action")
+
+    if error := validate_action(new_action):
+        return error
+
     try:
         new_action["owner_id"] = user.uname
 
@@ -120,15 +133,15 @@ def add_action(user: User, **_) -> Response:
     return created(action_obj.as_primitives())
 
 
+@generate_swagger_docs()
 @action_api.route("/<id>", methods=["PUT", "PATCH"])
 @api_login(
     audit=False,
     check_xsrf_token=False,
     required_type=["automation_basic"],
 )
-def update_action(id, user: User, **_) -> Response:
-    """
-    Update an existing action
+def update_action(id: str, user: User, **_) -> Response:
+    """Update an existing action
 
     Variables:
     id  => id of the aciton to update
@@ -153,7 +166,6 @@ def update_action(id, user: User, **_) -> Response:
         ...action   # The saved action data
     }
     """
-
     updated_action = request.json
     if not isinstance(updated_action, dict):
         return bad_request(err="Incorrect data structure!")
@@ -174,25 +186,8 @@ def update_action(id, user: User, **_) -> Response:
         "action_id": existing_action["action_id"],
     }
 
-    if not updated_action["name"]:
-        return bad_request(err="Name cannot be empty.")
-
-    if not updated_action["query"]:
-        return bad_request(err="Query cannot be empty.")
-
-    operations = updated_action.get("operations", None)
-    if not operations:
-        return bad_request(err="You must specify a list of operations.")
-
-    if not isinstance(operations, list):
-        return bad_request(err="'operations' must be a list of operations.")
-
-    if len(operations) < 1:
-        return bad_request(err="You must specify at least one operation.")
-
-    operation_ids = [o["operation_id"] for o in operations]
-    if len(operation_ids) != len(set(operation_ids)):
-        return bad_request(err="You must have a maximum of one operation of each type in request.")
+    if error := validate_action(updated_action):
+        return error
 
     try:
         action_obj = Action(updated_action)
@@ -206,11 +201,11 @@ def update_action(id, user: User, **_) -> Response:
     return ok(action_obj.as_primitives())
 
 
+@generate_swagger_docs()
 @action_api.route("/<id>", methods=["DELETE"])
 @api_login(audit=True, check_xsrf_token=False, required_type=["automation_basic"])
 def delete_action(id: str, user: User, **kwargs) -> Response:
-    """
-    Delete an existing action
+    """Delete an existing action
 
     Variables:
     id  => The id of the action to delete
@@ -221,7 +216,6 @@ def delete_action(id: str, user: User, **kwargs) -> Response:
     Result Example:
     None
     """
-
     ds = datastore()
 
     result = ds.action.search(f"action_id:{id}", rows=1)
@@ -243,11 +237,11 @@ def delete_action(id: str, user: User, **kwargs) -> Response:
         return internal_error(err=str(e))
 
 
+@generate_swagger_docs()
 @action_api.route("/<id>/execute", methods=["POST"])
 @api_login(audit=True, check_xsrf_token=False, required_type=["automation_basic"])
 def execute_action(id: str, **kwargs) -> Response:
-    """
-    Execute one or more actions on a given query
+    """Execute one or more actions on a given query
 
     Variables:
     id  => The id of the action to execute
@@ -318,11 +312,11 @@ def execute_action(id: str, **kwargs) -> Response:
     return ok(reports)
 
 
+@generate_swagger_docs()
 @action_api.route("/operations")
 @api_login(audit=False, check_xsrf_token=False, required_type=["automation_basic"])
 def get_operations(**_) -> Response:
-    """
-    Get a list of operations the user can run on a query
+    """Get a list of operations the user can run on a query
 
     Variables:
     None
@@ -338,11 +332,11 @@ def get_operations(**_) -> Response:
     return ok(actions.specifications())
 
 
+@generate_swagger_docs()
 @action_api.route("/execute", methods=["POST"])
 @api_login(audit=True, check_xsrf_token=False, required_type=["automation_basic"])
 def execute_operations(**kwargs) -> Response:
-    """
-    Execute one or more operations on a given query
+    """Execute one or more operations on a given query
 
     Variables:
     None

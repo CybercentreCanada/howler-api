@@ -23,7 +23,6 @@ def check_action(
     Returns:
         list[tuple[str, str, bool]]: The new list of outstanding actions
     """
-
     if broadcast:
         event_service.emit(
             "broadcast",

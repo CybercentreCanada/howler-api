@@ -11,7 +11,6 @@ def execute(query: str, arg1: str, arg2: str, **kwargs):
         arg1 (str, optional): The provided value for the matching argument below. One of "a", "b", "c".
         arg2 (str, optional): The provided value for the matching argument below. Freeform text.
     """
-
     report = []
 
     try:

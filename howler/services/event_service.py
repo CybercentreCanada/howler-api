@@ -26,7 +26,7 @@ def emit(event: str, data: Any):
         if config.ui.websocket_url:
             logger.debug("POST %s - event:%s", config.ui.websocket_url, event)
 
-            if HWL_INTERPOD_COMMS_SECRET == "secret":
+            if HWL_INTERPOD_COMMS_SECRET == "secret":  # noqa: S105
                 logger.warn("Using default interpod secret! DO NOT allow this on a production instance.")
 
             res = requests.post(

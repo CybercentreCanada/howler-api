@@ -1,13 +1,13 @@
+import requests
+
 from howler.common.net import (
-    is_valid_port,
-    is_valid_domain,
-    is_valid_ip,
-    is_valid_email,
     is_ip_in_network,
+    is_valid_domain,
+    is_valid_email,
+    is_valid_ip,
+    is_valid_port,
 )
 from howler.common.net_static import TLDS_ALPHA_BY_DOMAIN
-
-import requests
 
 
 def test_domain_list():

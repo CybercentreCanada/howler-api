@@ -1,13 +1,12 @@
-from pathlib import Path
-
 import pytest
-from howler.common.loader import datastore
+
 from howler.actions.remove_from_bundle import execute
+from howler.common import loader
+from howler.common.loader import datastore
 from howler.datastore.howler_store import HowlerDatastore
+from howler.odm.helper import generate_useful_hit
 from howler.odm.models.hit import Hit
-from howler.odm.models.user import User
 from howler.odm.random_data import wipe_hits
-from howler.odm.randomizer import random_model_obj
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -30,20 +29,19 @@ def test_execute_no_bundle_id():
 
     assert result["outcome"] == "error"
     assert result["title"] == "Invalid Bundle"
-    assert (
-        result["message"]
-        == "Either a hit with ID not_a_valid_id does not exist, or it is not a bundle."
-    )
+    assert result["message"] == "Either a hit with ID not_a_valid_id does not exist, or it is not a bundle."
 
 
 def test_execute():
-    bundle: Hit = random_model_obj(Hit)
+    lookups = loader.get_lookups()
+    users = datastore().user.search("*:*")["items"]
+    bundle: Hit = generate_useful_hit(lookups, [user["uname"] for user in users], prune_hit=False)
     bundle.howler.is_bundle = True
     bundle.howler.hits = []
     datastore().hit.save(bundle.howler.id, bundle)
 
     for i in range(2):
-        hit: Hit = random_model_obj(Hit)
+        hit: Hit = generate_useful_hit(lookups, [user["uname"] for user in users], prune_hit=False)
         hit.howler.analytic = "TestingRemoveFromBundle"
         if i == 0:
             hit.howler.bundles = [bundle.howler.id]
@@ -68,20 +66,19 @@ def test_execute():
 
     assert result[1]["outcome"] == "success"
     assert result[1]["title"] == "Executed Successfully"
-    assert (
-        result[1]["message"]
-        == f"Matching hits removed from bundle with id {bundle.howler.id}"
-    )
+    assert result[1]["message"] == f"Matching hits removed from bundle with id {bundle.howler.id}"
 
 
 def test_execute_failed():
-    bundle: Hit = random_model_obj(Hit)
+    lookups = loader.get_lookups()
+    users = datastore().user.search("*:*")["items"]
+    bundle: Hit = generate_useful_hit(lookups, [user["uname"] for user in users], prune_hit=False)
     bundle.howler.is_bundle = True
     bundle.howler.hits = []
     datastore().hit.save(bundle.howler.id, bundle)
 
     for i in range(3):
-        hit: Hit = random_model_obj(Hit)
+        hit: Hit = generate_useful_hit(lookups, [user["uname"] for user in users], prune_hit=False)
         hit.howler.analytic = "TestingRemoveFromBundle"
         if i == 0:
             hit.howler.is_bundle = True

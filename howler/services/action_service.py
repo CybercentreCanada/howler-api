@@ -13,7 +13,8 @@ from howler.utils.str_utils import sanitize_lucene_query
 logger = get_logger(__file__)
 
 
-def bulk_execute_on_query(query: str, trigger="create", user: Optional[User] = None):
+def bulk_execute_on_query(query: str, trigger: str = "create", user: Optional[User] = None):
+    """Execute the operations specified in registered actions on the given query"""
     storage = datastore()
 
     if trigger not in VALID_TRIGGERS:

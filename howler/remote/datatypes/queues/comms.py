@@ -1,7 +1,8 @@
 import json
+
 import redis
 
-from howler.remote.datatypes import get_client, retry_call, log, decode
+from howler.remote.datatypes import decode, get_client, log, retry_call
 
 
 class CommsQueue(object):

@@ -19,6 +19,7 @@ logger = get_logger(__file__)
 # Custom Error page
 @errors.app_errorhandler(400)
 def handle_400(e):
+    """Handle bad request errors"""
     if isinstance(e, BadRequest):
         error_message = "No data block provided or data block not in JSON format.'"
     else:
@@ -28,6 +29,7 @@ def handle_400(e):
 
 @errors.app_errorhandler(401)
 def handle_401(e):
+    """Handle unauthorized errors"""
     if isinstance(e, Unauthorized):
         msg = e.description
     else:
@@ -44,6 +46,7 @@ def handle_401(e):
 
 @errors.app_errorhandler(403)
 def handle_403(e):
+    """Handle bad forbidden errors"""
     if isinstance(e, Forbidden):
         error_message = e.description
     else:
@@ -66,11 +69,13 @@ def handle_403(e):
 
 @errors.app_errorhandler(404)
 def handle_404(_):
+    """Handle not found errors"""
     return not_found(err=f"Api does not exist ({request.path})")
 
 
 @errors.app_errorhandler(500)
 def handle_500(e):
+    """Handle internal server errors"""
     if isinstance(e.original_exception, AccessDeniedException):
         return handle_403(e.original_exception)
 

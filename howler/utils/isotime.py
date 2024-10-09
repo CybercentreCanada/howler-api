@@ -41,18 +41,22 @@ def _timestamp_to_ms(ts: str) -> float:
 
 
 def epoch_to_iso(t: float) -> str:
+    """Convert an epoch (in float format) to an ISO formatted string"""
     s = datetime.utcfromtimestamp(t).isoformat()
     return "".join((s, "Z"))
 
 
 def epoch_to_local(t: float) -> str:
+    """Convert an epoch (in float) to an ISO formatted string in the localized format"""
     s = datetime.fromtimestamp(t).strftime(LOCAL_FMT)
     return "".join((s, _epoch_to_ms(t)))[:26]
 
 
 def iso_to_epoch(ts: str, hp: bool = False) -> float:
+    """Convert an ISO formatted string to an epoch (in float format)"""
     if not ts:
         return 0
+
     dt = datetime.strptime(ts[:19], ISO_FMT)
     if hp:
         return int(((dt - EPOCH).total_seconds() + _timestamp_to_ms(ts)) * 1000000)
@@ -61,10 +65,12 @@ def iso_to_epoch(ts: str, hp: bool = False) -> float:
 
 
 def iso_to_local(ts: str) -> str:
+    """Convert an ISO formatted string to an ISO formatted string in the localized format"""
     return epoch_to_local(iso_to_epoch(ts))
 
 
 def local_to_epoch(ts: str, hp: bool = False) -> float:
+    """Convert an ISO formatted string in the localized format to an epoch (in float format)"""
     epoch = iso_to_epoch("%sZ" % ts.replace(" ", "T"))
     if hp:
         return int((epoch + (utc_offset_from_local(epoch) * 3600)) * 1000000)
@@ -73,10 +79,12 @@ def local_to_epoch(ts: str, hp: bool = False) -> float:
 
 
 def local_to_iso(ts: str) -> str:
+    """Convert an ISO formatted string in the localized format to an ISO formatted string"""
     return epoch_to_iso(local_to_epoch(ts))
 
 
 def now(offset: float = 0.0, hp: bool = False) -> float:
+    """Get the current time in epoch format"""
     epoch = time() + offset
 
     if hp:
@@ -87,22 +95,21 @@ def now(offset: float = 0.0, hp: bool = False) -> float:
 
 
 def now_as_iso(offset: float = 0.0) -> str:
+    """Get the current time as an ISO formatted string"""
     return epoch_to_iso(now(offset))
 
 
 def now_as_local(offset: float = 0.0) -> str:
+    """Get the current time as an ISO formatted string in the localized format"""
     return epoch_to_local(now(offset))
 
 
-def now_as_db(offset: float = 0.0, date_format: str = DB_FMT) -> str:
-    return datetime.fromtimestamp(now(offset)).strftime(date_format)
-
-
 def utc_offset_from_local(cur_time: Optional[float] = None) -> float:
+    """Get the current timezone's offset from UTC"""
     if not cur_time:
         cur_time = time()
 
-    return int(cur_time - iso_to_epoch("%sZ" % epoch_to_local(cur_time).replace(" ", "T"))) / 3600
+    return int(cur_time - iso_to_epoch(f"{epoch_to_local(cur_time).replace(' ', 'T')}Z")) / 3600
 
 
 def trunc_day(timeobj: datetime) -> datetime:

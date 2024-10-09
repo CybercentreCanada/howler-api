@@ -1,12 +1,14 @@
 import os
+
 import requests
 
 
 def get_tlds(url):
+    "Get a list of top-level domains"
     comments = []
     tlds = []
 
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     for line in response.text.splitlines():
         if not line:
             continue

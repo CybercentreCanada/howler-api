@@ -16,6 +16,7 @@ logger = get_logger(__file__)
 
 
 def ws_response(type, data={}, error=False, status=200, message=""):
+    "Create a formatted websocket response"
     return json.dumps({"error": error, "status": status, "message": message, "type": type, **data})
 
 
@@ -95,8 +96,8 @@ def websocket_auth(required_type: Optional[list[str]] = None, required_priv: Opt
             finally:
                 try:
                     ws.close()
-                except:  # noqa: E722
-                    pass
+                except Exception as e:
+                    logger.debug("Exception on WS close: %s", str(e))
                 finally:
                     ws.connected = False
 

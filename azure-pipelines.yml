@@ -24,7 +24,6 @@ variables:
   repoName: "howler-api"
   isMaster: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
   isPrBranch: $[eq(variables['Build.SourceBranchName'], 'merge')]
-  pythonVersion: "3.9"
   dockerfilePath: "$(Build.SourcesDirectory)/docker/Dockerfile"
 
 pool:
@@ -38,8 +37,7 @@ resources:
         - 6379:6379
       env:
         ALLOW_EMPTY_PASSWORD: yes
-
-    - container: elasticsearch
+    - container: elasticsearch39
       image: docker.elastic.co/elasticsearch/elasticsearch:8.5.2
       env:
         ES_JAVA_OPTS: "-Xms256m -Xmx512m"
@@ -48,7 +46,15 @@ resources:
         xpack.security.enabled: "false"
       ports:
         - 9200:9200
-
+    - container: elasticsearch312
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.5.2
+      env:
+        ES_JAVA_OPTS: "-Xms256m -Xmx512m"
+        discovery.type: "single-node"
+        ELASTIC_PASSWORD: "devpass"
+        xpack.security.enabled: "false"
+      ports:
+        - 9200:9200
     - container: minio
       image: bitnami/minio:2022.10.8-debian-11-r0
       env:
@@ -56,7 +62,6 @@ resources:
         MINIO_ROOT_PASSWORD: Ch@ngeTh!sPa33w0rd
       ports:
         - 9000:9000
-
     - container: keycloak
       image: uchimera.azurecr.io/cccs/ap-mini/keycloak:1.0.1
       ports:
@@ -65,19 +70,72 @@ resources:
       endpoint: uchimera
 
 stages:
-  - stage: test
+  - stage: run_qa_and_test
+    displayName: Quality Assurance and Tests
     jobs:
+      - job: run_qa
+        displayName: Check Code Quality Standards
+        steps:
+          - checkout: self
+            fetchDepth: 100
+            persistCredentials: true
+          - script: |
+              python --version
+              python -m pip install poetry
+            displayName: Install poetry
+          - script: |
+              python -m pip install poetry
+            displayName: Install poetry
+          - script: |
+              poetry --version
+              poetry check
+              poetry env info
+            displayName: Check for poetry config integrity
+          - script: |
+              poetry install --verbose --with test
+            displayName: Install dependencies
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              poetry run python build_scripts/run_wrapped.py ruff format howler --check
+            displayName: Run ruff formatter checks
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              poetry run python build_scripts/run_wrapped.py ruff check howler --output-format concise
+            displayName: Run ruff linter checks
+            workingDirectory: $(Pipeline.Workspace)/s
+          - script: |
+              poetry run type_check
+            displayName: Run type checking
+            workingDirectory: $(Pipeline.Workspace)/s
+          - task: GithubComment@0
+            condition: and(eq(variables.isPrBranch, true), and(failed(), ne(variables.error_result, '')))
+            inputs:
+              githubConnection: Howler Github PAT
+              repositoryName: "$(Build.Repository.Name)"
+              comment: $(error_result)
       - job: run_test
+        dependsOn: run_qa
+        displayName: Unit and Integration Testing
         strategy:
           matrix:
-            python3_9:
+            "(Python 3.9)":
+              containerImage: python:3.9-bookworm
               python.version: "3.9"
-        timeoutInMinutes: "20"
+              elasticInstance: elasticsearch39
+            "(Python 3.12)":
+              containerImage: python:3.12-bookworm
+              python.version: "3.12"
+              elasticInstance: elasticsearch312
+          maxParallel: 2
+
+        timeoutInMinutes: 20
         services:
-          elasticsearch: elasticsearch
+          elasticsearch: $[ variables['elasticInstance'] ]
           redis: redis
           minio: minio
+          keycloak: keycloak
 
+        container: $[ variables['containerImage'] ]
         steps:
           - checkout: self
             fetchDepth: 100
@@ -90,18 +148,20 @@ stages:
               python -m pip install poetry
             displayName: Install poetry
           - script: |
-              poetry --version
-              poetry check
+              python -m poetry --version
+              python -m poetry check
+              python -m poetry env info
             displayName: Check for poetry config integrity
           - script: |
+              apt-get install sudo
+              sudo mkdir -p /var/log/howler/
               sudo mkdir -p /var/cache/howler/
               sudo mkdir -p /var/lib/howler/
-              sudo mkdir -p /var/log/howler/
               sudo mkdir -p /etc/howler/conf/
               sudo mkdir -p /etc/howler/lookups/
+              sudo chmod a+rw /var/log/howler/
               sudo chmod a+rw /var/cache/howler/
               sudo chmod a+rw /var/lib/howler/
-              sudo chmod a+rw /var/log/howler/
               sudo chmod a+rw /etc/howler/conf/
               sudo chmod a+rw /etc/howler/lookups/
               cp build_scripts/classification.yml /etc/howler/conf/classification.yml
@@ -109,44 +169,37 @@ stages:
             displayName: Setup Environment
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
-              poetry install --verbose --with test
+              python -m poetry install --verbose --with test
+              python -m poetry run mitre /etc/howler/lookups
+              python -m poetry run sigma
             displayName: Install howler-api
             workingDirectory: $(Pipeline.Workspace)/s
           - script: |
-              poetry run black howler/ --check
-            displayName: Run black formatter checks
-            workingDirectory: $(Pipeline.Workspace)/s
-          - script: |
-              poetry run type_check
-            displayName: Run type checking
-            workingDirectory: $(Pipeline.Workspace)/s
-          - script: |
-              poetry run test
+              python -m poetry run test
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Test
           - script: |
-              poetry run coverage_report
+              python -m poetry run coverage_report
             workingDirectory: $(Pipeline.Workspace)/s
             displayName: Coverage Results
+            condition: and(eq(variables.isPrBranch, true), eq(variables['python.version'], '3.12'))
           - task: PublishTestResults@2
             condition: succeededOrFailed()
             inputs:
               testResultsFiles: "$(Pipeline.Workspace)/s/**/test-*.xml"
               testRunTitle: "Publish test results for Python $(python.version)"
-          - task: PublishCodeCoverageResults@1
+          - task: PublishCodeCoverageResults@2
             condition: succeededOrFailed()
             inputs:
-              codeCoverageTool: Cobertura
               summaryFileLocation: "$(Pipeline.Workspace)/s/**/coverage.xml"
-              reportDirectory: "$(Pipeline.Workspace)/s/**/htmlcov"
           - task: GithubComment@0
-            condition: and(eq(variables.isPrBranch, true), succeeded())
+            condition: and(and(eq(variables.isPrBranch, true), succeeded()), eq(variables['python.version'], '3.12'))
             inputs:
               githubConnection: Howler Github PAT
               repositoryName: "$(Build.Repository.Name)"
               comment: $(coverage_result)
           - task: GithubComment@0
-            condition: and(eq(variables.isPrBranch, true), failed())
+            condition: and(eq(variables.isPrBranch, true), and(failed(), ne(variables.error_result, '')))
             inputs:
               githubConnection: Howler Github PAT
               repositoryName: "$(Build.Repository.Name)"

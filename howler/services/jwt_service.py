@@ -16,19 +16,20 @@ logger = get_logger(__file__)
 
 
 def get_jwk(access_token: str) -> PyJWK:
+    """Get the JSON Web Key associated with the given JWT"""
     # "kid" is the JSON Web Key's identifier. It tells us which key was used to validate the token.
     kid = jwt.get_unverified_header(access_token).get("kid")
-    JWKS, _ = get_jwks()
+    jwks, _ = get_jwks()
 
     try:
         # Check to see if we have it cached
-        key = PyJWK(JWKS[kid])
+        key = PyJWK(jwks[kid])
     except KeyError:
         # We don't, so we need to refresh the key set
         cache.delete(key="get_jwks")
         try:
-            JWKS, _ = get_jwks()
-            key = JWKS[kid]
+            jwks, _ = get_jwks()
+            key = jwks[kid]
         except KeyError:
             raise HowlerKeyError()
 
@@ -49,17 +50,17 @@ def get_provider(access_token: str) -> str:
     """
     # "kid" is the JSON Web Key's identifier. It tells us which key was used to validate the token.
     kid = jwt.get_unverified_header(access_token).get("kid")
-    _, PROVIDERS = get_jwks()
+    _, providers = get_jwks()
 
     try:
         # Check to see if we have it cached
-        oauth_provider = PROVIDERS[kid]
+        oauth_provider = providers[kid]
     except KeyError:
         # We don't, so we need to refresh the key set
         cache.delete(key="get_jwks")
         try:
-            _, PROVIDERS = get_jwks()
-            oauth_provider = PROVIDERS[kid]
+            _, providers = get_jwks()
+            oauth_provider = providers[kid]
         except KeyError:
             raise HowlerValueError("The provider of this access token does not match any supported providers")
 
@@ -67,16 +68,16 @@ def get_provider(access_token: str) -> str:
 
 
 @cache.cached(timeout=60 * 60 * 12, key_prefix="get_jwks")  # Cached for 12hrs
-def get_jwks() -> tuple[dict[str, str], dict[str, str]]:
+def get_jwks() -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
     """Get the JSON Web Key Set for all supported providers
 
     Returns:
         tuple[dict[str, str], dict[str, str]]: The JWKS and the providers that are included in it
     """
     # JWKS = JSON Web Key Set. We merge the key set from all oauth providers
-    JWKS: dict[str, str] = {}
+    jwks: dict[str, dict[str, Any]] = {}
     # Mapping of keys to their provider (i.e. azure, keycloak)
-    PROVIDERS: dict[str, str] = {}
+    providers: dict[str, str] = {}
 
     for (
         provider_name,
@@ -84,12 +85,12 @@ def get_jwks() -> tuple[dict[str, str], dict[str, str]]:
     ) in config.auth.oauth.providers.items():
         # Fetch the JSON Web Key Set for each provider that supports them
         if provider_data.jwks_uri:
-            jwks = requests.get(provider_data.jwks_uri).json()["keys"]
-            for jwk in jwks:
-                JWKS[jwk["kid"]] = jwk
-                PROVIDERS[jwk["kid"]] = provider_name
+            provider_jwks: list[dict[str, Any]] = requests.get(provider_data.jwks_uri, timeout=10).json()["keys"]
+            for jwk in provider_jwks:
+                jwks[jwk["kid"]] = jwk
+                providers[jwk["kid"]] = provider_name
 
-    return (JWKS, PROVIDERS)
+    return (jwks, providers)
 
 
 def get_audience(oauth_provider: str) -> str:
@@ -111,7 +112,7 @@ def get_audience(oauth_provider: str) -> str:
     elif "client_id" in provider_data and provider_data.client_id:
         audience = provider_data.client_id
 
-    if oauth_provider == "azure" and not (f"{audience}/.default" in provider_data.scope):
+    if oauth_provider == "azure" and f"{audience}/.default" not in provider_data.scope:
         raise HowlerValueError("Azure scope must contain the <client_id>/.default claim!")
 
     return audience
@@ -146,4 +147,9 @@ def decode(
     if validate_audience and not audience:
         audience = get_audience(get_provider(access_token))
 
-    return jwt.decode(jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs)  # type: ignore
+    try:
+        logger.debug("Validating token against audience %s", audience)
+        return jwt.decode(jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs)  # type: ignore
+    except jwt.InvalidTokenError as err:
+        logger.error("Error occurred when decoding JWT:\n%s", repr(err))
+        raise HowlerValueError("There was an error when decoding your JWT.", cause=err)

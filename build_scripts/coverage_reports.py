@@ -1,4 +1,5 @@
 import os
+import platform
 import re
 import shlex
 import subprocess
@@ -16,7 +17,10 @@ def get_color(percentage):
 
 
 def generate_badge(title, percentage, color):
-    return f"![Static Badge](https://img.shields.io/badge/{title.replace(' ', '_')}-{percentage}25-{color}?style=flat&logo=azuredevops&logoColor=%230078D7)"
+    return (
+        f"![Static Badge](https://img.shields.io/badge/{title.replace(' ', '_')}-{percentage}25-{color}?style="
+        "flat&logo=azuredevops&logoColor=%230078D7)"
+    )
 
 
 def main():
@@ -24,7 +28,7 @@ def main():
 
     develop = "develop" in os.environ.get("GIT_BRANCH", "unknown")
     rc_or_main = any(x in os.environ.get("GIT_BRANCH", "unknown") for x in ["patch", "rc", "main", "master"])
-    pr_branch = "origin/" + os.environ.get("PR_BRANCH", "develop")
+    pr_branch = "origin/" + (os.environ.get("PR_BRANCH", "develop") or "develop")
 
     try:
         report_result = subprocess.check_output(shlex.split("coverage report --data-file=.coverage")).decode()
@@ -65,13 +69,15 @@ def main():
 
                 diff_result += "\n</details>"
 
+        badge = generate_badge("Diff Coverage", diff_percentage, diff_color) if (not develop and not rc_or_main) else ""
+
         newline = "\n"
         markdown_output = textwrap.dedent(
             f"""
-        ![Static Badge](https://img.shields.io/badge/build-passing-brightgreen)
+        ![Static Badge](https://img.shields.io/badge/Build%20(Python%20{platform.python_version()})-passing-brightgreen)
 
         # Coverage Results
-        {generate_badge('Total Coverage', total_percentage, total_color)} {generate_badge('Diff Coverage', diff_percentage, diff_color) if (not develop and not rc_or_main) else ''}
+        {generate_badge('Total Coverage', total_percentage, total_color)} {badge}
 
 {newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if (not develop and not rc_or_main) else ''}
 

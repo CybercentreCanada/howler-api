@@ -50,7 +50,7 @@ XSRF_ENABLED = True
 ####################################
 # API Helper func and decorators
 # noinspection PyPep8Naming
-class api_login(object):
+class api_login(object):  # noqa: D101, N801
     def __init__(
         self,
         required_type: Optional[list[str]] = None,
@@ -84,9 +84,9 @@ class api_login(object):
         self.check_xsrf_token = check_xsrf_token
         self.enforce_quota = enforce_quota
 
-    def __call__(self, func):
+    def __call__(self, func):  # noqa: C901, D102
         @functools.wraps(func)
-        def base(*args, **kwargs):
+        def base(*args, **kwargs):  # noqa: C901
             try:
                 # All authorization (except impersonation) must go through the Authorization header, in one of
                 # four formats:

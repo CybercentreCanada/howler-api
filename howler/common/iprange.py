@@ -4,7 +4,6 @@ from struct import pack, unpack
 
 from howler.common.exceptions import InvalidRangeException
 
-
 # If you are tempted to extend this module to add support for IPv6 (or some
 # similar invasive change) take a look at using PySubnetTree and extending it
 # to allow arbitrary ranges instead.
@@ -27,13 +26,14 @@ def _valid(lower, upper):
 
 
 # noinspection PyPep8Naming
-class _dict(dict):
+class _dict(dict):  # noqa: N801
     pass
 
 
 def ip_to_int(ip):
-    if type(ip) == int:
+    if isinstance(ip, int):
         return ip
+
     return _convert(ip)
 
 
@@ -92,7 +92,7 @@ class RangeTable(object):
         return self._follow_path(self._to_path(ip_to_int(key)))
 
     def __setitem__(self, key, value):
-        if type(key) == int:
+        if isinstance(key, int):
             self._add_cidr(key, key, value)
             return
 

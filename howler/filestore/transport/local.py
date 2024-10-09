@@ -14,9 +14,7 @@ from howler.utils.uid import get_random_id
 
 @ChainAll(TransportException)
 class TransportLocal(Transport):
-    """
-    Local file system Transport class.
-    """
+    """Local file system Transport class."""
 
     def __init__(self, base=None, normalize=None):
         self.log = logging.getLogger(f"{APP_NAME}.transport.local")
@@ -76,14 +74,16 @@ class TransportLocal(Transport):
 
         dirname = os.path.dirname(dst_path)
         filename = os.path.basename(dst_path)
-        tempname = get_random_id()
-        temppath = _join(dirname, tempname)
-        finalpath = _join(dirname, filename)
-        assert finalpath == dst_path
+        temp_name = get_random_id()
+        temp_path = _join(dirname, temp_name)
+        final_path = _join(dirname, filename)
+        if final_path != dst_path:
+            raise HowlerException(f"Final and destination paths do not match: {final_path} != {dst_path}")
         self.makedirs(dirname)
-        shutil.copy(src_path, temppath)
-        shutil.move(temppath, finalpath)
-        assert self.exists(dst_path)
+        shutil.copy(src_path, temp_path)
+        shutil.move(temp_path, final_path)
+        if not self.exists(dst_path):
+            raise HowlerException(f"Destination path does not exist: {dst_path}")
 
     # Buffer based functions
     def get(self, path: str) -> bytes:
@@ -102,26 +102,30 @@ class TransportLocal(Transport):
         dirname = os.path.dirname(path)
         filename = os.path.basename(path)
 
-        tempname = get_random_id()
-        temppath = _join(dirname, tempname)
+        temp_name = get_random_id()
+        temp_path = _join(dirname, temp_name)
 
-        finalpath = _join(dirname, filename)
-        assert finalpath == path
+        final_path = _join(dirname, filename)
+
+        if final_path != path:
+            raise HowlerException(f"Final and expected path do not match: {final_path} != {path}")
 
         self.makedirs(dirname)
         fh = None
         try:
-            fh = open(temppath, "wb")
+            fh = open(temp_path, "wb")
             return fh.write(content)
         finally:
             if fh:
                 fh.close()
 
             try:
-                shutil.move(temppath, finalpath)
+                shutil.move(temp_path, final_path)
             except shutil.Error:
                 pass
-            assert self.exists(path)
+
+            if not self.exists(path):
+                raise HowlerException(f"Path does not exist: {path}")
 
     def __str__(self):
         return "file://{}".format(self.base)

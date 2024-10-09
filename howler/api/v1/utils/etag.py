@@ -7,6 +7,8 @@ from howler.api import not_modified
 
 
 def add_etag(getter, check_if_match=False):
+    """Decorator to add etag handling to a flask response"""
+
     def wrapper(f):
         @functools.wraps(f)
         def generate_etag(*args, **kwargs):

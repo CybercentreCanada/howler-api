@@ -1,4 +1,5 @@
 import pytest
+
 from howler.common.exceptions import Chain, ChainAll, HowlerException
 
 

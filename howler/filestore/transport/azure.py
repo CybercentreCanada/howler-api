@@ -1,29 +1,28 @@
 import logging
 import os
 import time
+from io import BytesIO
 from typing import Optional
 
 # noinspection PyProtectedMember
 from azure.core.exceptions import (
-    ServiceRequestError,
-    DecodeError,
-    ResourceExistsError,
-    ResourceNotFoundError,
     ClientAuthenticationError,
-    ResourceModifiedError,
-    ResourceNotModifiedError,
-    TooManyRedirectsError,
+    DecodeError,
     ODataV4Error,
+    ResourceExistsError,
+    ResourceModifiedError,
+    ResourceNotFoundError,
+    ResourceNotModifiedError,
+    ServiceRequestError,
+    TooManyRedirectsError,
 )
 from azure.identity import ClientSecretCredential
 from azure.storage.blob import BlobServiceClient
-from io import BytesIO
 
 from howler.common.exceptions import ChainAll
-from howler.filestore.exceptions import HowlerConnectionError
 from howler.common.loader import APP_NAME
+from howler.filestore.exceptions import HowlerConnectionError
 from howler.filestore.transport.base import Transport, TransportException
-
 
 """
 This class assumes a flat file structure in the Azure storage blob.

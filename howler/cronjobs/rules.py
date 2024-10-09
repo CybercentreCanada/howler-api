@@ -1,19 +1,21 @@
-from datetime import datetime
 import hashlib
 import json
+import os
 import random
 import re
 import sys
+from datetime import datetime
 from typing import Any, Optional
+
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler.triggers.cron import CronTrigger
-from howler.common.exceptions import HowlerValueError
-from howler.common.loader import datastore
-
+from pytz import timezone
 from sigma.backends.elasticsearch import LuceneBackend
 from sigma.rule import SigmaRule
 from yaml.scanner import ScannerError
 
+from howler.common.exceptions import HowlerValueError
+from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.config import DEBUG, HWL_ENABLE_RULES
 from howler.datastore.collection import ESCollection
@@ -29,6 +31,7 @@ __scheduler_instance: Optional[BaseScheduler] = None
 
 
 def create_correlated_bundle(rule: Analytic, query: str, correlated_hits: list[Hit]):
+    "Create a bundle based on the results of an analytic"
     # We'll create a hash using the hashes of the children, and the analytic ID/current time
     bundle_hash = hashlib.sha256()
     bundle_hash.update(rule.analytic_id.encode())
@@ -79,7 +82,7 @@ def create_correlated_bundle(rule: Analytic, query: str, correlated_hits: list[H
             f"howler.id:({' OR '.join(child_ids)})",
             [
                 hit_helper.list_add(
-                    f"howler.bundles",
+                    "howler.bundles",
                     correlated_bundle.howler.id,
                     if_missing=True,
                 ),
@@ -102,8 +105,11 @@ def create_correlated_bundle(rule: Analytic, query: str, correlated_hits: list[H
     return correlated_bundle
 
 
-def create_executor(rule: Analytic):
-    def execute():
+def create_executor(rule: Analytic):  # noqa: C901
+    "Create a cronjob for a given analytic"
+
+    def execute():  # noqa: C901
+        "Execute the rule"
         try:
             if not rule.rule or not rule.rule_type:
                 logger.error("Invalid rule %s! Skipping", rule.analytic_id)
@@ -201,7 +207,8 @@ def create_executor(rule: Analytic):
     return execute
 
 
-def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
+def register_rules(new_rule: Optional[Analytic] = None, test_override: bool = False):
+    "Register all of the created analytic rules as cronjobs"
     global __scheduler_instance
     if not __scheduler_instance:  # pragma: no cover
         logger.error("Scheduler instance does not exist!")
@@ -227,7 +234,7 @@ def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
     total_initialized = 0
     for rule in rules:
         job_id = f"rule_{rule.analytic_id}"
-        interval = rule.rule_crontab or f"{random.randint(0, 59)} * * * *"
+        interval = rule.rule_crontab or f"{random.randint(0, 59)} * * * *"  # noqa: S311
 
         if __scheduler_instance.get_job(job_id):
             logger.debug(f"Rule {job_id} already running!")
@@ -244,7 +251,7 @@ def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
         __scheduler_instance.add_job(
             id=job_id,
             func=create_executor(rule),
-            trigger=CronTrigger.from_crontab(interval),
+            trigger=CronTrigger.from_crontab(interval, timezone=timezone(os.getenv("SCHEDULER_TZ", "America/Toronto"))),
             **_kwargs,
         )
 
@@ -252,6 +259,7 @@ def register_rules(new_rule: Optional[Analytic] = None, test_override=False):
 
 
 def setup_job(sched: BaseScheduler):
+    "Initialize the rules cronjobs"
     if not DEBUG and not HWL_ENABLE_RULES:  # pragma: no cover
         logger.debug("Rule integration disabled")
         return

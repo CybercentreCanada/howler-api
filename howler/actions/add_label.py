@@ -1,3 +1,5 @@
+from typing import Optional
+
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
@@ -12,15 +14,14 @@ OPERATION_ID = "add_label"
 CATEGORIES = list(Label.fields().keys())
 
 
-def execute(query: str, category="generic", label=None, **kwargs):
+def execute(query: str, category: str = "generic", label: Optional[str] = None, **kwargs):
     """Add a label to a hit.
 
     Args:
         query (str): The query on which to apply this automation.
         category (str, optional): The category of label to add. Defaults to "generic".
-        label (str, optional): The label content. Defaults to None.
+        label (str): The label content. Defaults to None.
     """
-
     if category not in CATEGORIES:
         return [
             {
@@ -28,6 +29,16 @@ def execute(query: str, category="generic", label=None, **kwargs):
                 "outcome": "error",
                 "title": "Invalid Category",
                 "message": f"'{category}' is not a valid category.",
+            }
+        ]
+
+    if not label:
+        return [
+            {
+                "query": query,
+                "outcome": "error",
+                "title": "Invalid Label",
+                "message": "Label cannot be empty.",
             }
         ]
 
@@ -78,6 +89,7 @@ def execute(query: str, category="generic", label=None, **kwargs):
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Add Label",

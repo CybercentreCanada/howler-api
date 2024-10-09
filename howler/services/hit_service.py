@@ -1,13 +1,10 @@
 import json
-from hashlib import sha256
 import re
-from typing import Any, Optional
 import typing
+from hashlib import sha256
+from typing import Any, Optional
 
 from prometheus_client import Counter
-from howler.odm.models.ecs.event import Event
-from howler.odm.models.user import User
-from howler.services import action_service
 
 import howler.services.event_service as event_service
 from howler.common.exceptions import (
@@ -32,6 +29,7 @@ from howler.helper.hit import (
 )
 from howler.helper.workflow import Transition, Workflow
 from howler.odm.base import BANNED_FIELDS
+from howler.odm.models.ecs.event import Event
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import (
     HitOperationType,
@@ -39,6 +37,8 @@ from howler.odm.models.howler_data import (
     HitStatusTransition,
     Log,
 )
+from howler.odm.models.user import User
+from howler.services import action_service
 from howler.utils.dict_utils import flatten
 from howler.utils.uid import get_random_id
 
@@ -254,11 +254,10 @@ def validate_hit_ids(hit_ids: list[str]) -> bool:
     Returns:
         bool: Whether all of the hit ids are free to use
     """
-
     return not any(does_hit_exist(hit_id) for hit_id in hit_ids)
 
 
-def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values=False) -> tuple[Hit, list[str]]:
+def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values: bool = False) -> tuple[Hit, list[str]]:  # noqa: C901
     """Validate if the provided dict is a valid hit.
 
     Args:
@@ -274,8 +273,7 @@ def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values=False) -
     Returns:
         Hit: The validated and converted ODM.
     """
-
-    data = flatten(data)
+    data = flatten(data, odm=Hit)
 
     if "howler.hash" not in data:
         hash_contents = {
@@ -302,6 +300,9 @@ def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values=False) -
                 parsed_data.append(json.dumps(entry))
 
         data["howler.data"] = parsed_data
+
+    if "bundle_size" not in data and "howler.hits" in data:
+        data["howler.bundle_size"] = len(data["howler.hits"])
 
     try:
         odm = Hit(data, ignore_extra_values=ignore_extra_values)
@@ -350,6 +351,7 @@ def convert_hit(data: dict[str, Any], unique: bool, ignore_extra_values=False) -
 
 
 def exists(id: str):
+    "Check if a hit exists"
     return datastore().hit.exists(id)
 
 
@@ -402,6 +404,7 @@ def update_hit(
 
 @typing.no_type_check
 def save_hit(hit: Hit, version: Optional[str] = None) -> tuple[Hit, str]:
+    "Save a hit to the datastore"
     datastore().hit.save(hit.howler.id, hit, version=version)
     data, _version = datastore().hit.get(hit.howler.id, as_obj=False, version=True)
     event_service.emit("hits", {"hit": data, "version": _version})
@@ -493,6 +496,7 @@ def get_transitions(status: HitStatus) -> list[str]:
 
 
 def get_all_children(hit: Hit):
+    "Get a list of all the children for a given hit"
     child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
 
     for entry in child_hits:

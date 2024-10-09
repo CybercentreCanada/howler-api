@@ -17,7 +17,6 @@ def get_apps_list(discovery_url: Optional[str]) -> list[dict[str, str]]:
     Returns:
         list[dict[str, str]]: A list of other apps
     """
-
     if discovery_url not in DISCO_CACHE:
         apps = []
 
@@ -25,7 +24,6 @@ def get_apps_list(discovery_url: Optional[str]) -> list[dict[str, str]]:
             logger.info("Skipping discovery, running in a test environment")
 
         try:
-
             resp = requests.get(
                 typing.cast(str, discovery_url or config.ui.discover_url),
                 headers={"accept": "application/json"},

@@ -6,10 +6,14 @@ from howler.datastore.operations import OdmUpdateOperation
 
 
 class WorkflowException(HowlerException):
+    "Exception for errors caused during processing of a workflow"
+
     pass
 
 
 class Transition(TypedDict):
+    """Typed Dict outlining the propertyies of a valid transition object"""
+
     source: Optional[Union[str, list[str]]]
     transition: str
     dest: Optional[str]
@@ -17,6 +21,7 @@ class Transition(TypedDict):
 
 
 def validate_transition(transition: Transition):
+    "Ensure the given transition is valid"
     return bool(
         transition
         # We want to check if a source is provided. If it is, it must have a value
@@ -32,8 +37,7 @@ def validate_transition(transition: Transition):
 
 
 class Workflow:
-    """
-    A simple state-like machine that generates OdmUpdateOperations on a given transition
+    """A simple state-like machine that generates OdmUpdateOperations on a given transition
 
     NOTE: This does not keep track of state, it merely provides the update operations of a transition.
     """
@@ -59,6 +63,7 @@ class Workflow:
             raise WorkflowException("There are duplicate transitions (same source, transition and dest values).")
 
     def transition(self, current_status: str, transition: str, **kwargs) -> list[OdmUpdateOperation]:
+        "Generate a list of ODM updates based on the current status and a given transition step"
         _transition: Optional[Transition] = self.transitions.get(
             f"{current_status}{transition}", self.transitions.get(transition, None)
         )
@@ -95,6 +100,7 @@ class Workflow:
         return list(updates_dict.values())
 
     def get_transitions(self, current_status: str):
+        "Get a list of all given transitions"
         return list(
             set(
                 [

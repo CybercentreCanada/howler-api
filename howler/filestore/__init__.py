@@ -7,12 +7,11 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import elasticapm
 
-from howler.common.exceptions import get_stacktrace_info
+from howler.common.exceptions import HowlerValueError, get_stacktrace_info
 from howler.common.loader import APP_NAME
 from howler.common.logging import get_logger
 from howler.filestore.exceptions import FileStoreException, TransportException
 from howler.filestore.transport.azure import TransportAzure
-from howler.filestore.transport.ftp import TransportFTP
 from howler.filestore.transport.http import TransportHTTP
 from howler.filestore.transport.local import TransportLocal
 from howler.filestore.transport.s3 import TransportS3
@@ -44,9 +43,8 @@ def _get_extras(parsed_dict, valid_str_keys=None, valid_bool_keys=None):
     return out
 
 
-def create_transport(url: str | Host, connection_attempts=None):
-    """
-    Transport are being initiated using an URL. They follow the normal url format:
+def create_transport(url: str | Host, connection_attempts=None) -> Transport:
+    """Transport are being initiated using an URL. They follow the normal url format:
     scheme://user:pass@host:port/path/to/file
 
     In this example, it will extract the following parameters:
@@ -77,7 +75,6 @@ def create_transport(url: str | Host, connection_attempts=None):
           file: normalize (bool)
 
     """
-
     parsed = urlparse(str(url))
 
     base = parsed.path or "/"
@@ -93,15 +90,9 @@ def create_transport(url: str | Host, connection_attempts=None):
 
     scheme = parsed.scheme.lower()
     try:
-        if scheme == "ftp" or scheme == "ftps":
-            valid_bool_keys = ["use_tls"]
-            extras = _get_extras(parse_qs(parsed.query), valid_bool_keys=valid_bool_keys)
-            if scheme == "ftps":
-                extras["use_tls"] = True
+        transport: Transport
 
-            transport: Transport = TransportFTP(base=base, host=host, password=password, user=user, port=port, **extras)
-
-        elif scheme == "sftp":
+        if scheme == "sftp":
             valid_str_keys = ["private_key", "private_key_pass"]
             valid_bool_keys = ["validate_host"]
             extras = _get_extras(
@@ -264,16 +255,23 @@ class FileStore(object):
                     )
         return transports
 
-    def slice(self, location):
-        start, end = {
+    def slice(self, location: str):
+        options = {
             "all": (0, len(self.transports)),
             "any": (0, len(self.transports)),
             "far": (-1, len(self.transports)),
             "near": (0, 1),
-        }[location]
+        }
+
+        if location not in options:
+            raise HowlerValueError(f"location must be one of [{','.join(options.keys())}]")
+
+        start, end = options[location]
 
         transports = self.transports[start:end]
-        assert len(transports) >= 1
+        if len(transports) < 1:
+            raise HowlerValueError("Not enough transports to slice.")
+
         return transports
 
     @elasticapm.capture_span(span_type="filestore")

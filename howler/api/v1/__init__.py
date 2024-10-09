@@ -1,4 +1,5 @@
 from textwrap import dedent
+
 from flask import Blueprint, current_app, request
 
 from howler.api import ok
@@ -9,14 +10,10 @@ apiv1 = Blueprint("apiv1", __name__, url_prefix=API_PREFIX)
 apiv1._doc = "Api Documentation Version 1"  # type: ignore[attr-defined]
 
 
-#####################################
-# API DOCUMENTATION
-# noinspection PyProtectedMember,PyBroadException
 @apiv1.route("/")
 @api_login(audit=False, required_priv=["R", "W"], required_type=["user", "admin"])
 def get_api_documentation(**kwargs):
-    """
-    Full API doc.
+    """Full API doc.
 
     Loop through all registered API paths and display their documentation.
     Returns a list of API definition.
@@ -66,9 +63,7 @@ def get_api_documentation(**kwargs):
 
                     if blueprint not in api_blueprints:
                         try:
-                            doc = current_app.blueprints[
-                                rule.endpoint[: rule.endpoint.rindex(".")]
-                            ]._doc  # type: ignore[attr-defined]
+                            doc = current_app.blueprints[rule.endpoint[: rule.endpoint.rindex(".")]]._doc  # type: ignore[attr-defined]
                         except Exception:
                             doc = ""
 

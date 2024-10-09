@@ -12,8 +12,7 @@ def normalize_srl_path(srl):
 
 
 class Transport(object):
-    """
-    FileTransport base class.
+    """FileTransport base class.
 
     - Subclasses should override all methods.
     - Except as noted, FileTransport methods do not return value and raise
@@ -31,47 +30,35 @@ class Transport(object):
         pass
 
     def delete(self, path: str):
-        """
-        Deletes the file.
-        """
+        """Deletes the file."""
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     def exists(self, path: str) -> bool:
-        """
-        Returns True if the path exists, False otherwise.
+        """Returns True if the path exists, False otherwise.
         Should work with both files and directories.
         """
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     def makedirs(self, path: str):
-        """
-        Like os.makedirs the super-mkdir, create the leaf directory path and
+        """Like os.makedirs the super-mkdir, create the leaf directory path and
         any intermediate path segments.
         """
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     # File based functions
     def download(self, src_path: str, dst_path: str):
-        """
-        Copies the content of the filestore src_path to the local dst_path.
-        """
+        """Copies the content of the filestore src_path to the local dst_path."""
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     def upload(self, src_path: str, dst_path: str):
-        """
-        Save upload source file src_path to to the filesotre dst_path, overwriting dst_path if it already exists.
-        """
+        """Save upload source file src_path to to the filesotre dst_path, overwriting dst_path if it already exists."""
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     # Buffer based functions
     def get(self, path: str) -> bytes:
-        """
-        Returns the content of the file.
-        """
+        """Returns the content of the file."""
         raise TransportException("Not Implemented", HowlerNotImplementedError())
 
     def put(self, dst_path: str, content: AnyStr):
-        """
-        Put the content of the file in memory directly to the filestore dst_path
-        """
+        """Put the content of the file in memory directly to the filestore dst_path"""
         raise TransportException("Not Implemented", HowlerNotImplementedError())

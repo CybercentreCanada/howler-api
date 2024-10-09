@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 import baseconv
 
@@ -21,7 +21,7 @@ def get_random_id() -> str:
     return baseconv.base62.encode(uuid.uuid4().int)
 
 
-def get_id_from_data(data: Any, prefix=None, length=MEDIUM) -> str:
+def get_id_from_data(data: Any, prefix: Optional[str] = None, length: int = MEDIUM) -> str:
     """Get an ID of a particular length, with an optional prefix, based on the provided data.
 
     Args:

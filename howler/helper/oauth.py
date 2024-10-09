@@ -6,11 +6,11 @@ from typing import Any, Optional
 import elasticapm
 import requests
 
-from howler.common.exceptions import HowlerException
+from howler.common.exceptions import HowlerException, HowlerValueError
 from howler.common.loader import USER_TYPES
 from howler.common.logging import get_logger
 from howler.common.random_user import random_user
-from howler.config import CLASSIFICATION as cl_engine
+from howler.config import CLASSIFICATION as CLASSIFICATION_ENGINE
 from howler.config import config
 from howler.helper.azure import azure_obo
 from howler.odm.models.config import OAuthProvider
@@ -21,7 +21,8 @@ VALID_CHARS = [str(x) for x in range(10)] + [chr(x + 65) for x in range(26)] + [
 logger = get_logger(__file__)
 
 
-def reorder_name(name) -> Optional[str]:
+def reorder_name(name: Optional[str]) -> Optional[str]:
+    """Reorder the name from Doe, John to John Doe"""
     if name is None:
         return name
 
@@ -29,7 +30,8 @@ def reorder_name(name) -> Optional[str]:
 
 
 @elasticapm.capture_span(span_type="authentication")
-def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
+def parse_profile(profile: dict[str, Any], provider_config: OAuthProvider) -> dict[str, Any]:  # noqa: C901
+    """Parse a raw profile dict into a useful user data dict"""
     # Find email address and normalize it for further processing
     email_adr = profile.get(
         "email",
@@ -84,7 +86,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
 
     # Get avatar from gravatar
     if config.auth.oauth.gravatar_enabled and email_adr:
-        email_hash = hashlib.md5(email_adr.encode("utf-8")).hexdigest()
+        email_hash = hashlib.md5(email_adr.encode("utf-8")).hexdigest()  # noqa: S324
         alternate = f"https://www.gravatar.com/avatar/{email_hash}?s=256&d=404&r=pg"
     else:
         alternate = None
@@ -92,7 +94,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
     # Compute access, roles and classification using auto_properties
     access = True
     roles = ["user"]
-    classification = cl_engine.UNRESTRICTED
+    classification = CLASSIFICATION_ENGINE.UNRESTRICTED
     if provider_config.auto_properties:
         for auto_prop in provider_config.auto_properties:
             if auto_prop.type == "access":
@@ -125,7 +127,9 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
                 # Compute classification from matching patterns
                 elif auto_prop.type == "classification":
                     if re.match(auto_prop.pattern, value):
-                        classification = cl_engine.build_user_classification(classification, auto_prop.value)
+                        classification = CLASSIFICATION_ENGINE.build_user_classification(
+                            classification, auto_prop.value
+                        )
                         break
 
     # Infer roles from groups
@@ -133,7 +137,7 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
         for user_type in USER_TYPES:
             if (
                 user_type in provider_config.role_map
-                and provider_config.role_map[user_type] in profile.get("groups")
+                and provider_config.role_map[user_type] in profile.get("groups", [])
                 and user_type not in roles
             ):
                 roles.append(user_type)
@@ -145,13 +149,16 @@ def parse_profile(profile, provider_config: OAuthProvider) -> dict[str, Any]:
         uname=uname,
         name=name,
         email=email_adr,
-        password="__NO_PASSWORD__",
+        password="__NO_PASSWORD__",  # noqa: S106
         avatar=profile.get("picture", provider_config.picture_url or alternate),
         groups=profile.get("groups", []),
     )
 
 
-def fetch_avatar(url, provider, oauth_provider: str, access_token=None):
+def fetch_avatar(  # noqa: C901
+    url: str, provider: dict[str, Any], oauth_provider: str, access_token: Optional[str] = None
+):
+    """Fetch a user's avatar form the oauth provider"""
     provider_config = config.auth.oauth.providers[oauth_provider]
 
     logger.info("Fetching avatar from %s at %s", oauth_provider, url)
@@ -162,12 +169,15 @@ def fetch_avatar(url, provider, oauth_provider: str, access_token=None):
             headers = {}
 
             if oauth_provider == "azure":
+                if not access_token:
+                    raise HowlerValueError("An azure access token is necessary to retrieve the profile picture")
+
                 token = azure_obo(access_token)
 
             if token:
                 headers["Authorization"] = f"Bearer {token}"
 
-            resp = requests.get(url, headers=headers)
+            resp: Any = requests.get(url, headers=headers, timeout=10)
 
             if resp.ok and resp.headers.get("content-type") is not None:
                 b64_img = base64.b64encode(resp.content).decode()
@@ -184,7 +194,7 @@ def fetch_avatar(url, provider, oauth_provider: str, access_token=None):
 
         # Unprotected url
         elif url.startswith("https://") or url.startswith("http://"):
-            resp = requests.get(url)
+            resp = requests.get(url, timeout=10)
             if resp.ok and resp.headers.get("content-type") is not None:
                 b64_img = base64.b64encode(resp.content).decode()
                 avatar = f'data:{resp.headers.get("content-type")};base64,{b64_img}'
@@ -197,6 +207,7 @@ def fetch_avatar(url, provider, oauth_provider: str, access_token=None):
 
 
 def fetch_groups(token: str):
+    """Fetch a user's groups form an external endpoint"""
     oauth_provider = jwt_service.get_provider(token)
     oauth_provider_config = config.auth.oauth.providers[oauth_provider]
 
@@ -212,7 +223,7 @@ def fetch_groups(token: str):
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
-        resp = requests.get(oauth_provider_config.groups_url, headers=headers)
+        resp = requests.get(oauth_provider_config.groups_url, headers=headers, timeout=10)
 
         if resp.ok and resp.headers.get("content-type") is not None:
             result = resp.json()

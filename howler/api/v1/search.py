@@ -1,7 +1,7 @@
 from typing import Union
+
 from elasticsearch import BadRequestError
 from flask import request
-from howler.common.logging import get_logger
 from sigma.backends.elasticsearch import LuceneBackend
 from sigma.rule import SigmaRule
 from werkzeug.exceptions import BadRequest
@@ -9,6 +9,8 @@ from yaml.scanner import ScannerError
 
 from howler.api import bad_request, make_subapi_blueprint, ok
 from howler.common.loader import datastore
+from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.datastore.exceptions import SearchException
 from howler.helper.search import (
     get_collection,
@@ -26,6 +28,7 @@ logger = get_logger(__file__)
 
 
 def generate_params(request, fields, multi_fields, params=None):
+    """Generate a list of parameters, combining the request data and the query arguments"""
     # I hate you, python
     if params is None:
         params = {}
@@ -53,12 +56,11 @@ def generate_params(request, fields, multi_fields, params=None):
     return params, req_data
 
 
+@generate_swagger_docs()
 @search_api.route("/<index>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def search(index, **kwargs):
-    """
-    Search through specified index for a given query.
-    Uses lucene search syntax for query.
+    """Search through specified index for a given query. Uses lucene search syntax for query.
 
     Variables:
     index  =>   Index to search in (hit, user,...)
@@ -140,12 +142,11 @@ def search(index, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/<index>/eql", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def eql_search(index, **kwargs):
-    """
-    Search through specified index for a given EQL query.
-    Uses EQL search syntax for query.
+    """Search through specified index for a given EQL query. Uses EQL search syntax for query.
 
     Variables:
     index  =>   Index to search in (hit, user,...)
@@ -206,12 +207,11 @@ def eql_search(index, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/<index>/sigma", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def sigma_search(index, **kwargs):
-    """
-    Search through specified index using a given sigma rule.
-    Uses sigma rule syntax for query.
+    """Search through specified index using a given sigma rule. Uses sigma rule syntax for query.
 
     Variables:
     index  =>   Index to search in (hit, user,...)
@@ -295,13 +295,11 @@ def sigma_search(index, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/grouped/<index>/<group_field>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def group_search(index, group_field, **kwargs):
-    """
-    Search through all relevant indexs for a given query and
-    groups the data based on a specific field.
-    Uses lucene search syntax for query.
+    """Search for a given query and groups the data based on a specific field. Uses lucene search syntax.
 
     Variables:
     index        =>   Index to search in (hit, user,...)
@@ -366,11 +364,11 @@ def group_search(index, group_field, **kwargs):
 
 
 # noinspection PyUnusedLocal
+@generate_swagger_docs()
 @search_api.route("/fields/<index>", methods=["GET"])
 @api_login(required_priv=["R"])
 def list_index_fields(index, **kwargs):
-    """
-    List all available fields for a given index
+    """List all available fields for a given index
 
     Variables:
     index  =>     Which specific index you want to know the fields for
@@ -400,12 +398,11 @@ def list_index_fields(index, **kwargs):
         return bad_request(err=f"Not a valid index to search in: {index}")
 
 
+@generate_swagger_docs()
 @search_api.route("/count/<index>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def count(index, **kwargs):
-    """
-    Returns number of documents matching a query.
-    Uses lucene search syntax for query.
+    """Returns number of documents matching a query. Uses lucene search syntax for query.
 
     Variables:
     index  =>   Index to search in (hit, user,...)
@@ -461,13 +458,14 @@ def count(index, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/facet/<index>/<field>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def facet(index, field, **kwargs):
-    """
-    Perform field analysis on the selected field. (Also known as facetting in lucene)
-    This essentially counts the number of instances a field is seen with each specific values
-    where the documents matches the specified queries.
+    """Perform field analysis on the selected field. (Also known as facetting in lucene).
+
+    This essentially counts the number of instances a field is seen with each specific
+    values where the documents matches the specified queries.
 
     Variables:
     index       =>   Index to search in (hit, user,...)
@@ -517,11 +515,11 @@ def facet(index, field, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/histogram/<index>/<field>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def histogram(index, field, **kwargs):
-    """
-    Generate an histogram based on a time or and int field using a specific gap size
+    """Generate an histogram based on a time or and int field using a specific gap size
 
     Variables:
     index       =>   Index to search in (hit, user,...)
@@ -592,11 +590,11 @@ def histogram(index, field, **kwargs):
         return bad_request(err=f"SearchException: {e}")
 
 
+@generate_swagger_docs()
 @search_api.route("/stats/<index>/<int_field>", methods=["GET", "POST"])
 @api_login(required_priv=["R"])
 def stats(index, int_field, **kwargs):
-    """
-    Perform statistical analysis of an integer field to get its min, max, average and count values
+    """Perform statistical analysis of an integer field to get its min, max, average and count values
 
     Variables:
     index       =>   Index to search in (hit, user,...)

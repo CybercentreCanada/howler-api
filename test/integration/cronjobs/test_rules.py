@@ -97,8 +97,8 @@ def test_executor(datastore_connection):
         references:
             - https://github.com/SigmaHQ/sigma
         author: You
-        date: 2024/01/25
-        modified: 2024/01/25
+        date: 2024-01-25
+        modified: 2024-01-25
         tags:
             - attack.command_and_control
         logsource:

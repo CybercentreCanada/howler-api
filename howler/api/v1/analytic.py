@@ -1,7 +1,7 @@
 import typing
 from typing import Any, Optional
 
-from flask import request
+from flask import Response, request
 
 from howler.api import (
     bad_request,
@@ -14,6 +14,7 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.cronjobs.rules import register_rules
 from howler.datastore.exceptions import DataStoreException
 from howler.datastore.operations import OdmHelper
@@ -33,11 +34,11 @@ logger = get_logger(__file__)
 analytic_helper = OdmHelper(Analytic)
 
 
+@generate_swagger_docs()
 @analytic_api.route("/", methods=["GET"])
 @api_login(required_priv=["R"])
-def get_analytics(**kwargs):
-    """
-    Get a list of analytics used to create hits in howler
+def get_analytics(**kwargs: Any) -> Response:
+    """Get a list of analytics used to create hits in howler
 
     Variables:
     None
@@ -50,15 +51,14 @@ def get_analytics(**kwargs):
         ...analytics    # A list of analytics
     ]
     """
-
     return ok(datastore().analytic.search("*:*", as_obj=False, rows=1000)["items"])
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>", methods=["GET"])
 @api_login(required_priv=["R"])
 def get_analytic(id, **kwargs):
-    """
-    Get a specific analytic
+    """Get a specific analytic
 
     Variables:
     id => The id of the analytic to retrieve
@@ -71,7 +71,6 @@ def get_analytic(id, **kwargs):
         ...analytic     # The requested analytic
     }
     """
-
     try:
         if not analytic_service.does_analytic_exist(id):
             return not_found(err="Analytic does not exist")
@@ -81,11 +80,11 @@ def get_analytic(id, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>", methods=["PUT"])
 @api_login(required_priv=["R", "W"])
-def update_analytic(id, user: User, **kwargs):
-    """
-    Update an analytic
+def update_analytic(id: str, user: User, **kwargs):
+    """Update an analytic
 
     Variables:
     id => The id of the analytic to modify
@@ -103,7 +102,6 @@ def update_analytic(id, user: User, **kwargs):
         ...analytic     # The updated analytic data
     }
     """
-
     storage = datastore()
 
     if not storage.analytic.exists(id):
@@ -139,11 +137,11 @@ def update_analytic(id, user: User, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @analytic_api.route("/rules", methods=["POST"])
 @api_login(required_priv=["R", "W"])
 def create_rule(user: User, **kwargs):
-    """
-    Create a rule analytic
+    """Create a rule analytic
 
     Variables:
     None
@@ -162,7 +160,6 @@ def create_rule(user: User, **kwargs):
         ...analytic     # The created analytic rule
     }
     """
-
     storage = datastore()
 
     new_data: Optional[dict[str, Any]] = request.json
@@ -221,11 +218,11 @@ def create_rule(user: User, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
-def delete_rule(id, user: User, **kwargs):
-    """
-    Delete a rule
+def delete_rule(id: str, user: User, **kwargs):
+    """Delete a rule
 
     Variables:
     id  => id of the analytic whose comments we are deleting
@@ -242,7 +239,6 @@ def delete_rule(id, user: User, **kwargs):
     {
     }
     """
-
     if not analytic_service.does_analytic_exist(id):
         return not_found(err=f"Analytic {id} does not exist")
 
@@ -262,11 +258,11 @@ def delete_rule(id, user: User, **kwargs):
     return no_content()
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/comments", methods=["POST"])
 @api_login(audit=False, required_priv=["W"])
-def add_comment(id, user: dict[str, Any], **kwargs):
-    """
-    Add a comment
+def add_comment(id: str, user: dict[str, Any], **kwargs):
+    """Add a comment
 
     Variables:
     id  => id of the analytic to add a comment to
@@ -321,11 +317,11 @@ def add_comment(id, user: dict[str, Any], **kwargs):
     return ok(analytic)
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/comments/<comment_id>", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
-def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    Edit a comment
+def edit_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """Edit a comment
 
     Variables:
     id          => id of the analytic the comment belongs to
@@ -381,11 +377,11 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(analytic.as_primitives())
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/comments/<comment_id>/react", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
-def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    React to a comment
+def react_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """React to a comment
 
     Variables:
     id          => id of the analytic the comment belongs to
@@ -404,7 +400,6 @@ def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
         ...analytic            # The new data for the analytic
     }
     """
-
     data = request.json
     if not isinstance(data, dict):
         return bad_request(err="Incorrect data format")
@@ -430,11 +425,11 @@ def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(analytic.as_primitives())
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/comments/<comment_id>/react", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
-def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    React to a comment
+def remove_react_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """React to a comment
 
     Variables:
     id          => id of the analytic the comment belongs to
@@ -464,11 +459,11 @@ def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(analytic.as_primitives())
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/comments", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
-def delete_comments(id, user: User, **kwargs):
-    """
-    Delete a set of comments
+def delete_comments(id: str, user: User, **kwargs):
+    """Delete a set of comments
 
     Variables:
     id  => id of the analytic whose comments we are deleting
@@ -485,7 +480,6 @@ def delete_comments(id, user: User, **kwargs):
     {
     }
     """
-
     if not analytic_service.does_analytic_exist(id):
         return not_found(err=f"Analytic {id} does not exist")
 
@@ -516,11 +510,11 @@ def delete_comments(id, user: User, **kwargs):
     return no_content()
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/owner", methods=["POST"])
 @api_login(required_priv=["W"])
-def set_analytic_owner(id, user: dict[str, Any], **kwargs):
-    """
-    Set the analytic's owner
+def set_analytic_owner(id: str, user: dict[str, Any], **kwargs):
+    """Set the analytic's owner
 
     Variables:
     id  => id of the analytic to claim
@@ -538,7 +532,6 @@ def set_analytic_owner(id, user: dict[str, Any], **kwargs):
         ...analytic            # The claimed analytic
     }
     """
-
     if not analytic_service.does_analytic_exist(id):
         return not_found(err=f"Analytic {id} does not exist")
 
@@ -557,11 +550,11 @@ def set_analytic_owner(id, user: dict[str, Any], **kwargs):
     return ok(analytic.as_primitives())
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/favourite", methods=["POST"])
 @api_login(required_priv=["R", "W"])
 def set_as_favourite(id, **kwargs):
-    """
-    Add an analytic to a list of the user's favourites
+    """Add an analytic to a list of the user's favourites
 
     Variables:
     id => The id of the analytic to add as a favourite
@@ -577,7 +570,6 @@ def set_as_favourite(id, **kwargs):
         "success": True     # If the operation succeeded
     }
     """
-
     storage = datastore()
 
     existing_analytic: Analytic = storage.analytic.get_if_exists(id)
@@ -596,11 +588,11 @@ def set_as_favourite(id, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @analytic_api.route("/<id>/favourite", methods=["DELETE"])
 @api_login(required_priv=["R", "W"])
 def remove_as_favourite(id, **kwargs):
-    """
-    Remove an analytic from a list of the user's favourites
+    """Remove an analytic from a list of the user's favourites
 
     Variables:
     id => The id of the analytic to remove as a favourite
@@ -613,7 +605,6 @@ def remove_as_favourite(id, **kwargs):
         "success": True     # If the operation succeeded
     }
     """
-
     storage = datastore()
 
     if not storage.analytic.exists(id):

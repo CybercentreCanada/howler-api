@@ -1,18 +1,13 @@
-import json
-import os
 import shlex
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from tempfile import mkdtemp
 
-import requests
-import yaml
 
-
-def run():
-    print(f"Generating sigma yaml")
+def main():
+    """Run the script to generate sigma rule lookups"""
+    print("Generating sigma yaml")
 
     git_dir = Path(mkdtemp())
     subprocess.call(shlex.split((f"git clone git@github.com:SigmaHQ/sigma.git {git_dir} --depth 1")))
@@ -33,4 +28,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    main()

@@ -1,5 +1,6 @@
 # mypy: ignore-errors
 from typing import Optional
+
 from howler import odm
 
 VALID_TRIGGERS = ["create", "demote", "promote", "add_label", "remove_label"]

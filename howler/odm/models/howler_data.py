@@ -7,15 +7,14 @@ from howler.common.exceptions import HowlerValueError
 
 
 class HowlerEnumMeta(EnumMeta):
-    def __contains__(self, obj) -> bool:
+    def __contains__(cls, obj) -> bool:
         """Check if either the name or value contains the object"""
-
         lowercase = str(obj)
         uppercase = lowercase.upper().replace("-", "_")
 
-        return uppercase in [e.name for e in self] or lowercase in [e.value for e in self]
+        return uppercase in [e.name for e in cls] or lowercase in [e.value for e in cls]
 
-    def __getitem__(self, name):
+    def __getitem__(cls, name):
         return super().__getitem__(str(name).upper().replace("-", "_"))
 
 
@@ -133,7 +132,10 @@ class Link(odm.Model):
     href = odm.Keyword(description="Timestamp at which the comment was last edited.")
     title = odm.Text(description="The title to use for the link.", optional=True)
     icon = odm.Keyword(
-        description="The icon to show. Either an ID corresponding to an analytical platform application, or an external link."
+        description=(
+            "The icon to show. Either an ID corresponding to an "
+            "analytical platform application, or an external link."
+        )
     )
 
 
@@ -240,6 +242,10 @@ class HowlerData(odm.Model):
         ),
         default=[],
     )
+    bundle_size: int = odm.Integer(
+        description="Number of hits in bundle",
+        default=0,
+    )
     is_bundle: bool = odm.Boolean(description="Is this hit a bundle or a normal hit?", default=False)
     related: list[str] = odm.List(
         odm.Keyword(
@@ -290,9 +296,6 @@ class HowlerData(odm.Model):
         odm.Compound(Log),
         default=[],
         description="A list of changes to the hit with timestamps and attribution.",
-    )
-    retained: Optional[str] = odm.Optional(
-        odm.Keyword(description="If the hit was retained, this is a link to it in Alfred.")
     )
     monitored: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident monitoring dashboard."))
     reported: Optional[str] = odm.Optional(odm.Keyword(description="Link to the incident report."))

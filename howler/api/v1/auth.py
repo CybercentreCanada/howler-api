@@ -1,12 +1,11 @@
+import typing
 from datetime import datetime, timedelta
 from typing import Any, Optional
-import typing
 from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
 from flask import current_app, request
 from passlib.hash import bcrypt
-from howler.services import jwt_service
 
 import howler.services.auth_service as auth_service
 import howler.services.user_service as user_service
@@ -29,10 +28,12 @@ from howler.common.exceptions import (
 )
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.config import config
 from howler.odm.models.user import User
 from howler.security import api_login
 from howler.security.utils import generate_random_secret
+from howler.services import jwt_service
 from howler.utils.str_utils import default_string_value
 
 logger = get_logger(__file__)
@@ -45,11 +46,11 @@ auth_api._doc = "Allow user to authenticate to the web server"
 logger = get_logger(__file__)
 
 
+@generate_swagger_docs()
 @auth_api.route("/apikey", methods=["POST"])
 @api_login(audit=False)
-def add_apikey(**kwargs):
-    """
-    Add an API Key for the currently logged in user with given privileges
+def add_apikey(**kwargs):  # noqa: C901
+    """Add an API Key for the currently logged in user with given privileges
 
     Variables:
     name    => Name of the API key
@@ -150,8 +151,7 @@ def add_apikey(**kwargs):
 @auth_api.route("/apikey/<name>", methods=["DELETE"])
 @api_login(audit=False)
 def delete_apikey(name, **kwargs):
-    """
-    Delete an API Key matching specified name for the currently logged in user
+    """Delete an API Key matching specified name for the currently logged in user
 
     Variables:
     name    => Name of the API key
@@ -177,11 +177,10 @@ def delete_apikey(name, **kwargs):
     return no_content()
 
 
-# noinspection PyBroadException,PyPropertyAccess
 @auth_api.route("/login", methods=["GET", "POST"])
-def login(**_):
-    """
-    Log the user into the system, in one of three ways.
+def login(**_):  # noqa: C901
+    """Log the user into the system, in one of three ways.
+
     1. Username/Password Authentication
     2. Username/API Key Authentication
     3. OAuth Login flow

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
@@ -11,15 +13,24 @@ hit_helper = OdmHelper(Hit)
 OPERATION_ID = "remove_from_bundle"
 
 
-def execute(query: str, bundle_id=None, **kwargs):
+def execute(query: str, bundle_id: Optional[str] = None, **kwargs):
     """Remove a set of hits matching the query from the specified bundle.
 
     Args:
         query (str): The query containing the matching hits
         bundle_id (str): The `howler.id` of the bundle to remove the hits from.
     """
-
     report = []
+
+    if not bundle_id:
+        return [
+            {
+                "query": query,
+                "outcome": "error",
+                "title": "Invalid Bundle ID",
+                "message": "Bundle ID cannot be empty.",
+            }
+        ]
 
     try:
         bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
@@ -47,7 +58,7 @@ def execute(query: str, bundle_id=None, **kwargs):
                     "query": f"howler.id:({' OR '.join(h.howler.id for h in skipped_hits)})",
                     "outcome": "skipped",
                     "title": "Skipped Hit not in Bundle",
-                    "message": f"These hits already are not in the bundle.",
+                    "message": "These hits already are not in the bundle.",
                 }
             )
 
@@ -60,19 +71,19 @@ def execute(query: str, bundle_id=None, **kwargs):
                     "query": safe_query,
                     "outcome": "skipped",
                     "title": "No Matching Hits",
-                    "message": f"There were no hits matching this query.",
+                    "message": "There were no hits matching this query.",
                 }
             )
             return report
 
         ds.hit.update_by_query(
             safe_query,
-            [hit_helper.list_remove(f"howler.bundles", bundle_id)],
+            [hit_helper.list_remove("howler.bundles", bundle_id)],
         )
 
         hit_service.update_hit(
             bundle_id,
-            [hit_helper.list_remove(f"howler.hits", h["howler"]["id"]) for h in ds.hit.search(safe_query)["items"]],
+            [hit_helper.list_remove("howler.hits", h["howler"]["id"]) for h in ds.hit.search(safe_query)["items"]],
         )
 
         if len(ds.hit.get(bundle_id).howler.hits) < 1:
@@ -100,6 +111,7 @@ def execute(query: str, bundle_id=None, **kwargs):
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Remove from Bundle",

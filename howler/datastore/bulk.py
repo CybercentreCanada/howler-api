@@ -50,7 +50,6 @@ class ElasticBulkPlan(object):
         self.operations.append(json.dumps({"doc": saved_doc, "doc_as_upsert": True}))
 
     def add_update_operation(self, doc_id, doc, index=None):
-
         if isinstance(doc, self.model):
             saved_doc = doc.as_primitives(hidden_fields=True)
         elif self.model:

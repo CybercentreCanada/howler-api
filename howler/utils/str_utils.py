@@ -9,19 +9,19 @@ from howler.common.exceptions import HowlerAttributeError, HowlerTypeError
 
 
 def remove_bidir_unicode_controls(in_str):
-    # noinspection PyBroadException
+    """Remove UBA characters"""
     try:
         no_controls_str = "".join(
             c
             for c in in_str
             if c
             not in [
-                "\u202E",
-                "\u202B",
-                "\u202D",
-                "\u202A",
-                "\u200E",
-                "\u200F",
+                "\u202e",
+                "\u202b",
+                "\u202d",
+                "\u202a",
+                "\u200e",
+                "\u200f",
             ]
         )
     except Exception:
@@ -31,12 +31,11 @@ def remove_bidir_unicode_controls(in_str):
 
 
 def wrap_bidir_unicode_string(uni_str):
-    """
-    Wraps str in a LRE (Left-to-Right Embed) unicode control
+    """Wraps str in a LRE (Left-to-Right Embed) unicode control.
+
     Guarantees that str can be concatenated to other strings without
     affecting their left-to-right direction
     """
-
     if len(uni_str) == 0 or isinstance(uni_str, bytes):  # Not str, return it unchanged
         return uni_str
 
@@ -47,7 +46,7 @@ def wrap_bidir_unicode_string(uni_str):
     # Parse str for unclosed bidir blocks
     count = 0
     for letter in uni_str:
-        if letter in ["\u202A", "\u202B", "\u202D", "\u202E"]:  # bidir block open?
+        if letter in ["\u202a", "\u202b", "\u202d", "\u202e"]:  # bidir block open?
             count += 1
         elif letter == "\u202c":
             if count > 0:
@@ -58,7 +57,7 @@ def wrap_bidir_unicode_string(uni_str):
         uni_str += "\u202c" * count
 
         # Final wrapper (LTR block) to neutralize any Marks (u+200E and u+200F)
-    uni_str = "\u202A" + uni_str + "\u202C"
+    uni_str = "\u202a" + uni_str + "\u202c"
 
     return uni_str
 
@@ -95,13 +94,19 @@ def _escape(t, reversible=True):
         return b"".join((b"\\x%02x" % x) for x in t[1])
 
 
-def dotdump(s):
+def dotdump(s: Union[bytes, str]):
+    """Remove any non-ascii characters and replace them with periods
+
+    https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html
+    """
     if isinstance(s, str):
         s = s.encode()
+
     return "".join(["." if x < 32 or x > 126 else chr(x) for x in s])
 
 
 def escape_str(s, reversible=True, force_str=False):
+    """Escape a string"""
     if isinstance(s, bytes):
         return escape_str_strict(s, reversible)
     elif not isinstance(s, str):
@@ -119,21 +124,24 @@ def escape_str(s, reversible=True, force_str=False):
 
 
 # Returns a string (str) with only valid UTF-8 byte sequences.
-def escape_str_strict(s: bytes, reversible=True) -> str:
+def escape_str_strict(s: bytes, reversible: bool = True) -> str:
+    """Strictly escape a string"""
     escaped = b"".join([_escape(t, reversible) for t in enumerate(_valid_utf8.split(s))])
     return escaped.decode("utf-8")
 
 
 def safe_str(s, force_str=False):
+    """Create a safe, escaped string"""
     return escape_str(s, reversible=False, force_str=force_str)
 
 
-def is_safe_str(s) -> bool:
+def is_safe_str(s: str) -> bool:
+    """Check if a given string is safe"""
     return escape_str(copy(s), reversible=False) == s
 
 
-# noinspection PyBroadException
-def translate_str(s: Union[str, bytes], min_confidence=0.7) -> dict:
+def translate_str(s: Union[str, bytes], min_confidence: float = 0.7) -> dict:
+    """Translate a string from an arbitrary encoding to a python str"""
     if not isinstance(s, (str, bytes)):
         raise HowlerTypeError(f"Expected str or bytes got {type(s)}")
 
@@ -162,12 +170,13 @@ def translate_str(s: Union[str, bytes], min_confidence=0.7) -> dict:
 
 # This method not really necessary. More to stop people from rolling their own.
 def unescape_str(s):
+    """unescape a string"""
     return s.decode("string_escape")
 
 
 def truncate(data: Union[bytes, str], length: int = 100) -> str:
-    """
-    This method is a helper used to avoid cluttering output
+    """This method is a helper used to avoid cluttering output
+
     :param data: The buffer that will be determined if it needs to be sliced
     :param length: The limit of characters to the buffer
     :return str: The potentially truncated buffer
@@ -178,22 +187,31 @@ def truncate(data: Union[bytes, str], length: int = 100) -> str:
     return string
 
 
-def default_string_value(*values: Optional[str], env_name: str = "", default=None) -> str:
-    return next((val for val in values if val), os.getenv(env_name, default))
+def default_string_value(
+    *values: Optional[str], env_name: Optional[str] = None, default: Optional[str] = None
+) -> Optional[str]:
+    """Return a string value based on a list of potential values, an environmnet variable, or a default string"""
+    return next(
+        (val for val in values if val), (os.getenv(env_name, default or "") or default) if env_name else default
+    )
 
 
 def get_parent_key(key: str) -> str:
+    """Get a parent key of a key in the format a.b.c"""
     return re.sub(r"^(.+)\..+?$", r"\1", key)
 
 
 def sanitize_lucene_query(query: str):
+    """Take in a given string, and escape it to ensure it is safe to search on via lucene"""
     query = re.sub(r'([\^"~*?:\\/()[\]{}\-!])', r"\\\1", query)
 
     return query.replace("&&", "\\&&").replace("||", "\\||")
 
 
 class NamedConstants(object):
-    def __init__(self, name, string_value_list):
+    """A class containing a list of named constants, as well as a reverse map for those constants to their name"""
+
+    def __init__(self, name: str, string_value_list: list[tuple[str, str]]):
         self._name = name
         self._value_map = dict(string_value_list)
         self._reverse_map = dict([(s[1], s[0]) for s in string_value_list])
@@ -204,9 +222,11 @@ class NamedConstants(object):
             setattr(self, s, v)
 
     def name_for_value(self, v):
+        """Get the name of a given value"""
         return self._reverse_map[v]
 
     def contains_value(self, v):
+        """Chgeck if this instance contains the given value"""
         return v in self._reverse_map
 
     def __getitem__(self, s):
@@ -217,25 +237,12 @@ class NamedConstants(object):
         return self._value_map[s]
 
 
-class StringTable(object):
-    def __init__(self, name, string_value_list):
-        self._name = name
-        self._value_map = dict(string_value_list)
-        self._reverse_map = dict([(s[1], s[0]) for s in string_value_list])
-
-        # we also import the list as attributes so things like
-        # tab completion and introspection still work.
-        for s in self._value_map.keys():
-            setattr(self, s, s)
-
-    def name_for_value(self, v):
-        return self._reverse_map[v]
+class StringTable(NamedConstants):
+    """A subclass of NamedConstants that throws an attribute error if the value does not exist in the table"""
 
     def contains_string(self, s):
+        """Chgeck if this instance contains the given value"""
         return s in self._reverse_map
-
-    def contains_value(self, v):
-        return v in self._value_map
 
     def __getitem__(self, s):
         if s in self._value_map:

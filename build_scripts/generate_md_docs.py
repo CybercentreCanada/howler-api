@@ -1,13 +1,11 @@
 import importlib
 import inspect
-from pathlib import Path
-from sys import modules
 import textwrap
-from flask import Config
+from pathlib import Path
 
 import yaml
+
 from howler import odm
-from howler.odm.randomizer import random_minimal_obj, random_model_obj
 
 root_dir = Path(__file__).parent.parent
 odm_path = root_dir / "howler/odm/models"
@@ -53,9 +51,7 @@ for class_name, _class in inspect.getmembers(
         continue
 
     newline = "\n"
-    intro_data += (
-        f"    | `{class_name}` | {_class.__doc__.strip().split(newline)[0]} |\n"
-    )
+    intro_data += f"    | `{class_name}` | {_class.__doc__.strip().split(newline)[0]} |\n"
 
 intro_data += """
     ## Field States

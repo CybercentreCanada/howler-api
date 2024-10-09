@@ -306,6 +306,7 @@ NOUNS = [
 
 
 def random_user(digits=2, delimiter="-"):
+    "Generate a random user"
     adjective = random.choice(ADJECTIVES)
     noun = random.choice(NOUNS)
     if digits > 0:

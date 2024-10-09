@@ -19,10 +19,14 @@ from howler.odm.models.ecs.file import File
 from howler.odm.models.ecs.group import Group
 from howler.odm.models.ecs.host import Host
 from howler.odm.models.ecs.http import HTTP
+from howler.odm.models.ecs.interface import Interface
+from howler.odm.models.ecs.network import Network
+from howler.odm.models.ecs.observer import Observer
 from howler.odm.models.ecs.organization import Organization
 from howler.odm.models.ecs.process import Process
 from howler.odm.models.ecs.registry import Registry
 from howler.odm.models.ecs.related import Related
+from howler.odm.models.ecs.rule import Rule
 from howler.odm.models.ecs.server import Server
 from howler.odm.models.ecs.threat import Threat
 from howler.odm.models.ecs.tls import TLS
@@ -208,6 +212,35 @@ class Hit(odm.Model):
             reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-http.html",
         )
     )
+    observer: Observer = odm.Optional(
+        odm.Compound(
+            Observer,
+            description=(
+                "Observer is defined as a special network, security, or application device used to detect, obs"
+                "erve, or create network, sercurity, or application event metrics"
+            ),
+        )
+    )
+    interface: Interface = odm.Optional(
+        odm.Compound(
+            Interface,
+            description=(
+                "The interface fields are used to record ingress and egress interface information when reported "
+                "by an observer (e.g. firewall, router, load balancer) in the context of the observer handling a "
+                "network connection. "
+            ),
+            reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-interface.html",
+        )
+    )
+    network: Network = odm.Optional(
+        odm.Compound(
+            Network,
+            description=(
+                "The network is defined as the communication path over which a host or network event happens."
+            ),
+            reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-network.html",
+        )
+    )
     organization: Organization = odm.Optional(
         odm.Compound(
             Organization,
@@ -235,6 +268,12 @@ class Hit(odm.Model):
             Related,
             description="Fields related to Windows Registry operations.",
             reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-related.html",
+        )
+    )
+    rule: Rule = odm.Optional(
+        odm.Compound(
+            Rule,
+            description="Capture the specifics of any observer or agent rules",
         )
     )
     server: Server = odm.Optional(

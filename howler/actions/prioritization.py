@@ -10,7 +10,7 @@ OPERATION_ID = "prioritization"
 VALID_FIELDS = ["reliability", "severity", "volume", "confidence", "score"]
 
 
-def execute(query: str, field="score", value: str = "0.0", **kwargs):
+def execute(query: str, field: str = "score", value: str = "0.0", **kwargs):
     """Change one of the priorization fields of a hit
 
     Args:
@@ -18,7 +18,6 @@ def execute(query: str, field="score", value: str = "0.0", **kwargs):
         field (str, optional): The field to update. Defaults to "score".
         value (str, optional): The value to set it to. Must be a float in string format. Defaults to "0.0".
     """
-
     if field not in VALID_FIELDS:
         return [
             {
@@ -73,6 +72,7 @@ def execute(query: str, field="score", value: str = "0.0", **kwargs):
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Change Prioritization",

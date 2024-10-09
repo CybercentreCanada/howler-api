@@ -7,7 +7,7 @@ import textwrap
 from datetime import datetime
 from pathlib import Path
 from random import choice, randint, sample
-from typing import Callable
+from typing import Any, Callable, cast
 
 import yaml
 
@@ -24,6 +24,7 @@ from howler.odm.models.analytic import Analytic, Comment
 from howler.odm.models.ecs.event import EVENT_CATEGORIES
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import Assessment, Escalation, HitStatus, Scrutiny
+from howler.odm.models.overview import Overview
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -44,6 +45,7 @@ hit_helper = OdmHelper(Hit)
 
 
 def create_users(ds):
+    """Create  number of user accounts"""
     admin_pass = os.getenv("DEV_ADMIN_PASS", "admin") or "admin"
     user_pass = os.getenv("DEV_USER_PASS", "user") or "user"
     shawnh_pass = "shawn-h"
@@ -256,11 +258,13 @@ def create_users(ds):
 
 
 def wipe_users(ds):
+    """Wipe the users index"""
     ds.user.wipe()
     ds.user_avatar.wipe()
 
 
 def create_templates(ds: HowlerDatastore):
+    """Create some random templates"""
     for _ in range(2):
         keys = sample(list(Hit.flat_fields().keys()), 5)
 
@@ -325,10 +329,85 @@ def create_templates(ds: HowlerDatastore):
 
 
 def wipe_templates(ds):
+    """Wipe the templates index"""
     ds.template.wipe()
 
 
+def create_overviews(ds: HowlerDatastore):
+    """Create some random overviews"""
+    for _ in range(2):
+        keys = sample(list(Hit.flat_fields().keys()), 5)
+
+        for detection in ["Detection 1", "Detection 2"]:
+            content = "\n\n".join(f"{{{key}}}" for key in keys)
+            overview = Overview(
+                {
+                    "analytic": choice(["Password Checker", "Bad Guy Finder", "SecretAnalytic"]),
+                    "owner": "admin",
+                    "detection": detection,
+                    "content": f"# Hello, World!\n\n{content}",
+                }
+            )
+
+            ds.overview.save(
+                overview.overview_id,
+                overview,
+            )
+
+    for analytic in ["Password Checker", "Bad Guy Finder"]:
+        overview = Overview(
+            {
+                "analytic": analytic,
+                "owner": "admin",
+                "content": textwrap.dedent("""
+                    # {{howler.analytic}} Alert
+                    {{#if (equals howler.status "open")}}
+                    ![](https://img.shields.io/badge/open-blue)
+                    {{/if}}
+                    {{#if (equals howler.status "in-progress")}}
+                    ![](https://img.shields.io/badge/in%20progress-yellow)
+                    {{/if}}
+                    {{#if (and (equals howler.status "resolved") (equals howler.escalation "miss"))}}
+                    ![](https://img.shields.io/badge/safe-green)
+                    {{/if}}
+                    {{#if (and (equals howler.status "resolved") (equals howler.escalation "evidence"))}}
+                    ![](https://img.shields.io/badge/malicious-red)
+                    {{/if}}
+
+                    `{{fetch "/api/v1/configs" "api_response.c12nDef.UNRESTRICTED"}}`
+
+                    {{#if (and (equals howler.status "resolved") (equals howler.escalation "evidence"))}}
+                    {{howler.rationale}}
+                    {{/if}}
+
+                    ## Summary
+
+                    > {{howler.outline.summary}}
+
+                    {{#if howler.assignment}}
+                    <div style="display: grid; align-items: center; grid-template-columns: auto auto; width: fit-content; border: 1px solid grey; padding: 0.25rem; border-radius: 5px; margin-bottom: 1rem">
+                    {{img src=(fetch (join "/api/v1/user/avatar/" howler.assignment ) "api_response") style="width: 32px; border-radius: 100px"}} {{howler.assignment}}
+                    </div>
+                    {{/if}}
+                    """),  # noqa: E501
+            }
+        )
+
+        ds.overview.save(
+            overview.overview_id,
+            overview,
+        )
+
+    ds.overview.commit()
+
+
+def wipe_overviews(ds):
+    """Wipe the overviews index"""
+    ds.overview.wipe()
+
+
 def create_views(ds: HowlerDatastore):
+    """Create some random views"""
     view = View(
         {
             "title": "CMT Hits",
@@ -379,10 +458,12 @@ def create_views(ds: HowlerDatastore):
 
 
 def wipe_views(ds):
+    """Wipe the views index"""
     ds.view.wipe()
 
 
-def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
+def create_hits(ds: HowlerDatastore, hit_count: int = 200):
+    """Create some random hits"""
     lookups = loader.get_lookups()
     users = ds.user.search("*:*")["items"]
     for hit_idx in range(hit_count):
@@ -414,6 +495,8 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
                 ],
             )
 
+        ds.hit.commit()
+
         if hit_idx % 25 == 0 and "pytest" not in sys.modules:
             logger.info("\tCreated %s/%s", hit_idx, hit_count)
 
@@ -422,6 +505,7 @@ def create_hits(ds: HowlerDatastore, log=None, hit_count=200):
 
 
 def create_bundles(ds: HowlerDatastore):
+    """Create some random bundles"""
     lookups = loader.get_lookups()
     users = [user.uname for user in ds.user.search("*:*")["items"]]
 
@@ -439,6 +523,7 @@ def create_bundles(ds: HowlerDatastore):
             hits[hit.howler.id].howler.bundles.append(bundle_hit.howler.id)
 
         analytic_service.save_from_hit(bundle_hit, random.choice(ds.user.search("*:*")["items"]))
+        bundle_hit.howler.bundle_size = len(bundle_hit.howler.hits)
         ds.hit.save(bundle_hit.howler.id, bundle_hit)
 
     for hit in hits.values():
@@ -448,10 +533,27 @@ def create_bundles(ds: HowlerDatastore):
 
 
 def wipe_hits(ds):
+    """Wipe the hits index"""
     ds.hit.wipe()
 
 
-def create_analytics(ds: HowlerDatastore, num_analytics=10):
+def random_escalations() -> list[Escalation]:
+    """Return a list of random escalations"""
+    return random.sample(Escalation.list(), k=random.randint(1, len(Escalation.list())))
+
+
+def random_scrutinies() -> list[Scrutiny]:
+    """Return a list of random scrutinies"""
+    return random.sample(Scrutiny.list(), k=random.randint(1, len(Scrutiny.list())))
+
+
+def random_event_categories():
+    """Return a list of random event categories"""
+    return random.choice(EVENT_CATEGORIES)
+
+
+def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
+    """Create some random analytics"""
     users = [user.uname for user in ds.user.search("*:*")["items"]]
 
     for analytic in ds.analytic.search("*:*")["items"]:
@@ -480,7 +582,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
     fields = Hit.flat_fields()
     key_list = [key for key in fields.keys() if isinstance(fields[key], Keyword)]
     for _ in range(num_analytics):
-        a: Analytic = random_model_obj(Analytic)
+        a: Analytic = random_model_obj(cast(Any, Analytic))
         a.name = " ".join([get_random_word().capitalize() for _ in range(random.randint(1, 3))])
         a.detections = list(set(a.detections))
         a.owner = random.choice(users)
@@ -492,7 +594,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
         ds.analytic.save(a.analytic_id, a)
 
     for rule_type in ["lucene", "eql", "sigma"]:
-        a: Analytic = random_model_obj(Analytic)
+        a: Analytic = random_model_obj(cast(Any, Analytic))
         a.rule_type = rule_type
         a.name = " ".join([get_random_word().capitalize() for _ in range(random.randint(1, 3))])
         a.detections = ["Rule"]
@@ -503,19 +605,25 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
         )
 
         if a.rule_type == "lucene":
-            a.rule = f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
+            a.rule = (
+                f"{choice(key_list)}:*{choice(VALID_CHARS)}*\n#example "
+                f"comment\nOR\n{choice(key_list)}:*{choice(VALID_CHARS)}*"
+            )
         elif a.rule_type == "eql":
+            category1 = random_event_categories()
+            category2 = random_event_categories()
+
             a.rule = textwrap.dedent(
                 f"""
             sequence
-                [ {random.choice(EVENT_CATEGORIES)} where howler.escalation in ({", ".join([f'"{item}"' for item in random.sample(Escalation.list(), k=random.randint(1, len(Escalation.list())))])}) ]
-                [ {random.choice(EVENT_CATEGORIES)} where howler.scrutiny in ({", ".join([f'"{item}"' for item in random.sample(Scrutiny.list(), k=random.randint(1, len(Scrutiny.list())))])}) ]
+                [ {category1} where howler.escalation in ({", ".join([f'"{item}"' for item in random_escalations()])}) ]
+                [ {category2} where howler.scrutiny in ({", ".join([f'"{item}"' for item in random_scrutinies()])}) ]
             """
             ).strip()
         elif a.rule_type == "sigma":
             sigma_dir = Path(__file__).parent / "sigma"
-            if sigma_dir.exists():
-                file_name = random.choice(list(sigma_dir.glob("*.yml")))
+            if sigma_dir.exists() and len(files := list(sigma_dir.glob("*.yml"))) > 0:
+                file_name = random.choice(files)
                 file_data = file_name.read_text("utf-8")
                 data = yaml.safe_load(file_data)
                 a.name = data["title"]
@@ -533,16 +641,18 @@ def create_analytics(ds: HowlerDatastore, num_analytics=10):
 
 
 def wipe_analytics(ds):
+    """Wipe the analytics index"""
     ds.analytic.wipe()
 
 
-def create_actions(ds: HowlerDatastore, num_actions=30):
+def create_actions(ds: HowlerDatastore, num_actions: int = 30):
+    """Create random actions"""
     fields = Hit.flat_fields()
     key_list = [key for key in fields.keys() if isinstance(fields[key], Keyword)]
     users = ds.user.search("*:*")["items"]
 
     module_path = Path(__file__).parents[1] / "actions"
-    OPERATIONS = {
+    available_operations = {
         operation.OPERATION_ID: operation
         for operation in (
             importlib.import_module(f"howler.actions.{module.stem}")
@@ -551,17 +661,17 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
         )
     }
 
-    operation_options = list(OPERATIONS.keys())
+    operation_options = list(available_operations.keys())
     if "transition" in operation_options:
         operation_options.remove("transition")
 
     for _ in range(num_actions):
-        operations = []
+        operations: list[dict[str, str]] = []
         operation_ids = sample(operation_options, k=randint(1, len(operation_options)))
         for operation_id in operation_ids:
             action_data = {}
 
-            for step in OPERATIONS[operation_id].specification()["steps"]:
+            for step in available_operations[operation_id].specification()["steps"]:
                 for key in step["args"].keys():
                     potential_values = step["options"].get(key, None)
                     if potential_values:
@@ -595,10 +705,12 @@ def create_actions(ds: HowlerDatastore, num_actions=30):
 
 
 def wipe_actions(ds: HowlerDatastore):
+    """Wipe the actions index"""
     ds.action.wipe()
 
 
 def setup_hits(ds):
+    "Set up hits index"
     os.environ["ELASTIC_HIT_SHARDS"] = "12"
     os.environ["ELASTIC_HIT_REPLICAS"] = "1"
     ds.hit.fix_shards()
@@ -606,6 +718,7 @@ def setup_hits(ds):
 
 
 def setup_users(ds):
+    "Set up users index"
     os.environ["ELASTIC_USER_REPLICAS"] = "1"
     os.environ["ELASTIC_USER_AVATAR_REPLICAS"] = "1"
     ds.user.fix_replicas()
@@ -615,6 +728,7 @@ def setup_users(ds):
 INDEXES: dict[str, tuple[Callable, list[Callable]]] = {
     "users": (wipe_users, [create_users]),
     "templates": (wipe_templates, [create_templates]),
+    "overviews": (wipe_overviews, [create_overviews]),
     "views": (wipe_views, [create_views]),
     "hits": (wipe_hits, [create_hits, create_bundles]),
     "analytics": (wipe_analytics, [create_analytics]),

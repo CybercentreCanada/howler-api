@@ -18,7 +18,7 @@ from datemath import dm
 from datemath.helpers import DateMathException
 
 from howler import odm
-from howler.common.exceptions import HowlerRuntimeError, HowlerValueError
+from howler.common.exceptions import HowlerRuntimeError, HowlerValueError, NonRecoverableError
 from howler.common.loader import APP_NAME
 from howler.datastore.bulk import ElasticBulkPlan
 from howler.datastore.exceptions import (
@@ -47,8 +47,8 @@ from howler.odm.base import (
     List,
     Mapping,
     Model,
-    _Field,
     ValidatedKeyword,
+    _Field,
 )
 from howler.utils.dict_utils import prune, recursive_update
 
@@ -66,7 +66,7 @@ write_unblock_settings = {"settings": {"index.blocks.write": None}}
 # A token value to represent a document not existing. Its a string to match the
 # type used for version values. Any string will do as long as it never matches
 # a real version string.
-CREATE_TOKEN = "create"
+CREATE_TOKEN = "create"  # noqa: S105
 
 
 def _strip_lists(model, data):
@@ -104,10 +104,9 @@ def sort_str(sort_dicts):
 
 
 def parse_sort(sort, ret_list=True):
-    """
-    This function tries to do two things at once:
-        - convert AL sort syntax to elastic,
-        - convert any sorts on the key _id to _id_
+    """This function tries to do two things at once:
+    - convert AL sort syntax to elastic,
+    - convert any sorts on the key _id to _id_
     """
     if sort is None:
         return sort
@@ -250,8 +249,7 @@ class ESCollection(Generic[ModelType]):
 
     @property
     def index_list(self):
-        """
-        This property contains the list of valid indexes for the current collection.
+        """This property contains the list of valid indexes for the current collection.
 
         :return: list of valid indexes for this collection
         """
@@ -302,7 +300,10 @@ class ESCollection(Generic[ModelType]):
 
                 # check if we have any errors
                 if (shards_successful + shards_skipped) < shards_total:
-                    shards_message = f"{scroll_id}: Scroll request has only succeeded on {shards_successful} (+{shards_skipped} skipped) shards out of {shards_total}."
+                    shards_message = (
+                        f"{scroll_id}: Scroll request has only succeeded on {shards_successful} "
+                        f"(+{shards_skipped} skipped) shards out of {shards_total}."
+                    )
                     raise HowlerScanError(shards_message)
                 resp = self.with_retries(self.datastore.client.scroll, scroll_id=scroll_id, scroll=scroll)
                 scroll_id = resp.get("_scroll_id")
@@ -321,8 +322,7 @@ class ESCollection(Generic[ModelType]):
                     )
 
     def with_retries(self, func, *args, raise_conflicts=False, **kwargs):
-        """
-        This function performs the passed function with the given args and kwargs and reconnect if it fails
+        """This function performs the passed function with the given args and kwargs and reconnect if it fails
 
         :return: return the output of the function passed
         """
@@ -361,7 +361,7 @@ class ESCollection(Generic[ModelType]):
             except elasticsearch.exceptions.ConflictError as ce:
                 if raise_conflicts:
                     # De-sync potential treads trying to write to the index
-                    time.sleep(random() * 0.1)
+                    time.sleep(random() * 0.1)  # noqa: S311
                     raise VersionConflictException(str(ce))
                 updated += ce.info.get("updated", 0)
                 deleted += ce.info.get("deleted", 0)
@@ -517,8 +517,7 @@ class ESCollection(Generic[ModelType]):
                 updated += res["updated"]
 
     def archive(self, query, max_docs=None, sort=None):
-        """
-        This function should archive to document that are matching to query to an time splitted index
+        """This function should archive to document that are matching to query to an time splitted index
 
         :param query: query to run to archive documents
         :return: Number of archived documents
@@ -558,28 +557,24 @@ class ESCollection(Generic[ModelType]):
             return False
 
     def bulk(self, operations):
-        """
-        Receives a bulk plan and executes the plan.
+        """Receives a bulk plan and executes the plan.
 
         :return: Results of the bulk operation
         """
-
         if not isinstance(operations, ElasticBulkPlan):
             return TypeError("Operations must be of type ElasticBulkPlan")
 
         return self.with_retries(self.datastore.client.bulk, body=operations.get_plan_data())
 
     def get_bulk_plan(self):
-        """
-        Creates a BulkPlan tailored for the current datastore
+        """Creates a BulkPlan tailored for the current datastore
 
         :return: The BulkPlan object
         """
         return ElasticBulkPlan(self.index_list, model=self.model_class)
 
     def commit(self):
-        """
-        This function should be overloaded to perform a commit of the index data of all the different hosts
+        """This function should be overloaded to perform a commit of the index data of all the different hosts
         specified in self.datastore.hosts.
 
         :return: Should return True of the commit was successful on all hosts
@@ -592,8 +587,7 @@ class ESCollection(Generic[ModelType]):
         return True
 
     def fix_ilm(self):
-        """
-        This function should be overloaded to fix the ILM configuration of the index of all the different hosts
+        """This function should be overloaded to fix the ILM configuration of the index of all the different hosts
         specified in self.datastore.hosts.
 
         :return: Should return True of the fix was successful on all hosts
@@ -674,8 +668,7 @@ class ESCollection(Generic[ModelType]):
         return True
 
     def fix_replicas(self):
-        """
-        This function should be overloaded to fix the replica configuration of the index of all the different hosts
+        """This function should be overloaded to fix the replica configuration of the index of all the different hosts
         specified in self.datastore.hosts.
 
         :return: Should return True of the fix was successful on all hosts
@@ -687,8 +680,7 @@ class ESCollection(Generic[ModelType]):
         ]
 
     def fix_shards(self, logger=None):
-        """
-        This function should be overloaded to fix the shard configuration of the index of all the different hosts
+        """This function should be overloaded to fix the shard configuration of the index of all the different hosts
         specified in self.datastore.hosts.
 
         :return: Should return True of the fix was successful on all hosts
@@ -842,8 +834,7 @@ class ESCollection(Generic[ModelType]):
         )
 
     def reindex(self):
-        """
-        This function should be overloaded to perform a reindex of all the data of the different hosts
+        """This function should be overloaded to perform a reindex of all the data of the different hosts
         specified in self.datastore.hosts.
 
         :return: Should return True of the commit was successful on all hosts
@@ -952,8 +943,7 @@ class ESCollection(Generic[ModelType]):
         return True
 
     def multiget(self, key_list, as_dictionary=True, as_obj=True, error_on_missing=True):
-        """
-        Get a list of documents from the datastore and make sure they are normalized using
+        """Get a list of documents from the datastore and make sure they are normalized using
         the model class
 
         :param error_on_missing: Should it raise a key error when keys are missing
@@ -1009,8 +999,7 @@ class ESCollection(Generic[ModelType]):
         return out
 
     def normalize(self, data, as_obj=True) -> Union[ModelType, dict[str, Any], None]:
-        """
-        Normalize the data using the model class
+        """Normalize the data using the model class
 
         :param as_obj: Return an object instead of a dictionary
         :param data: data to normalize
@@ -1025,8 +1014,7 @@ class ESCollection(Generic[ModelType]):
         return data
 
     def exists(self, key, archive_access=None):
-        """
-        Check if a document exists in the datastore.
+        """Check if a document exists in the datastore.
 
         :param archive_access: Temporary sets access value to archive during this call
         :param key: key of the document to get from the datastore
@@ -1049,8 +1037,7 @@ class ESCollection(Generic[ModelType]):
         return found
 
     def _get(self, key, retries, archive_access=None, version=False):
-        """
-        Versioned get-save for atomic update has three paths:
+        """Versioned get-save for atomic update has three paths:
             1. Document doesn't exist at all. Create token will be returned for version.
                This way only the first query to try and create the document will succeed.
             2. Document exists in archive. Create token will be returned for version.
@@ -1113,8 +1100,7 @@ class ESCollection(Generic[ModelType]):
         return None
 
     def get(self, key, as_obj=True, archive_access=None, version=False):
-        """
-        Get a document from the datastore, retry a few times if not found and normalize the
+        """Get a document from the datastore, retry a few times if not found and normalize the
         document with the model provided with the collection.
 
         This is the normal way to get data of the system.
@@ -1132,8 +1118,7 @@ class ESCollection(Generic[ModelType]):
         return self.normalize(data, as_obj=as_obj)
 
     def get_if_exists(self, key, as_obj=True, archive_access=None, version=False):
-        """
-        Get a document from the datastore but do not retry if not found.
+        """Get a document from the datastore but do not retry if not found.
 
         Use this more in caching scenarios because eventually consistent database may lead
         to have document reported as missing even if they exist.
@@ -1150,12 +1135,13 @@ class ESCollection(Generic[ModelType]):
             return self.normalize(data, as_obj=as_obj), version
         return self.normalize(data, as_obj=as_obj)
 
-    def require(self, key, as_obj=True, archive_access=None, version=False) -> Union[
+    def require(
+        self, key, as_obj=True, archive_access=None, version=False
+    ) -> Union[
         tuple[Optional[Union[dict[str, Any], ModelType]], str],
         Optional[Union[dict[str, Any], ModelType]],
     ]:
-        """
-        Get a document from the datastore and retry forever because we know for sure
+        """Get a document from the datastore and retry forever because we know for sure
         that this document should exist. If it does not right now, this will wait for the
         document to show up in the datastore.
 
@@ -1172,8 +1158,7 @@ class ESCollection(Generic[ModelType]):
         return self.normalize(data, as_obj=as_obj)
 
     def save(self, key, data, version=None):
-        """
-        Save to document to the datastore using the key as its document id.
+        """Save to document to the datastore using the key as its document id.
 
         The document data will be normalized before being saved in the datastore.
 
@@ -1205,22 +1190,27 @@ class ESCollection(Generic[ModelType]):
         elif version:
             seq_no, primary_term = version.split("---")
 
-        self.with_retries(
-            self.datastore.client.index,
-            index=self.name,
-            id=key,
-            document=json.dumps(saved_data),
-            op_type=operation,
-            if_seq_no=seq_no,
-            if_primary_term=primary_term,
-            raise_conflicts=True,
-        )
+        try:
+            self.with_retries(
+                self.datastore.client.index,
+                index=self.name,
+                id=key,
+                document=json.dumps(saved_data),
+                op_type=operation,
+                if_seq_no=seq_no,
+                if_primary_term=primary_term,
+                raise_conflicts=True,
+            )
+        except elasticsearch.BadRequestError as e:
+            raise NonRecoverableError(
+                f"When saving document {key} to elasticsearch, an exception occurred:\n{repr(e)}\n\n"
+                f"Data: {json.dumps(saved_data)}"
+            ) from e
 
         return True
 
     def delete(self, key):
-        """
-        This function should delete the underlying document referenced by the key.
+        """This function should delete the underlying document referenced by the key.
         It should return true if the document was in fact properly deleted.
 
         :param key: id of the document to delete
@@ -1244,8 +1234,7 @@ class ESCollection(Generic[ModelType]):
         return deleted
 
     def delete_by_query(self, query, workers=20, sort=None, max_docs=None):
-        """
-        This function should delete the underlying documents referenced by the query.
+        """This function should delete the underlying documents referenced by the query.
         It should return true if the documents were in fact properly deleted.
 
         :param query: Query of the documents to download
@@ -1321,8 +1310,7 @@ class ESCollection(Generic[ModelType]):
         }
 
     def _validate_operations(self, operations):
-        """
-        Validate the different operations received for a partial update
+        """Validate the different operations received for a partial update
 
         TODO: When the field is of type Mapping, the validation/check only works for depth 1. A full recursive
               solution is needed to support multi-depth cases.
@@ -1392,8 +1380,7 @@ class ESCollection(Generic[ModelType]):
         return ret_ops
 
     def update(self, key, operations, version=None):
-        """
-        This function performs an atomic update on some fields from the
+        """This function performs an atomic update on some fields from the
         underlying documents referenced by the id using a list of operations.
 
         Operations supported by the update function are the following:
@@ -1411,7 +1398,7 @@ class ESCollection(Generic[ModelType]):
         primary_term = None
         if version:
             seq_no, primary_term = version.split("---")
-        # noinspection PyBroadException
+
         try:
             res = self.with_retries(
                 self.datastore.client.update,
@@ -1447,8 +1434,7 @@ class ESCollection(Generic[ModelType]):
         return False
 
     def update_by_query(self, query, operations, filters=None, access_control=None, max_docs=None):
-        """
-        This function performs an atomic update on some fields from the
+        """This function performs an atomic update on some fields from the
         underlying documents matching the query and the filters using a list of operations.
 
         Operations supported by the update function are the following:
@@ -1485,7 +1471,6 @@ class ESCollection(Generic[ModelType]):
             },
         }
 
-        # noinspection PyBroadException
         try:
             res = self._update_async(index, query_body, max_docs=max_docs)
         except Exception:
@@ -1701,8 +1686,7 @@ class ESCollection(Generic[ModelType]):
         track_total_hits=None,
         script_fields=[],
     ):
-        """
-        This function should perform a search through the datastore and return a
+        """This function should perform a search through the datastore and return a
         search result object that consist on the following::
 
             {
@@ -1732,7 +1716,6 @@ class ESCollection(Generic[ModelType]):
         :param access_control: access control parameters to limiti the scope of the query
         :return: a search result object
         """
-
         if offset is None:
             offset = self.DEFAULT_OFFSET
 
@@ -1821,8 +1804,7 @@ class ESCollection(Generic[ModelType]):
         as_obj=True,
         use_archive=False,
     ):
-        """
-        This function should perform a search through the datastore and stream
+        """This function should perform a search through the datastore and stream
         all related results as a dictionary of key value pair where each keys
         are one of the field specified in the field list parameter.
 
@@ -1949,8 +1931,7 @@ class ESCollection(Generic[ModelType]):
             raise SearchException(f"collection: {self.name}, error: {str(error)}")
 
     def keys(self, access_control=None):
-        """
-        This function streams the keys of all the documents of this collection.
+        """This function streams the keys of all the documents of this collection.
 
         :param access_control: access control parameter to limit the scope of the key scan
         :return: a generator of keys
@@ -2015,8 +1996,7 @@ class ESCollection(Generic[ModelType]):
         access_control=None,
         use_archive=False,
     ):
-        """
-        This function should perform a count operation through the datastore and return a
+        """This function should perform a count operation through the datastore and return a
         search result object that consists of the following:
 
             {
@@ -2028,7 +2008,6 @@ class ESCollection(Generic[ModelType]):
         :param access_control: access control parameters to limiti the scope of the query
         :return: a count result object
         """
-
         index = self.name
         if self.archive_access and use_archive:
             index = f"{index},{self.name}-*"
@@ -2264,11 +2243,9 @@ class ESCollection(Generic[ModelType]):
         except KeyError:
             return ds_type.lower()
 
-    def fields(self):
+    def fields(self, skip_mapping_children=False):
         """
         This function should return all the fields in the index with their types
-
-        :return:
         """
 
         def flatten_fields(props):
@@ -2328,6 +2305,9 @@ class ESCollection(Generic[ModelType]):
                             ),
                             "deprecated_description": (field_model.deprecated_description if field_model else ""),
                         }
+
+                        if skip_mapping_children:
+                            continue
                     else:
                         continue
 
@@ -2404,6 +2384,15 @@ class ESCollection(Generic[ModelType]):
             settings["index"] = {}
         settings["index"]["number_of_shards"] = self.shards
         settings["index"]["number_of_replicas"] = self.replicas
+
+        if "mapping" not in settings["index"]:
+            settings["index"]["mapping"] = {}
+
+        if "total_fields" not in settings["index"]["mapping"]:
+            settings["index"]["mapping"]["total_fields"] = {}
+
+        settings["index"]["mapping"]["total_fields"]["limit"] = 1500
+
         return settings
 
     def _get_index_mappings(self) -> dict:
@@ -2469,8 +2458,7 @@ class ESCollection(Generic[ModelType]):
                 )
 
     def _ensure_collection(self):
-        """
-        This function should test if the collection that you are trying to access does indeed exist
+        """This function should test if the collection that you are trying to access does indeed exist
         and should create it if it does not.
 
         :return:
@@ -2605,8 +2593,7 @@ class ESCollection(Generic[ModelType]):
             )
 
     def wipe(self):
-        """
-        This function should completely delete the collection
+        """This function should completely delete the collection
 
         NEVER USE THIS!
 

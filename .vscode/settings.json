@@ -27,30 +27,9 @@
     "python.terminal.activateEnvironment": false,
     "python.testing.pytestEnabled": true,
     "python.testing.pytestPath": ".",
-    "taskExplorer.enableAnsiconForAnt": false,
-    "taskExplorer.enableAnt": false,
-    "taskExplorer.enableAppPublisher": false,
-    "taskExplorer.enableBash": false,
-    "taskExplorer.enableBatch": false,
-    "taskExplorer.enableExplorerView": true,
-    "taskExplorer.enableGradle": false,
-    "taskExplorer.enableGrunt": false,
-    "taskExplorer.enableGulp": false,
-    "taskExplorer.enableMake": false,
-    "taskExplorer.enableNpm": true,
-    "taskExplorer.enableNsis": false,
-    "taskExplorer.enablePerl": false,
-    "taskExplorer.enablePowershell": false,
-    "taskExplorer.enablePython": false,
-    "taskExplorer.enableRuby": false,
-    "taskExplorer.enableSideBar": true,
-    "taskExplorer.enableTsc": false,
-    "taskExplorer.enableComposer": false,
-    "taskExplorer.enableMaven": false,
-    "taskExplorer.enablePipenv": false,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
     },
     "autoDocstring.docstringFormat": "google",
     "autoDocstring.guessTypes": true,
@@ -59,7 +38,7 @@
         "source.fixAll": "explicit",
         "source.unusedImports": "explicit"
     },
-    "python.defaultInterpreterPath": "${workspaceFolder}/env/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.analysis.autoImportCompletions": true,
     "python.analysis.exclude": [
         "**/build"
@@ -68,5 +47,9 @@
     "python.analysis.completeFunctionParens": true,
     "mypy-type-checker.ignorePatterns": [
         "test/**/*.py"
+    ],
+    "ruff.configurationPreference": "filesystemFirst",
+    "python.analysis.extraPaths": [
+      "./test"
     ]
 }
