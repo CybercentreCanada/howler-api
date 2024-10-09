@@ -119,11 +119,9 @@ stages:
         strategy:
           matrix:
             "(Python 3.9)":
-              containerImage: python:3.9-bookworm
               python.version: "3.9"
               elasticInstance: elasticsearch39
             "(Python 3.12)":
-              containerImage: python:3.12-bookworm
               python.version: "3.12"
               elasticInstance: elasticsearch312
           maxParallel: 2
@@ -135,7 +133,6 @@ stages:
           minio: minio
           keycloak: keycloak
 
-        container: $[ variables['containerImage'] ]
         steps:
           - checkout: self
             fetchDepth: 100
