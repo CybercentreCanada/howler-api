@@ -1,6 +1,7 @@
 from typing import Iterable, Optional
 
 from elasticsearch.helpers.errors import ScanError
+
 from howler.common.exceptions import HowlerException, HowlerKeyError
 
 

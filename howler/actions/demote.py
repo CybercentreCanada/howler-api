@@ -1,8 +1,9 @@
 from typing import Optional
+
+import howler.helper.hit as hit_helper
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
-import howler.helper.hit as hit_helper
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import (
     Assessment,
@@ -22,9 +23,9 @@ odm_helper = OdmHelper(Hit)
 
 def execute(
     query: str,
-    escalation=Escalation.HIT,
-    assessment=None,
-    rationale=None,
+    escalation: Escalation = Escalation.HIT,
+    assessment: Optional[str] = None,
+    rationale: Optional[str] = None,
     user: Optional[User] = None,
     **kwargs,
 ):
@@ -36,7 +37,6 @@ def execute(
         assessment (str, optional): The assessment to apply if demoting to miss. Required if escalation is "miss".
         rationale (str, optional): The optional rationale to apply if demoting to miss.
     """
-
     if escalation not in ESCALATIONS:
         return [
             {
@@ -122,6 +122,7 @@ def execute(
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Demote Hit",

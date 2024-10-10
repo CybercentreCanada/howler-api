@@ -16,7 +16,6 @@ def execute(query: str, field: str, value: str, **kwargs):
         field (str): The field to update.
         value (str): The value to set it to. Must be a string.
     """
-
     if field not in Hit.flat_fields():
         return [
             {
@@ -57,6 +56,7 @@ def execute(query: str, field: str, value: str, **kwargs):
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Change Field",

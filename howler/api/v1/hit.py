@@ -23,6 +23,7 @@ from howler.common.exceptions import (
 )
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.datastore.collection import ESCollection
 from howler.datastore.exceptions import DataStoreException, VersionConflictException
 from howler.datastore.operations import OdmHelper, OdmUpdateOperation
@@ -47,11 +48,11 @@ logger = get_logger(__file__)
 hit_helper = OdmHelper(Hit)
 
 
+@generate_swagger_docs()
 @hit_api.route("/", methods=["POST"])
 @api_login(required_priv=["W"])
 def create_hits(user: User, **kwargs):
-    """
-    Create hits.
+    """Create hits.
 
     Variables:
     None
@@ -93,7 +94,6 @@ def create_hits(user: User, **kwargs):
         ]
     }
     """
-
     hits = request.json
 
     if hits is None:
@@ -116,16 +116,17 @@ def create_hits(user: User, **kwargs):
             response_body["invalid"].append({"input": hit, "error": str(e)})
 
     if len(response_body["invalid"]) == 0:
-        for odm in odms:
-            # Ensure all ids are consistent
-            if odm.event is not None:
-                odm.event.id = odm.howler.id
-            hit_service.create_hit(odm.howler.id, odm, user=user["uname"])
-            analytic_service.save_from_hit(odm, user)
+        if len(odms) > 0:
+            for odm in odms:
+                # Ensure all ids are consistent
+                if odm.event is not None:
+                    odm.event.id = odm.howler.id
+                hit_service.create_hit(odm.howler.id, odm, user=user["uname"])
+                analytic_service.save_from_hit(odm, user)
 
-        datastore().hit.commit()
+            datastore().hit.commit()
 
-        action_service.bulk_execute_on_query(f"howler.id:({' OR '.join(odm.howler.id for odm in odms)})", user=user)
+            action_service.bulk_execute_on_query(f"howler.id:({' OR '.join(odm.howler.id for odm in odms)})", user=user)
 
         response_body["warnings"] = warnings
 
@@ -136,11 +137,11 @@ def create_hits(user: User, **kwargs):
         return bad_request(response_body, err=err_msg, warnings=warnings)
 
 
+@generate_swagger_docs()
 @hit_api.route("/", methods=["DELETE"])
 @api_login(required_priv=["W"])
 def delete_hits(user: User, **kwargs):
-    """
-    Delete hits.
+    """Delete hits.
 
     Variables:
     None
@@ -160,7 +161,6 @@ def delete_hits(user: User, **kwargs):
      "success": True             # Deleting the hits succeded
     }
     """
-
     hit_ids = request.json
 
     if hit_ids is None:
@@ -186,10 +186,10 @@ def delete_hits(user: User, **kwargs):
     return no_content()
 
 
+@generate_swagger_docs()
 @hit_api.route("/validate", methods=["POST"])
 def validate_hits(**kwargs):
-    """
-    Validates hits.
+    """Validates hits.
 
     Variables:
     None
@@ -231,7 +231,6 @@ def validate_hits(**kwargs):
         ]
     }
     """
-
     hits = request.json
 
     if hits is None:
@@ -249,12 +248,12 @@ def validate_hits(**kwargs):
     return ok(validation)
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>", methods=["GET"])
 @api_login(audit=False, required_priv=["R"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def get_hit(id: str, server_version: str, **kwargs):
-    """
-    Get a hit.
+    """Get a hit.
 
     Variables:
     id       => Id of the hit you would like to get
@@ -265,7 +264,6 @@ def get_hit(id: str, server_version: str, **kwargs):
     Result Example:
     https://github.com/CybercentreCanada/howler-api/blob/main/howler/odm/models/hit.py
     """
-
     hit: Optional[Hit] = kwargs.get("cached_hit")
 
     if not hit:
@@ -274,12 +272,12 @@ def get_hit(id: str, server_version: str, **kwargs):
     return ok(hit.as_primitives()), server_version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/update", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def update_hit(id: str, server_version: str, **kwargs):
-    """
-    Update a hit.
+    """Update a hit.
 
     Variables:
     id       => Id of the hit you would like to update
@@ -339,11 +337,11 @@ def update_hit(id: str, server_version: str, **kwargs):
         return bad_request(err=e.message)
 
 
+@generate_swagger_docs()
 @hit_api.route("/update", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 def update_by_query(**kwargs):
-    """
-    Update a set of hits using a query.
+    """Update a set of hits using a query.
 
     Variables:
     None
@@ -365,7 +363,6 @@ def update_by_query(**kwargs):
         "success": True
     }
     """
-
     data = cast(dict[str, Any], request.json)
 
     try:
@@ -399,11 +396,11 @@ def update_by_query(**kwargs):
         return internal_error(err=str(e))
 
 
+@generate_swagger_docs()
 @hit_api.route("/user", methods=["GET"])
 @api_login(audit=True, required_priv=["R"])
 def get_assigned_hits(user, **kwargs):
-    """
-    Get hits assigned to the user.
+    """Get hits assigned to the user.
 
     Variables:
     None
@@ -426,7 +423,6 @@ def get_assigned_hits(user, **kwargs):
 
     https://github.com/CybercentreCanada/howler-api/blob/main/howler/odm/models/hit.py
     """
-
     uname = user["uname"]
 
     hits = hit_service.search(
@@ -443,12 +439,12 @@ def get_assigned_hits(user, **kwargs):
     return ok(hits)
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/labels/<label_set>", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def add_label(id, label_set, user, **kwargs):
-    """
-    Add labels to a hit.
+    """Add labels to a hit.
 
     Variables:
     id          => id of the hit to add labels to
@@ -467,7 +463,6 @@ def add_label(id, label_set, user, **kwargs):
         "success": True             # Adding the label succeeded
     }
     """
-
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
@@ -508,12 +503,12 @@ def add_label(id, label_set, user, **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/labels/<label_set>", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def remove_labels(id, label_set, user, **kwargs):
-    """
-    Remove labels from a hit.
+    """Remove labels from a hit.
 
     Variables:
     id          => id of the hit to remove labels from
@@ -532,7 +527,6 @@ def remove_labels(id, label_set, user, **kwargs):
         "success": True             # Removing the labels succeeded
     }
     """
-
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
@@ -567,12 +561,12 @@ def remove_labels(id, label_set, user, **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/transition", methods=["POST"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=True)
-def transition(id, user: User, **kwargs):
-    """
-    Transition a hit
+def transition(id: str, user: User, **kwargs):
+    """Transition a hit
 
     Variables:
     id          => id of the hit to transition
@@ -602,7 +596,8 @@ def transition(id, user: User, **kwargs):
     if "If-Match" in request.headers:
         version = request.headers["If-Match"]
     else:
-        return bad_request(err="No If-Match header in request. Contact an Administrator for help.")
+        logger.warning("User is mising version - no If-Match header in request.")
+        version = None
 
     try:
         if transition not in HitStatusTransition.list():
@@ -625,12 +620,12 @@ def transition(id, user: User, **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments/<comment_id>", methods=["GET"])
 @api_login(audit=False, required_priv=["R"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def get_comment(id, comment_id: str, user: User, server_version: str, **kwargs):
-    """
-    Get a comment associated with a particular hit
+def get_comment(id: str, comment_id: str, user: User, server_version: str, **kwargs):
+    """Get a comment associated with a particular hit
 
     Variables:
     id          => id of the hit corresponding to the comment
@@ -654,12 +649,12 @@ def get_comment(id, comment_id: str, user: User, server_version: str, **kwargs):
     return ok(comment.as_primitives()), server_version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments", methods=["POST"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def add_comment(id, user: dict[str, Any], **kwargs):
-    """
-    Add a comment
+def add_comment(id: str, user: dict[str, Any], **kwargs):
+    """Add a comment
 
     Variables:
     id  => id of the hit to add a comment to
@@ -713,12 +708,12 @@ def add_comment(id, user: dict[str, Any], **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments/<comment_id>", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    Edit a comment
+def edit_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """Edit a comment
 
     Variables:
     id          => id of the hit the comment belongs to
@@ -786,12 +781,12 @@ def edit_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def delete_comments(id, user: User, **kwargs):
-    """
-    Delete a set of comments
+def delete_comments(id: str, user: User, **kwargs):
+    """Delete a set of comments
 
     Variables:
     id  => id of the hit whose comments we are deleting
@@ -809,7 +804,6 @@ def delete_comments(id, user: User, **kwargs):
         ...hit            # The new data for the hit
     }
     """
-
     if not hit_service.does_hit_exist(id):
         return not_found(err=f"Hit {id} does not exist")
 
@@ -848,12 +842,12 @@ def delete_comments(id, user: User, **kwargs):
     return ok(hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments/<comment_id>/react", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    React to a comment
+def react_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """React to a comment
 
     Variables:
     id          => id of the hit the comment belongs to
@@ -897,12 +891,12 @@ def react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(new_hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/<id>/comments/<comment_id>/react", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
-def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
-    """
-    React to a comment
+def remove_react_comment(id: str, comment_id: str, user: dict[str, Any], **kwargs):
+    """React to a comment
 
     Variables:
     id          => id of the hit the comment belongs to
@@ -931,11 +925,11 @@ def remove_react_comment(id, comment_id: str, user: dict[str, Any], **kwargs):
     return ok(new_hit), version
 
 
+@generate_swagger_docs()
 @hit_api.route("/bundle", methods=["POST"])
 @api_login(audit=False, required_priv=["W"])
 def create_bundle(user: User, **kwargs):
-    """
-    Create a new bundle
+    """Create a new bundle
 
     Variables:
     None
@@ -999,12 +993,12 @@ def create_bundle(user: User, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @hit_api.route("/bundle/<id>", methods=["PUT"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def update_bundle(id, **kwargs):
-    """
-    Update a hit's child hits. Can be used to convert an existing hit into a bundle, or to update an existing bundle.
+    """Update a hit's child hits. Can be used to convert an existing hit into a bundle, or to update an existing bundle.
 
     Variables:
     id  => The ID of the bundle to update
@@ -1022,7 +1016,6 @@ def update_bundle(id, **kwargs):
         ...hit      # The updated bundle
     }
     """
-
     bundle_hit: Hit = kwargs.get("cached_hit", None)
     if not bundle_hit:
         return not_found(err="This bundle does not exist.")
@@ -1065,13 +1058,15 @@ def update_bundle(id, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @hit_api.route("/bundle/<id>", methods=["DELETE"])
 @api_login(audit=False, required_priv=["W"])
 @add_etag(getter=hit_service.get_hit, check_if_match=False)
 def remove_bundle_children(id, **kwargs):
-    """
-    Remove a bundle's child hits. Can be used to convert an existing bundle back into a normal hit,
-    or to remove a subset of existing hits from the bundle.
+    """Remove a bundle's child hits.
+
+    Can be used to convert an existing bundle back into a normal hit, or to remove a subset of
+    existing hits from the bundle.
 
     Variables:
     id  => The ID of the bundle to update
@@ -1089,7 +1084,6 @@ def remove_bundle_children(id, **kwargs):
         ...hit      # The updated hit
     }
     """
-
     bundle_hit = kwargs.get("cached_hit", None)
     if not bundle_hit:
         return not_found(err="This bundle does not exist.")

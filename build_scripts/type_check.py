@@ -1,16 +1,19 @@
 import os
+import platform
 import shlex
 import subprocess
 import sys
 import textwrap
 
 
-def prep_command(cmd: str):
+def prep_command(cmd: str) -> list[str]:
+    "Take in a raw string and return a split array of entries understood by functions like subprocess.check_output."
     print(">", cmd)
     return shlex.split(cmd)
 
 
-def main():
+def main() -> None:
+    "Main type checking script"
     print("Removing existing coverage files")
     result = subprocess.check_output(prep_command('find howler -type f -name "*.py"')).decode().strip().split("\n")
 
@@ -36,10 +39,9 @@ def main():
     return_code = mypy.poll()
     if return_code is not None and return_code > 0:
         if output and os.environ.get("TF_BUILD", ""):
-
             markdown_output = textwrap.dedent(
-                """
-            ![Static Badge](https://img.shields.io/badge/type_check-failing-red)
+                f"""
+            ![Static Badge](https://img.shields.io/badge/Type_Check%20(Python%20{platform.python_version()})-failing-red)
 
             ```
             """

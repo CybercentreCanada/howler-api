@@ -10,8 +10,7 @@ from howler.common.exceptions import (
 )
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
-from howler.config import CLASSIFICATION as Classification
-from howler.config import config
+from howler.config import CLASSIFICATION, config
 from howler.helper.oauth import fetch_avatar, parse_profile
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -73,13 +72,13 @@ def convert_user(user: User) -> dict[str, Any]:
 
 
 @elasticapm.capture_span(span_type="authentication")
-def parse_user_data(
+def parse_user_data(  # noqa: C901
     data: dict,
     oauth_provider: str,
     skip_setup: bool = True,
     access_token: Optional[str] = None,
 ) -> User:
-    """Convert a JSON Web Token into a Howler User
+    """Convert a JSON Web Token into a Howler User.
 
     Args:
         data (dict): The JWT to parse
@@ -96,7 +95,6 @@ def parse_user_data(
     Returns:
         User: The parsed User ODM
     """
-
     if not data or not oauth_provider:
         raise InvalidDataException("Both the JWT and OAuth provider must be supplied")
 
@@ -239,8 +237,8 @@ def add_access_control(user: dict[str, Any]):
         user (dict[str, Any]): The user to add access control information to.
     """
     user.update(
-        Classification.get_access_control_parts(
-            user.get("classification", Classification.UNRESTRICTED),
+        CLASSIFICATION.get_access_control_parts(
+            user.get("classification", CLASSIFICATION.UNRESTRICTED),
             user_classification=True,
         )
     )
@@ -261,7 +259,7 @@ def add_access_control(user: dict[str, Any]):
     )
     gl1_query = f"({gl1_query}) AND "
 
-    req = list(set(Classification.get_access_control_req()).difference(set(user["__access_req__"])))
+    req = list(set(CLASSIFICATION.get_access_control_req()).difference(set(user["__access_req__"])))
     req_query = " OR ".join([f'__access_req__:"{r}"' for r in req])
     if req_query:
         req_query = f"-({req_query}) AND "
@@ -328,8 +326,7 @@ def get_dynamic_classification(current_c12n: str, email: str) -> str:
     Returns:
         str: The classification
     """
-
-    if Classification.dynamic_groups and email:
+    if CLASSIFICATION.dynamic_groups and email:
         dyn_group = email.upper().split("@")[1]
-        return Classification.build_user_classification(current_c12n, f"{Classification.UNRESTRICTED}//{dyn_group}")
+        return CLASSIFICATION.build_user_classification(current_c12n, f"{CLASSIFICATION.UNRESTRICTED}//{dyn_group}")
     return current_c12n

@@ -11,8 +11,7 @@ api = Blueprint("api", __name__, url_prefix=API_PREFIX)
 @api.route("/")
 @api_login(audit=False, required_priv=["R", "W"])
 def api_version_list(**_):
-    """
-    List all available API versions.
+    """List all available API versions.
 
     Variables:
     None
@@ -28,10 +27,9 @@ def api_version_list(**_):
         if rule.rule.startswith("/api/"):
             version = rule.rule[5:].split("/", 1)[0]
             if version not in api_list and version != "":
-                # noinspection PyBroadException
                 try:
                     int(version[1:])
-                except Exception:
+                except ValueError:
                     continue
                 api_list.append(version)
 
@@ -41,8 +39,7 @@ def api_version_list(**_):
 @api.route("/site_map")
 @api_login(required_type=["admin"], audit=False)
 def site_map(**_):
-    """
-    Check if all pages have been protected by a login decorator
+    """Check if all pages have been protected by a login decorator
 
     Variables:
     None

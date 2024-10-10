@@ -12,8 +12,7 @@ class CorruptedFileStoreException(HowlerException):
 
 
 class TransportException(HowlerException):
-    """
-    FileTransport exception base class.
+    """FileTransport exception base class.
 
     TransportException is a subclass of HowlerException so that it can be
     used with the Chain and ChainAll decorators.

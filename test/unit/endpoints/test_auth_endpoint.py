@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
-import json
-from unittest import mock
-from flask import Flask, Response
 
-from mock import MagicMock, patch
 import pytest
+from flask import Flask, Response
+from mock import MagicMock, patch
+
 from howler.common.loader import datastore
 from howler.config import config
 from howler.odm.models.user import User
@@ -26,9 +25,7 @@ def request_context():
 @patch("howler.security.auth_service")
 def test_add_apikey(mock_auth_service, mock_jwt_service, request_context: Flask):
     mock_auth_service.bearer_auth = MagicMock()
-    mock_jwt_service.decode = MagicMock(
-        return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()}
-    )
+    mock_jwt_service.decode = MagicMock(return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()})
 
     user_data: User = random_model_obj(User)
     user_data.type = ["admin", "user"]
@@ -57,15 +54,11 @@ def test_add_apikey(mock_auth_service, mock_jwt_service, request_context: Flask)
 
 @patch("howler.api.v1.auth.jwt_service")
 @patch("howler.security.auth_service")
-def test_add_apikey_no_extended(
-    mock_auth_service, mock_jwt_service, request_context: Flask
-):
+def test_add_apikey_no_extended(mock_auth_service, mock_jwt_service, request_context: Flask):
     config.auth.allow_extended_apikeys = False
 
     mock_auth_service.bearer_auth = MagicMock()
-    mock_jwt_service.decode = MagicMock(
-        return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()}
-    )
+    mock_jwt_service.decode = MagicMock(return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()})
 
     user_data: User = random_model_obj(User)
     user_data.type = ["admin", "user"]
@@ -94,15 +87,11 @@ def test_add_apikey_no_extended(
 
 @patch("howler.api.v1.auth.jwt_service")
 @patch("howler.security.auth_service")
-def test_add_apikey_bad_date_format(
-    mock_auth_service, mock_jwt_service, request_context: Flask
-):
+def test_add_apikey_bad_date_format(mock_auth_service, mock_jwt_service, request_context: Flask):
     config.auth.allow_extended_apikeys = False
 
     mock_auth_service.basic_auth = MagicMock()
-    mock_jwt_service.decode = MagicMock(
-        return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()}
-    )
+    mock_jwt_service.decode = MagicMock(return_value={"exp": (datetime.now() + timedelta(minutes=5)).timestamp()})
 
     user_data: User = random_model_obj(User)
     user_data.type = ["admin", "user"]
@@ -126,10 +115,7 @@ def test_add_apikey_bad_date_format(
         result: Response = add_apikey()
 
         assert result.status_code == 400
-        assert (
-            result.json["api_error_message"]
-            == "Invalid expiry date format. Please use ISO format."
-        )
+        assert result.json["api_error_message"] == "Invalid expiry date format. Please use ISO format."
 
 
 @patch("howler.security.auth_service")

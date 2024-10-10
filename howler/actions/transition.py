@@ -21,7 +21,8 @@ OPERATION_ID = "transition"
 log = get_logger(__file__)
 
 
-def __parse_workflow_actions(workflow: Workflow):
+def __parse_workflow_actions(workflow: Workflow) -> dict[str, set[str]]:
+    """Take in a workflow, and parse the steps and transitions of that workflow into a format understood by the UI"""
     parsed_args: dict[str, set[str]] = {}
 
     for wf in workflow.transitions.values():
@@ -165,6 +166,7 @@ def execute(
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Transition",

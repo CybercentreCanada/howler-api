@@ -8,7 +8,7 @@ from io import BytesIO
 import pysftp
 from paramiko import SSHException
 
-from howler.common.exceptions import ChainAll
+from howler.common.exceptions import ChainAll, HowlerException
 from howler.common.loader import APP_NAME
 from howler.filestore.transport.base import (
     Transport,
@@ -66,9 +66,7 @@ def reconnect_retry_on_fail(func):
 
 @ChainAll(TransportException)
 class TransportSFTP(Transport):
-    """
-    SFTP Transport class.
-    """
+    """SFTP Transport class."""
 
     def __init__(
         self,
@@ -144,12 +142,16 @@ class TransportSFTP(Transport):
         filename = posixpath.basename(dst_path)
         tempname = get_random_id()
         temppath = posixpath.join(dirname, tempname)
-        finalpath = posixpath.join(dirname, filename)
-        assert finalpath == dst_path
+        final_path = posixpath.join(dirname, filename)
+
+        if final_path != dst_path:
+            raise HowlerException(f"Final and destination paths do not match: {final_path} != {dst_path}")
+
         self.makedirs(dirname)
         self.sftp.put(src_path, temppath)
-        self.sftp.rename(temppath, finalpath)
-        assert self.exists(dst_path)
+        self.sftp.rename(temppath, final_path)
+        if not self.exists(dst_path):
+            raise HowlerException(f"Destination path does not exist: {dst_path}")
 
     # Buffer based functions
     @reconnect_retry_on_fail
@@ -167,8 +169,10 @@ class TransportSFTP(Transport):
         filename = posixpath.basename(dst_path)
         tempname = get_random_id()
         temppath = posixpath.join(dirname, tempname)
-        finalpath = posixpath.join(dirname, filename)
-        assert finalpath == dst_path
+        final_path = posixpath.join(dirname, filename)
+
+        if final_path != dst_path:
+            raise HowlerException(f"Final and destination paths do not match: {final_path} != {dst_path}")
 
         # Write content to a tempfile
         fd, src_path = tempfile.mkstemp(prefix="filestore.local_path")
@@ -178,8 +182,9 @@ class TransportSFTP(Transport):
         # Upload the tempfile
         self.makedirs(dirname)
         self.sftp.put(src_path, temppath)
-        self.sftp.rename(temppath, finalpath)
-        assert self.exists(dst_path)
+        self.sftp.rename(temppath, final_path)
+        if not self.exists(dst_path):
+            raise HowlerException(f"Destination path does not exist: {dst_path}")
 
         # Cleanup
         os.unlink(src_path)

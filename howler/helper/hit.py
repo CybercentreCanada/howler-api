@@ -209,7 +209,9 @@ def vote_hit(
         else (
             "obscure"
             if email in hit["howler"]["votes"]["obscure"]
-            else "malicious" if email in hit["howler"]["votes"]["malicious"] else None
+            else "malicious"
+            if email in hit["howler"]["votes"]["malicious"]
+            else None
         )
     )
 

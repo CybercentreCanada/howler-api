@@ -1,6 +1,6 @@
 import base64
-from datetime import datetime
 import hashlib
+from datetime import datetime
 from typing import Optional, Union
 
 import elasticapm
@@ -31,7 +31,7 @@ nonpersistent_config: dict[str, Union[str, int]] = {
 }
 
 
-def _get_token_store(user: str):
+def _get_token_store(user: str) -> ExpiringSet:
     """Get an expiring redis set in which to add a token
 
     Args:
@@ -43,7 +43,7 @@ def _get_token_store(user: str):
     return ExpiringSet(f"token_{user}", host=redis, ttl=60 * 60)  # 1 Hour expiry
 
 
-def _get_priv_store(user: str, token: str):
+def _get_priv_store(user: str, token: str) -> ExpiringSet:
     """Get an expiring redis set in which to add the privileges
 
     Args:
@@ -125,7 +125,9 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 
 @elasticapm.capture_span(span_type="authentication")
-def bearer_auth(data: str, skip_jwt=False, skip_internal=False) -> tuple[Optional[User], Optional[list[str]]]:
+def bearer_auth(
+    data: str, skip_jwt: bool = False, skip_internal: bool = False
+) -> tuple[Optional[User], Optional[list[str]]]:
     """This function handles Bearer type Authorization headers.
 
     Args:
@@ -269,7 +271,7 @@ def decode_b64(b64_str: str) -> str:
 
 @elasticapm.capture_span(span_type="authentication")
 def basic_auth(
-    data: str, is_base64=True, skip_apikey=False, skip_password=False
+    data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False
 ) -> tuple[Optional[User], Optional[list[str]]]:
     """This function handles Basic type Authorization headers.
 

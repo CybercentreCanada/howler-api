@@ -1,5 +1,4 @@
 from howler import odm
-
 from howler.odm.models.ecs.code_signature import CodeSignature
 from howler.odm.models.ecs.elf import ELF
 from howler.odm.models.ecs.hash import Hashes

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from howler import odm
 from howler.odm.models.ecs.code_signature import CodeSignature
 from howler.odm.models.ecs.hash import Hashes
@@ -23,8 +25,13 @@ class TTY(odm.Model):
 
 @odm.model(index=True, store=True, description="Thread Information.")
 class Thread(odm.Model):
-    id = odm.Optional(odm.Integer(description="Thread ID."))
-    name = odm.Optional(odm.Keyword(description="Thread name."))
+    id: Optional[int] = odm.Optional(odm.Integer(description="Thread ID."))
+    name: Optional[str] = odm.Optional(odm.Keyword(description="Thread name."))
+
+
+@odm.model(index=True, store=True, description="Entry Meta-Information.")
+class EntryMeta(odm.Model):
+    type: Optional[str] = odm.Keyword(description="SESSIONNAME from Process Environment Variable", optional=True)
 
 
 @odm.model(
@@ -51,7 +58,11 @@ class ParentParentProcess(odm.Model):
         )
     )
     end = odm.Optional(odm.Date(description="The time the process ended."))
-    entity_id = odm.Optional(odm.Keyword(description="Unique identifier for the process."))
+    entity_id = odm.Optional(odm.Keyword(description="OID Hash of the process."))
+    entry_meta: Optional[EntryMeta] = odm.Optional(
+        odm.Compound(EntryMeta),
+        description="Process Meta Information.",
+    )
     env_vars = odm.Optional(
         odm.Mapping(
             odm.Keyword(),
@@ -105,7 +116,11 @@ class ParentProcess(odm.Model):
         )
     )
     end = odm.Optional(odm.Date(description="The time the process ended."))
-    entity_id = odm.Optional(odm.Keyword(description="Unique identifier for the process."))
+    entity_id = odm.Optional(odm.Keyword(description="OID Hash of the process."))
+    entry_meta: Optional[EntryMeta] = odm.Optional(
+        odm.Compound(EntryMeta),
+        description="Process Meta Information.",
+    )
     env_vars = odm.Optional(
         odm.Mapping(
             odm.Keyword(),
@@ -163,7 +178,11 @@ class Process(odm.Model):
         )
     )
     end = odm.Optional(odm.Date(description="The time the process ended."))
-    entity_id = odm.Optional(odm.Keyword(description="Unique identifier for the process."))
+    entity_id = odm.Optional(odm.Keyword(description="OID Hash of the process."))
+    entry_meta: Optional[EntryMeta] = odm.Optional(
+        odm.Compound(EntryMeta),
+        description="Process Meta Information.",
+    )
     env_vars = odm.Optional(
         odm.Mapping(
             odm.Keyword(),

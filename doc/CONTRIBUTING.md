@@ -8,7 +8,7 @@ This repo contains the API server for Howler
 
 In order to run howler, you need:
 
-- Python 3.9
+- Python 3.12
 - Docker
 - Docker Compose
 - Recommended: Visual Studio Code
@@ -35,7 +35,7 @@ sudo chown $USER /var/log/howler
 sudo apt update
 sudo apt install -yy software-properties-common
 sudo add-apt-repository -y ppa:deadsnakes/ppa
-sudo apt install -yy python3-venv python3.9 python3.9-dev python3.9-venv
+sudo apt install -yy python3-venv python3.12 python3.12-dev python3.12-venv
 sudo apt install -yy libsasl2-2 build-essential libsasl2-dev libssl-dev zip
 ```
 

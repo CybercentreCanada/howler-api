@@ -12,6 +12,7 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.datastore.exceptions import SearchException
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -24,11 +25,11 @@ view_api._doc = "Manage the different views created for filtering hits"
 logger = get_logger(__file__)
 
 
+@generate_swagger_docs()
 @view_api.route("/", methods=["GET"])
 @api_login(required_priv=["R"])
 def get_views(user: User, **kwargs):
-    """
-    Get a list of views the user can use to filter hits
+    """Get a list of views the user can use to filter hits
 
     Variables:
     None
@@ -53,11 +54,11 @@ def get_views(user: User, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @view_api.route("/", methods=["POST"])
 @api_login(required_priv=["R", "W"])
 def create_view(**kwargs):
-    """
-    Create a new view
+    """Create a new view
 
     Variables:
     None
@@ -77,7 +78,6 @@ def create_view(**kwargs):
         ...view            # The new view data
     }
     """
-
     view_data = request.json
     if not isinstance(view_data, dict):
         return bad_request(err="Invalid data format")
@@ -116,11 +116,11 @@ def create_view(**kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @view_api.route("/<id>", methods=["DELETE"])
 @api_login(required_priv=["W"])
-def delete_view(id, user: User, **kwargs):
-    """
-    Delete a view
+def delete_view(id: str, user: User, **kwargs):
+    """Delete a view
 
     Variables:
     id => The id of the view to delete
@@ -136,7 +136,6 @@ def delete_view(id, user: User, **kwargs):
         "success": true     # Did the deletion succeed?
     }
     """
-
     storage = datastore()
 
     existing_view: View = storage.view.get_if_exists(id)
@@ -156,11 +155,11 @@ def delete_view(id, user: User, **kwargs):
     return no_content({"success": success})
 
 
+@generate_swagger_docs()
 @view_api.route("/<id>", methods=["PUT"])
 @api_login(required_priv=["R", "W"])
-def update_view(id, user: User, **kwargs):
-    """
-    Update a view
+def update_view(id: str, user: User, **kwargs):
+    """Update a view
 
     Variables:
     id => The id of the view to modify
@@ -179,7 +178,6 @@ def update_view(id, user: User, **kwargs):
         ...view     # The updated view data
     }
     """
-
     storage = datastore()
 
     new_data = request.json
@@ -220,11 +218,11 @@ def update_view(id, user: User, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @view_api.route("/<id>/favourite", methods=["POST"])
 @api_login(required_priv=["R", "W"])
-def set_as_favourite(id, **kwargs):
-    """
-    Add a view to a list of the user's favourites
+def set_as_favourite(id: str, **kwargs):
+    """Add a view to a list of the user's favourites
 
     Variables:
     id => The id of the view to add as a favourite
@@ -240,7 +238,6 @@ def set_as_favourite(id, **kwargs):
         "success": True     # If the operation succeeded
     }
     """
-
     storage = datastore()
 
     existing_view: View = storage.view.get_if_exists(id)
@@ -264,11 +261,11 @@ def set_as_favourite(id, **kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @view_api.route("/<id>/favourite", methods=["DELETE"])
 @api_login(required_priv=["R", "W"])
 def remove_as_favourite(id, **kwargs):
-    """
-    Remove a view from a list of the user's favourites
+    """Remove a view from a list of the user's favourites
 
     Variables:
     id => The id of the view to remove as a favourite
@@ -281,7 +278,6 @@ def remove_as_favourite(id, **kwargs):
         "success": True     # If the operation succeeded
     }
     """
-
     storage = datastore()
 
     if not storage.view.exists(id):

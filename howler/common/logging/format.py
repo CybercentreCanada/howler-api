@@ -2,14 +2,12 @@ import json
 
 from howler.common.loader import APP_NAME
 
-hostname = "unknownhost"
-# noinspection PyBroadException
 try:
     from howler.common.net import get_hostname
 
     hostname = get_hostname()
-except Exception:  # pylint:disable=W0702
-    pass
+except Exception:
+    hostname = "unknownhost"
 
 HWL_SYSLOG_FORMAT = f"HWL %(levelname)8s {hostname} %(process)5d %(name)40s | %(message)s"
 HWL_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s | %(message)s"

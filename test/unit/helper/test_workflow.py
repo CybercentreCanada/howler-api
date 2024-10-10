@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 
 from howler.datastore.collection import ESCollection
@@ -7,19 +5,13 @@ from howler.datastore.operations import OdmUpdateOperation
 from howler.helper.workflow import Transition, Workflow, WorkflowException
 
 DUMMY_WORKFLOW_TRANSITIONS = [
-    Transition(
-        {"transition": "first", "source": "state1", "dest": "state2", "actions": []}
-    ),
+    Transition({"transition": "first", "source": "state1", "dest": "state2", "actions": []}),
     Transition(
         {
             "transition": "second",
             "source": "state2",
             "dest": "state1",
-            "actions": [
-                lambda **kwargs: [
-                    OdmUpdateOperation(ESCollection.UPDATE_SET, "user", "random_user")
-                ]
-            ],
+            "actions": [lambda **kwargs: [OdmUpdateOperation(ESCollection.UPDATE_SET, "user", "random_user")]],
         }
     ),
 ]

@@ -8,6 +8,7 @@ import yaml
 
 
 def run(writepath):
+    """Run the script to generate mitre lookups"""
     dirname = Path(writepath)
     print(f"Generating mitre lookups to {dirname}")
     file_name = os.path.join(os.getcwd(), "enterprise-attack.json")
@@ -18,7 +19,8 @@ def run(writepath):
         print("Pulling mitre attack data")
         response = requests.get(
             "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/"
-            + "master/enterprise-attack/enterprise-attack.json"
+            + "master/enterprise-attack/enterprise-attack.json",
+            timeout=10,
         )
 
         response.raise_for_status()
@@ -80,6 +82,7 @@ def run(writepath):
 
 
 def main():
+    "Main run function"
     writepath = None
     try:
         writepath = sys.argv[1]

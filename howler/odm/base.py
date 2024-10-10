@@ -1,5 +1,4 @@
-"""
-HOWLER's built in Object Document Model tool.
+"""HOWLER's built in Object Document Model tool.
 
 The classes in this module can be composed to build database
 independent data models in python. This gives us:
@@ -20,9 +19,8 @@ from datetime import datetime
 from enum import Enum as PyEnum
 from enum import EnumMeta
 from typing import Any as _Any
-from typing import Dict
+from typing import Dict, Tuple, Union
 from typing import Mapping as _Mapping
-from typing import Tuple, Union
 
 import arrow
 from dateutil.tz import tzutc
@@ -176,8 +174,7 @@ class _Field:
         return out
 
     def setter(self, method):
-        """
-        Let fields be used as a decorator to define a setter method.
+        """Let fields be used as a decorator to define a setter method.
 
         >>> expiry = Date()
         >>>
@@ -199,8 +196,7 @@ class _Field:
             self.store = store
 
     def fields(self):
-        """
-        Return the subfields/modified field data.
+        """Return the subfields/modified field data.
 
         For simple fields this is an identity function.
         """
@@ -257,8 +253,7 @@ class Boolean(_Field):
 
 
 class Json(_Field):
-    """
-    A field storing serializeable structure with their JSON encoded representations.
+    """A field storing serializeable structure with their JSON encoded representations.
 
     Examples: metadata
     """
@@ -277,8 +272,7 @@ class Json(_Field):
 
 
 class Keyword(_Field):
-    """
-    A field storing a short string with a technical interpretation.
+    """A field storing a short string with a technical interpretation.
 
     Examples: file hashes, service names, document ids
     """
@@ -307,9 +301,7 @@ class Keyword(_Field):
 
 
 class EmptyableKeyword(_Field):
-    """
-    A keyword which allow to differentiate between empty and None values.
-    """
+    """A keyword which allow to differentiate between empty and None values."""
 
     def check(self, value, context=[], **kwargs):
         if self.optional and value is None:
@@ -330,9 +322,7 @@ class EmptyableKeyword(_Field):
 
 
 class UpperKeyword(Keyword):
-    """
-    A field storing a short uppercase string with a technical interpretation.
-    """
+    """A field storing a short uppercase string with a technical interpretation."""
 
     def check(self, value, context=[], **kwargs):
         kw_val = super().check(value, context=context, **kwargs)
@@ -343,9 +333,22 @@ class UpperKeyword(Keyword):
         return kw_val.upper()
 
 
-class Any(Keyword):
+class LowerKeyword(Keyword):
     """
-    A field that can hold any value whatsoever but which is stored as a
+    A field storing a short lowercase string with a technical interpretation.
+    """
+
+    def check(self, value, context=[], **kwargs):
+        kw_val = super().check(value, context=context, **kwargs)
+
+        if kw_val is None:
+            return None
+
+        return kw_val.lower()
+
+
+class Any(Keyword):
+    """A field that can hold any value whatsoever but which is stored as a
     Keyword in the datastore index
     """
 
@@ -359,9 +362,7 @@ class Any(Keyword):
 
 
 class ValidatedKeyword(Keyword):
-    """
-    Keyword field which the values are validated by a regular expression
-    """
+    """Keyword field which the values are validated by a regular expression"""
 
     def __init__(self, validation_regex, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -537,9 +538,7 @@ class Processor(ValidatedKeyword):
 
 
 class Enum(Keyword):
-    """
-    A field storing a short string that has predefined list of possible values
-    """
+    """A field storing a short string that has predefined list of possible values"""
 
     def __init__(self, values: PyEnum | list[typing.Any] | set[typing.Any], *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -572,9 +571,7 @@ class Enum(Keyword):
 
 
 class UUID(Keyword):
-    """
-    A field storing an auto-generated unique ID if None is provided
-    """
+    """A field storing an auto-generated unique ID if None is provided"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -711,8 +708,7 @@ class Classification(Keyword):
     """A field storing access control classification."""
 
     def __init__(self, *args, is_user_classification=False, yml_config=None, **kwargs):
-        """
-        An expanded classification is one that controls the access to the document
+        """An expanded classification is one that controls the access to the document
         which holds it.
         """
         super().__init__(*args, **kwargs)
@@ -1009,8 +1005,7 @@ class Optional(_Field):
 class Model:
     @classmethod
     def fields(cls, skip_mappings=False) -> _Mapping[str, _Field]:
-        """
-        Describe the elements of the model.
+        """Describe the elements of the model.
 
         For compound fields return the field object.
 
@@ -1070,8 +1065,7 @@ class Model:
 
     @classmethod
     def flat_fields(cls, show_compound=False, skip_mappings=False) -> _Mapping[str, _Field]:
-        """
-        Describe the elements of the model.
+        """Describe the elements of the model.
 
         Recurse into compound fields, concatenating the names with '.' separators.
 
@@ -1106,7 +1100,8 @@ class Model:
         markdown_content = (
             (
                 '??? success "Auto-Generated Documentation"\n    '
-                "This set of documentation is automatically generated from source, and will help ensure any change to functionality will always be documented and available on release.\n\n"
+                "This set of documentation is automatically generated from source, and will help ensure any change to "
+                "functionality will always be documented and available on release.\n\n"
             )
             if include_autogen_note
             else ""

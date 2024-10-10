@@ -1,7 +1,10 @@
+import os
 from datetime import datetime, timedelta
 from typing import Any
+
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler.triggers.cron import CronTrigger
+from pytz import timezone
 
 from howler.common.logging import get_logger
 from howler.config import DEBUG, config
@@ -10,6 +13,7 @@ logger = get_logger(__file__)
 
 
 def execute():
+    """Delete any hits older than the configured time"""
     from howler.common.loader import datastore
 
     delta_kwargs = {config.system.retention.limit_unit: config.system.retention.limit_amount}
@@ -27,6 +31,7 @@ def execute():
 
 
 def setup_job(sched: BaseScheduler):
+    """Initialize the retention job"""
     if not config.system.retention.enabled:
         if not DEBUG or config.system.type == "production":
             logger.warn("Retention cronjob disabled! This is not recommended for a production settings.")
@@ -47,7 +52,9 @@ def setup_job(sched: BaseScheduler):
     sched.add_job(
         id="retention",
         func=execute,
-        trigger=CronTrigger.from_crontab(config.system.retention.crontab),
+        trigger=CronTrigger.from_crontab(
+            config.system.retention.crontab, timezone=timezone(os.getenv("SCHEDULER_TZ", "America/Toronto"))
+        ),
         **_kwargs,
     )
     logger.debug("Initialization complete")

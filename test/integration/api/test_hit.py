@@ -30,6 +30,7 @@ valid_hit_data = [
             "hash": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
             "labels": {"assignments": ["test", "test2"], "generic": ["test", "test2"]},
             "votes": {"benign": {}, "obscure": {}, "malicious": {}},
+            "source": {"address": "test", "geo": {"city_name": "test_city", "continent_code": "TT"}, "packets": 64},
         },
     },
     {
@@ -697,8 +698,8 @@ def test_get_hit(datastore: HowlerDatastore, login_session):
             session,
             f"{host}/api/v1/hit/{hit['howler']['id']}/",
         )
-        odmHit = datastore.hit.get(hit["howler"]["id"], as_obj=False, version=True)
-        assert response == odmHit[0]
+        odm_hit = datastore.hit.get(hit["howler"]["id"], as_obj=False, version=True)
+        assert response == odm_hit[0]
 
 
 def test_get_assigned_hits(datastore: HowlerDatastore, login_session):
@@ -707,11 +708,11 @@ def test_get_assigned_hits(datastore: HowlerDatastore, login_session):
 
     response = get_api_data(session, f"{host}/api/v1/hit/user/")
 
-    odmHits = datastore.hit.search("howler.assignment:admin", as_obj=False)["items"]
+    odm_hits = datastore.hit.search("howler.assignment:admin", as_obj=False)["items"]
 
-    assert len(response) == len(odmHits)
+    assert len(response) == len(odm_hits)
 
-    for odm in odmHits:
+    for odm in odm_hits:
         match_found = False
 
         for hit in response:

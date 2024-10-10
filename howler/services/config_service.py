@@ -25,7 +25,6 @@ def get_configuration(user: User, **kwargs):
     Args:
         user (User): The user making the request
     """
-
     apps = get_apps_list(discovery_url=kwargs.get("discovery_url", None))
 
     amount, unit = (

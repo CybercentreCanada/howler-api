@@ -1,4 +1,5 @@
 import os
+import platform
 import re
 import shlex
 import subprocess
@@ -27,10 +28,10 @@ def main():
 
         print("Running pytest")
         time.sleep(2)
+        _path = sys.argv[1] if len(sys.argv) > 1 else "test"
+
         pytest = subprocess.Popen(
-            prep_command(
-                f"pytest --cov=howler --cov-branch --cov-config=.coveragerc.pytest -rsx -vv {sys.argv[1] if len(sys.argv) > 1 else 'test'}"
-            ),
+            prep_command(f"pytest --cov=howler --cov-branch --cov-config=.coveragerc.pytest -rP -vv {_path}"),
             stdout=subprocess.PIPE,
         )
 
@@ -52,8 +53,8 @@ def main():
         if return_code is not None and return_code > 0:
             if output and os.environ.get("TF_BUILD", ""):
                 markdown_output = textwrap.dedent(
-                    """
-                ![Static Badge](https://img.shields.io/badge/build-failing-red)
+                    f"""
+                ![Static Badge](https://img.shields.io/badge/build%20(Python%20{platform.python_version()})-failing-red)
 
                 <details>
                     <summary>Error Output</summary>

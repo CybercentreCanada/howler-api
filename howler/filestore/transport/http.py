@@ -4,6 +4,7 @@ import posixpath
 from typing import Optional
 
 import requests
+
 from howler.common.exceptions import ChainAll, HowlerNotImplementedError
 from howler.common.loader import APP_NAME
 from howler.filestore.exceptions import TransportException
@@ -12,9 +13,7 @@ from howler.filestore.transport.base import Transport, normalize_srl_path
 
 @ChainAll(TransportException)
 class TransportHTTP(Transport):
-    """
-    HTTP Transport class.
-    """
+    """HTTP Transport class."""
 
     def __init__(
         self,

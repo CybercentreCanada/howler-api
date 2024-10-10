@@ -1,14 +1,14 @@
-import base64
 import json
 import signal
 import struct
+
 import pytest
 import requests
 from requests.auth import HTTPBasicAuth
-from websocket import create_connection, WebSocket
-from howler.api.socket import HWL_INTERPOD_COMMS_SECRET
-
 from utils.oauth_credentials import get_token
+from websocket import WebSocket, create_connection
+
+from howler.api.socket import HWL_INTERPOD_COMMS_SECRET
 
 
 @pytest.fixture(scope="module")
@@ -66,9 +66,7 @@ def test_ws_communication(ws_client: WebSocket, timeout):
     try:
         timeout.alarm(10)
 
-        ws_client.send(
-            json.dumps({"broadcast": True, "action": "typing", "id": "test_id"})
-        )
+        ws_client.send(json.dumps({"broadcast": True, "action": "typing", "id": "test_id"}))
 
         data = json.loads(ws_client.recv())
 

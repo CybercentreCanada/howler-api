@@ -5,11 +5,13 @@ from datetime import datetime, timedelta
 from hashlib import md5
 from math import ceil
 from random import choice, sample
+from typing import cast
 
 from howler.common.logging import get_logger
 from howler.config import config
 from howler.datastore.howler_store import HowlerDatastore
 from howler.helper.discover import get_apps_list
+from howler.odm.base import Model
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import Escalation, Link
 from howler.odm.models.user import User
@@ -31,8 +33,9 @@ ESCALATIONS = Escalation.list()
 logger = get_logger(__file__)
 
 
-def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
-    hit: Hit = random_model_obj(Hit)
+def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover  # noqa: C901
+    "Create a random, useful/cogent hit for synthetic data"
+    hit: Hit = random_model_obj(cast(Model, Hit))
 
     rand_seed = random.random()
 
@@ -51,8 +54,16 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
     hit.howler.outline.threat = get_random_ip()
     hit.howler.outline.target = get_random_host()
     hit.howler.outline.indicators = []
-    for _ in range(round(rand_seed * 10)):
-        hit.howler.outline.indicators.append(get_random_filename())
+    for _ in range(round(rand_seed * 12)):
+        ind_type = choice(["ip", "file", "department", "user_agent"])
+        if ind_type == "ip":
+            hit.howler.outline.indicators.append(get_random_ip())
+        elif ind_type == "file":
+            hit.howler.outline.indicators.append(get_random_filename())
+        elif ind_type == "department":
+            hit.howler.outline.indicators.append(random_department()[0])
+        elif ind_type == "user_agent":
+            hit.howler.outline.indicators.append(get_random_user_agent())
 
     hit.cloud.service.name = choice(
         [
@@ -111,16 +122,16 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
     hit.howler.labels.operation = []
     hit.howler.labels.threat = []
 
-    labelType = ceil(rand_seed * 6)
-    if labelType == 1:
+    label_type = ceil(rand_seed * 6)
+    if label_type == 1:
         hit.howler.labels.campaign = ["Bad event 2023-07"]
-    elif labelType == 2:
+    elif label_type == 2:
         hit.howler.labels.insight = ["admin"]
-    elif labelType == 3:
+    elif label_type == 3:
         hit.howler.labels.victim = ["Bobby's Ice-Cream"]
-    elif labelType == 4:
+    elif label_type == 4:
         hit.howler.labels.mitigation = ["Blocked: google.com"]
-    elif labelType == 5:
+    elif label_type == 5:
         hit.howler.labels.operation = ["OP_HOWLER"]
     else:
         hit.howler.labels.threat = ["Bad Mojo"]
@@ -138,7 +149,7 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
             hit.howler.outline.threat,
             hit.howler.outline.threat,
             hit.howler.outline.threat,
-            f"{md5(hit.howler.outline.threat.encode()).hexdigest()}-thing.baduser.org",
+            f"{md5(hit.howler.outline.threat.encode()).hexdigest()}-thing.baduser.org",  # noqa: S324
         ]
     )
 
@@ -147,7 +158,7 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
             hit.howler.outline.target,
             hit.howler.outline.target,
             hit.howler.outline.target,
-            f"{md5(hit.howler.outline.target.encode()).hexdigest()}.gc.ca",
+            f"{md5(hit.howler.outline.target.encode()).hexdigest()}.gc.ca",  # noqa: S324
         ]
     )
 
@@ -203,6 +214,7 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover
 
     hit.howler.viewers = []
     hit.howler.hits = []
+    hit.howler.bundle_size = 0
     hit.howler.bundles = []
     hit.howler.is_bundle = False
 

@@ -1,7 +1,7 @@
 import itertools
 import logging
 from copy import copy
-from typing import Any, Dict, KeysView, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, KeysView, List, Optional, Set, Tuple, Union, cast
 
 from howler.common.exceptions import (
     HowlerKeyError,
@@ -22,8 +22,7 @@ class Classification(object):
     INVALID_CLASSIFICATION = "INVALID"
 
     def __init__(self, classification_definition: Dict):
-        """
-        Returns the classification class instantiated with the classification_definition
+        """Returns the classification class instantiated with the classification_definition
 
         Args:
             classification_definition:  The classification definition dictionary,
@@ -549,8 +548,7 @@ class Classification(object):
 
     # noinspection PyUnusedLocal
     def default_user_classification(self, user: Optional[str] = None, long_format: bool = True) -> str:
-        """
-        You can overload this function to specify a way to get the default classification of a user.
+        """You can overload this function to specify a way to get the default classification of a user.
         By default, this function returns the UNRESTRICTED value of your classification definition.
 
         Args:
@@ -563,8 +561,7 @@ class Classification(object):
         return self.UNRESTRICTED
 
     def get_parsed_classification_definition(self) -> Dict:
-        """
-        Returns all dictionary of all the variables inside the classification object that will be used
+        """Returns all dictionary of all the variables inside the classification object that will be used
         to enforce classification throughout the system.
         """
         from copy import deepcopy
@@ -584,8 +581,7 @@ class Classification(object):
         return out
 
     def get_access_control_parts(self, c12n: str, user_classification: bool = False) -> Dict:
-        """
-        Returns a dictionary containing the different access parameters Lucene needs to build it's queries
+        """Returns a dictionary containing the different access parameters Lucene needs to build it's queries
 
         Args:
             c12n: The classification to get the parts from
@@ -620,35 +616,28 @@ class Classification(object):
                 raise
 
     def get_access_control_req(self) -> Union[KeysView, List]:
-        """
-        Returns a list of the different possible REQUIRED parts
-        """
+        """Returns a list of the different possible REQUIRED parts"""
         if not self.enforce or self.invalid_mode:
             return []
 
         return self.access_req_map_stl.keys()
 
     def get_access_control_groups(self) -> Union[KeysView, List]:
-        """
-        Returns a list of the different possible GROUPS
-        """
+        """Returns a list of the different possible GROUPS"""
         if not self.enforce or self.invalid_mode:
             return []
 
         return self.groups_map_stl.keys()
 
     def get_access_control_subgroups(self) -> Union[KeysView, List]:
-        """
-        Returns a list of the different possible SUBGROUPS
-        """
+        """Returns a list of the different possible SUBGROUPS"""
         if not self.enforce or self.invalid_mode:
             return []
 
         return self.subgroups_map_stl.keys()
 
     def intersect_user_classification(self, user_c12n_1: str, user_c12n_2: str, long_format: bool = True) -> str:
-        """
-        This function intersects two user classification to return the maximum classification
+        """This function intersects two user classification to return the maximum classification
         that both user could see.
 
         Args:
@@ -690,8 +679,7 @@ class Classification(object):
         )
 
     def is_accessible(self, user_c12n: str, c12n: str, ignore_invalid: bool = False) -> bool:
-        """
-        Given a user classification, check if a user is allow to see a certain classification
+        """Given a user classification, check if a user is allow to see a certain classification
 
         Args:
             user_c12n: Maximum classification for the user
@@ -735,8 +723,7 @@ class Classification(object):
                 raise
 
     def is_valid(self, c12n: str, skip_auto_select: bool = False) -> bool:
-        """
-        Performs a series of checks againts a classification to make sure it is valid in it's current form
+        """Performs a series of checks againts a classification to make sure it is valid in it's current form
 
         Args:
             c12n: The classification we want to validate
@@ -826,8 +813,7 @@ class Classification(object):
         return True
 
     def max_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
-        """
-        Mixes to classification and returns to most restrictive form for them
+        """Mixes to classification and returns to most restrictive form for them
 
         Args:
             c12n_1: First classification
@@ -859,12 +845,15 @@ class Classification(object):
         subgroups = self._max_groups(subgroups_1, subgroups_2)
 
         return self._get_normalized_classification_text(
-            max(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
+            cast(int, max(lvl_idx_1, lvl_idx_2)),
+            req,
+            groups,
+            subgroups,
+            long_format=long_format,  # type: ignore
         )
 
     def min_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
-        """
-        Mixes to classification and returns to least restrictive form for them
+        """Mixes to classification and returns to least restrictive form for them
 
         Args:
             c12n_1: First classification
@@ -903,12 +892,15 @@ class Classification(object):
             subgroups = []
 
         return self._get_normalized_classification_text(
-            min(lvl_idx_1, lvl_idx_2), req, groups, subgroups, long_format=long_format  # type: ignore
+            cast(int, min(lvl_idx_1, lvl_idx_2)),
+            req,
+            groups,
+            subgroups,
+            long_format=long_format,  # type: ignore
         )
 
     def normalize_classification(self, c12n: str, long_format: bool = True, skip_auto_select: bool = False) -> str:
-        """
-        Normalize a given classification by applying the rules defined in the classification definition.
+        """Normalize a given classification by applying the rules defined in the classification definition.
         This function will remove any invalid parts and add missing parts to the classification.
         It will also ensure that the display of the classification is always done the same way
 
@@ -946,8 +938,7 @@ class Classification(object):
         return new_c12n
 
     def build_user_classification(self, c12n_1: str, c12n_2: str, long_format: bool = True) -> str:
-        """
-        Mixes to classification and return the classification marking that would give access to the most data
+        """Mixes to classification and return the classification marking that would give access to the most data
 
         Args:
             c12n_1: First classification

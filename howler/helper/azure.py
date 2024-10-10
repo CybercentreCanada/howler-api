@@ -42,10 +42,7 @@ def azure_obo(token: str) -> str:
     if not azure_provider_config.access_token_url:
         raise HowlerException("Azure OBO failed - access_token_url must be set!")
 
-    resp = requests.post(
-        azure_provider_config.access_token_url,
-        data=data,
-    )
+    resp = requests.post(azure_provider_config.access_token_url, data=data, timeout=10)
 
     if not resp.ok:
         raise HowlerException(f"Azure OBO failed. Reason: {resp.content!r}")

@@ -1,14 +1,18 @@
 from __future__ import annotations
+
 import os
 import sys
 from typing import Optional
 
 
 def modulepath(modulename: str) -> str:
+    "Get the path to a given mdule"
     m = sys.modules[modulename]
     f = getattr(m, "__file__", None)
+
     if not f:
         return os.path.abspath(os.getcwd())
+
     return os.path.dirname(os.path.abspath(f))
 
 

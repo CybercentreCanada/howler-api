@@ -1,7 +1,9 @@
+from typing import Optional
+
+import howler.helper.hit as hit_helper
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
-import howler.helper.hit as hit_helper
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import (
     Assessment,
@@ -17,16 +19,21 @@ ESCALATIONS = [esc for esc in Escalation.list() if esc != Escalation.MISS]
 odm_helper = OdmHelper(Hit)
 
 
-def execute(query: str, escalation=Escalation.ALERT, assessment=None, rationale=None, **kwargs):
+def execute(
+    query: str,
+    escalation: Escalation = Escalation.ALERT,
+    assessment: Optional[str] = None,
+    rationale: Optional[str] = None,
+    **kwargs,
+):
     """Promote a hit.
 
     Args:
         query (str): The query on which to apply this automation.
         escalation (str, optional): The escalation to promote to. Defaults to "alert".
-        assessment (str, optional): The assessment to apply if promoting to evidence. Required if escalation is "evidence".
+        assessment (str, optional): Required if escalation is evidence, assessment to apply.
         rationale (str, optional): The optional rationale to apply if promoting to evidence.
     """
-
     if escalation not in ESCALATIONS:
         return [
             {
@@ -102,6 +109,7 @@ def execute(query: str, escalation=Escalation.ALERT, assessment=None, rationale=
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Promote Hit",

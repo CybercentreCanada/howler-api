@@ -4,9 +4,22 @@ import os
 import pytest
 
 from howler.common.classification import InvalidClassification
-from howler.odm import (UUID, Classification, Compound, Enum, FlattenedObject,
-                        Integer, KeyMaskException, Keyword, List, Mapping,
-                        Model, construct_safe, flat_to_nested, model)
+from howler.odm import (
+    UUID,
+    Classification,
+    Compound,
+    Enum,
+    FlattenedObject,
+    Integer,
+    KeyMaskException,
+    Keyword,
+    List,
+    Mapping,
+    Model,
+    construct_safe,
+    flat_to_nested,
+    model,
+)
 from howler.odm.models.ecs.client import Client
 
 
@@ -332,9 +345,7 @@ def test_defaults():
         y = Integer(default=-1)
 
     # Build a model with missing data found in the defaults
-    test = Test(
-        {"a": {"value": "red"}, "b": {"number": -100, "value": "blue"}, "x": -55}
-    )
+    test = Test({"a": {"value": "red"}, "b": {"number": -100, "value": "blue"}, "x": -55})
 
     assert test.a.number == 10
     assert test.a.value == "red"
@@ -489,9 +500,7 @@ def test_flattened_object():
 
 
 def test_classification():
-    yml_config = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "classification.yml"
-    )
+    yml_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), "classification.yml")
 
     @model(index=True, store=True)
     class ClassificationTest(Model):

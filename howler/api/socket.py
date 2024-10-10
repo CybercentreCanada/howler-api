@@ -27,12 +27,13 @@ hit_helper = OdmHelper(Hit)
 
 @socket_api.route("/emit/<event>", methods=["POST"])
 def emit(event: str):
+    """Emit an event to all listening websockets"""
     if "Authorization" not in request.headers:
         return unauthorized(err="Invalid auth data")
 
     auth_data = base64.b64decode(request.headers["Authorization"].split(" ")[1]).decode().split(":")[1]
 
-    if HWL_INTERPOD_COMMS_SECRET == "secret":
+    if HWL_INTERPOD_COMMS_SECRET == "secret":  # noqa: S105
         logger.warn("Using default interpod secret! DO NOT allow this on a production instance.")
 
     if auth_data != HWL_INTERPOD_COMMS_SECRET:
@@ -45,9 +46,8 @@ def emit(event: str):
 
 @socket_api.route("/connect", websocket=True)
 @websocket_auth(required_priv=["R"])
-def connect(ws: Server, *args, ws_id, **kwargs):
-    """
-    Connect to the server to monitor for updates via websocket
+def connect(ws: Server, *args: Any, ws_id: str, **kwargs):
+    """Connect to the server to monitor for updates via websocket
 
     Variables:
     None

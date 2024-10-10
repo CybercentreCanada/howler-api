@@ -1,3 +1,5 @@
+from typing import Optional
+
 from howler.common.loader import datastore
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.action import VALID_TRIGGERS
@@ -10,15 +12,24 @@ hit_helper = OdmHelper(Hit)
 OPERATION_ID = "add_to_bundle"
 
 
-def execute(query: str, bundle_id=None, **kwargs):
+def execute(query: str, bundle_id: Optional[str] = None, **kwargs):
     """Add a set of hits matching the query to the specified bundle.
 
     Args:
         query (str): The query containing the matching hits
         bundle_id (str): The `howler.id` of the bundle to add the hits to.
     """
-
     report = []
+
+    if not bundle_id:
+        return [
+            {
+                "query": query,
+                "outcome": "error",
+                "title": "Invalid Bundle ID",
+                "message": "Bundle ID cannot be empty.",
+            }
+        ]
 
     try:
         bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
@@ -66,7 +77,6 @@ def execute(query: str, bundle_id=None, **kwargs):
             )
 
         safe_query = f"({query}) AND (-howler.bundles:({sanitize_lucene_query(bundle_id)}) AND howler.is_bundle:false)"
-
         matching_hits = ds.hit.search(safe_query)["items"]
         if len(matching_hits) < 1:
             report.append(
@@ -84,11 +94,21 @@ def execute(query: str, bundle_id=None, **kwargs):
             [hit_helper.list_add("howler.bundles", sanitize_lucene_query(bundle_id), if_missing=True)],
         )
 
+        operations = [
+            hit_helper.list_add(
+                "howler.hits",
+                hit["howler"]["id"],
+                if_missing=True,
+            )
+            for hit in matching_hits
+        ]
+
+        operations.append(hit_helper.update("howler.bundle_size", len(operations)))
         hit_service.update_hit(
             bundle_id,
-            [hit_helper.list_add("howler.hits", h["howler"]["id"], if_missing=True) for h in matching_hits],
+            operations,
         )
-
+        bundle_hit = hit_service.get_hit(bundle_id, as_odm=True)
         report.append(
             {
                 "query": safe_query.replace("-howler.bundles", "howler.bundles"),
@@ -111,6 +131,7 @@ def execute(query: str, bundle_id=None, **kwargs):
 
 
 def specification():
+    """Specify various properties of the action, such as title, descriptions, permissions and input steps."""
     return {
         "id": OPERATION_ID,
         "title": "Add to Bundle",

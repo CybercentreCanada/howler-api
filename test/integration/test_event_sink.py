@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import enum
 import json
-import pytest
 import time
 import uuid
-
-from dataclasses import dataclass, asdict
-from redis import Redis
+from dataclasses import asdict, dataclass
 from typing import Any
+
+import pytest
+from redis import Redis
 
 from howler.remote.datatypes.events import EventSender, EventWatcher
 
@@ -65,9 +65,7 @@ def test_serialized_event(redis_connection: Redis[Any]):
     try:
         watcher.register("changes.test", _track_call)
         watcher.start()
-        sender = EventSender[Message](
-            "changes.", redis_connection, serializer=_serialize
-        )
+        sender = EventSender[Message]("changes.", redis_connection, serializer=_serialize)
         start = time.time()
 
         while len(calls) < 5:

@@ -86,7 +86,7 @@ AUDIT_LOG.addHandler(ch)
 
 
 def audit(args, kwargs, logged_in_uname, user, func, impersonator=None):
-    # noinspection PyBroadException
+    """Log audit information for a given function executed by a given user."""
     try:
         json_blob = request.json
         if not isinstance(json_blob, dict):

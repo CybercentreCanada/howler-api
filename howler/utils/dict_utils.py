@@ -1,12 +1,13 @@
 from collections.abc import Mapping
-from typing import Any, AnyStr, List
+from typing import TYPE_CHECKING, Any, AnyStr, Optional, cast
 from typing import Mapping as _Mapping
-from typing import Optional
 
-from howler.utils.uid import get_id_from_data
+if TYPE_CHECKING:
+    from howler.odm.base import Model
 
 
-def strip_nulls(d):
+def strip_nulls(d: Any):
+    """Remove null values from a dict"""
     if isinstance(d, dict):
         return {k: strip_nulls(v) for k, v in d.items() if v is not None}
     else:
@@ -14,13 +15,14 @@ def strip_nulls(d):
 
 
 def recursive_update(
-    d: dict[str, Any],
-    u: _Mapping[str, Any],
+    d: Optional[dict[str, Any]],
+    u: Optional[_Mapping[str, Any]],
     stop_keys: list[AnyStr] = [],
     allow_recursion: bool = True,
 ) -> dict[str, Any]:
+    "Recursively update a dict with another value"
     if d is None:
-        return u
+        return cast(dict, u or {})
 
     if u is None:
         return d
@@ -35,16 +37,17 @@ def recursive_update(
 
 
 def get_recursive_delta(
-    d1: _Mapping[str, Any],
-    d2: _Mapping[str, Any],
+    d1: Optional[_Mapping[str, Any]],
+    d2: Optional[_Mapping[str, Any]],
     stop_keys: list[AnyStr] = [],
     allow_recursion: bool = True,
-) -> dict[str, Any]:
+) -> Optional[dict[str, Any]]:
+    "Get the recursive difference between two objects"
     if d1 is None:
-        return d2
+        return cast(dict, d2)
 
     if d2 is None:
-        return d1
+        return cast(dict, d1)
 
     out = {}
     for k1, v1 in d1.items():
@@ -70,40 +73,20 @@ def get_recursive_delta(
     return out
 
 
-def get_recursive_sorted_tuples(data: _Mapping):
-    def sort_lists(ldata: List):
-        new_list = []
-        for i in ldata:
-            if isinstance(i, list):
-                i = sort_lists(i)
-            elif isinstance(i, dict):
-                i = get_recursive_sorted_tuples(i)
-
-            new_list.append(i)
-        return new_list
-
-    items = []
-    for k, v in sorted(data.items()):
-        if isinstance(v, dict):
-            v = get_recursive_sorted_tuples(v)
-        elif isinstance(v, list):
-            v = sort_lists(v)
-
-        items.append((k, v))
-
-    return items
-
-
-def get_dict_fingerprint_hash(data: _Mapping):
-    return get_id_from_data(str(get_recursive_sorted_tuples(data)))
-
-
-def flatten(data: _Mapping, parent_key: Optional[str] = None) -> dict[str, Any]:
+def flatten(data: _Mapping, parent_key: Optional[str] = None, odm: Optional[type["Model"]] = None) -> dict[str, Any]:
+    "Flatten a nested dict"
     items: list[tuple[str, Any]] = []
     for k, v in data.items():
         cur_key = f"{parent_key}.{k}" if parent_key is not None else k
+
         if isinstance(v, dict):
-            items.extend(flatten(v, cur_key).items())
+            if odm:
+                valid_keys = list(odm.flat_fields().keys())
+                if not next((key for key in valid_keys if key.startswith(f"{cur_key}.")), False):
+                    items.append((cur_key, v))
+                    continue
+
+            items.extend(flatten(v, cur_key, odm=odm).items())
         else:
             items.append((cur_key, v))
 
@@ -111,6 +94,7 @@ def flatten(data: _Mapping, parent_key: Optional[str] = None) -> dict[str, Any]:
 
 
 def unflatten(data: _Mapping) -> _Mapping:
+    "Unflatted a nested dict"
     out: dict[str, Any] = dict()
     for k, v in data.items():
         parts = k.split(".")
@@ -124,6 +108,7 @@ def unflatten(data: _Mapping) -> _Mapping:
 
 
 def prune(data: _Mapping, keys: list[str], parent_key: Optional[str] = None) -> dict[str, Any]:
+    "Remove all keys in the given list from the dict if they exist"
     pruned_items: list[tuple[str, Any]] = []
 
     for key, val in data.items():
@@ -135,7 +120,7 @@ def prune(data: _Mapping, keys: list[str], parent_key: Optional[str] = None) -> 
             if len(child_keys) > 0:
                 pruned_items.append((key, prune(val, child_keys, cur_key)))
         elif isinstance(val, list):
-            if not cur_key in keys and not any(_key.startswith(cur_key) for _key in keys):
+            if cur_key not in keys and not any(_key.startswith(cur_key) for _key in keys):
                 continue
 
             list_result = []

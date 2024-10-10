@@ -13,6 +13,7 @@ from howler.api import (
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.datastore.operations import OdmHelper
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
@@ -28,11 +29,11 @@ logger = get_logger(__file__)
 template_helper = OdmHelper(Template)
 
 
+@generate_swagger_docs()
 @template_api.route("/", methods=["GET"])
 @api_login(required_priv=["R"])
 def get_templates(**kwargs):
-    """
-    Get a list of templates the user can use to render hits
+    """Get a list of templates the user can use to render hits
 
     Variables:
     None
@@ -45,7 +46,6 @@ def get_templates(**kwargs):
         ...templates    # A list of templates the user can use
     ]
     """
-
     try:
         return ok(
             datastore().template.search(
@@ -58,11 +58,11 @@ def get_templates(**kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @template_api.route("/", methods=["POST"])
 @api_login(required_priv=["R", "W"])
 def create_template(**kwargs):
-    """
-    Create a new template
+    """Create a new template
 
     Variables:
     None
@@ -83,7 +83,6 @@ def create_template(**kwargs):
         ...template            # The new template data
     }
     """
-
     template_data = request.json
     if not isinstance(template_data, dict):
         return bad_request(err="Invalid data format")
@@ -120,11 +119,11 @@ def create_template(**kwargs):
         return bad_request(err=str(e))
 
 
+@generate_swagger_docs()
 @template_api.route("/<id>", methods=["DELETE"])
 @api_login(required_priv=["W"])
-def delete_template(id, user: User, **kwargs):
-    """
-    Delete a template
+def delete_template(id: str, user: User, **kwargs):
+    """Delete a template
 
     Variables:
     id => The id of the template to delete
@@ -140,7 +139,6 @@ def delete_template(id, user: User, **kwargs):
         "success": true     # Did the deletion succeed?
     }
     """
-
     storage = datastore()
 
     if not storage.template.exists(id):
@@ -161,11 +159,11 @@ def delete_template(id, user: User, **kwargs):
         return not_found()
 
 
+@generate_swagger_docs()
 @template_api.route("/<id>", methods=["PUT"])
 @api_login(required_priv=["R", "W"])
-def update_template_fields(id, user: User, **kwargs):
-    """
-    Update a template's keys
+def update_template_fields(id: str, user: User, **kwargs):
+    """Update a template's keys
 
     Variables:
     id => The id of the template to modify
@@ -184,7 +182,6 @@ def update_template_fields(id, user: User, **kwargs):
         ...template     # The updated template data
     }
     """
-
     storage = datastore()
 
     if not storage.template.exists(id):
@@ -199,20 +196,9 @@ def update_template_fields(id, user: User, **kwargs):
     if existing_template.type == "personal" and existing_template.owner != user.uname:
         return forbidden(err="You cannot update a personal template that is not owned by you.")
 
-    fields_to_add = set(new_fields) - set(existing_template.keys)
-    fields_to_remove = set(existing_template.keys) - set(new_fields)
+    existing_template.keys = new_fields
 
-    logger.debug("Adding %s to template %s", fields_to_add, id)
-    logger.debug("Removing %s from template %s", fields_to_remove, id)
-
-    storage.template.update(
-        existing_template.template_id,
-        [
-            *[template_helper.list_remove("keys", f) for f in fields_to_remove],
-            *[template_helper.list_add("keys", f) for f in fields_to_add],
-        ],
-        version=False,
-    )
+    storage.template.save(existing_template.template_id, existing_template)
 
     try:
         return ok(storage.template.get_if_exists(existing_template.template_id, as_obj=False))

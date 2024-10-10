@@ -17,6 +17,7 @@ INDEX_MAP: dict[str, Callable[[], ESCollection]] = {
     "hit": lambda: ds.hit,
     "user": lambda: ds.user,
     "template": lambda: ds.template,
+    "overview": lambda: ds.overview,
     "analytic": lambda: ds.analytic,
     "action": lambda: ds.action,
     "view": lambda: ds.view,
@@ -25,7 +26,8 @@ INDEX_MAP: dict[str, Callable[[], ESCollection]] = {
 INDEX_ORDER_MAP: dict[str, str] = {
     "hit": "event.created desc",
     "user": "id asc",
-    "template": "id asc",
+    "template": "template_id asc",
+    "overview": "overview_id asc",
     "analytic": "name asc",
     "action": "name asc",
     "view": "title asc",
@@ -73,7 +75,7 @@ def has_access_control(index: str) -> bool:
     return index in ACCESS_CONTROLLED_INDICES
 
 
-def list_all_fields(is_admin=False) -> dict[str, dict]:
+def list_all_fields(is_admin: bool = False) -> dict[str, dict]:
     """Generate a list of all fields in each index
 
     Args:
@@ -82,9 +84,9 @@ def list_all_fields(is_admin=False) -> dict[str, dict]:
     Returns:
         dict[str, dict]: A list of all fields in each index
     """
-    fields_map = {k: INDEX_MAP[k]().fields() for k in INDEX_MAP.keys()}
+    fields_map = {k: INDEX_MAP[k]().fields(skip_mapping_children=True) for k in INDEX_MAP.keys()}
 
     if is_admin:
-        fields_map.update({k: ADMIN_INDEX_MAP[k]().fields() for k in ADMIN_INDEX_MAP.keys()})
+        fields_map.update({k: ADMIN_INDEX_MAP[k]().fields(skip_mapping_children=True) for k in ADMIN_INDEX_MAP.keys()})
 
     return fields_map

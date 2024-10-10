@@ -1,40 +1,44 @@
 from typing import Union
+
+from howler.common.exceptions import HowlerNotImplementedError, HowlerValueError
+from howler.common.logging import get_logger
 from howler.odm import (
-    Keyword,
-    Text,
-    List,
-    Compound,
-    Date,
-    Integer,
-    Float,
-    Boolean,
-    Mapping,
-    Classification,
-    Enum,
-    Any,
-    UUID,
-    Optional,
     IP,
-    Domain,
-    URI,
-    URIPath,
     MAC,
-    PhoneNumber,
-    SSDeepHash,
+    MD5,
     SHA1,
     SHA256,
-    MD5,
+    URI,
+    UUID,
+    Any,
+    Boolean,
+    Classification,
+    ClassificationString,
+    Compound,
+    Date,
+    Domain,
+    Email,
+    Enum,
+    FlattenedObject,
+    Float,
+    Integer,
+    Json,
+    Keyword,
+    List,
+    LowerKeyword,
+    Mapping,
+    Optional,
+    PhoneNumber,
     Platform,
     Processor,
-    ClassificationString,
-    FlattenedObject,
-    Email,
+    SSDeepHash,
+    Text,
     UpperKeyword,
-    Json,
+    URIPath,
     ValidatedKeyword,
 )
 
-from howler.common.exceptions import HowlerValueError, HowlerNotImplementedError
+logger = get_logger(__file__)
 
 # Simple types can be resolved by a direct mapping
 __type_mapping = {
@@ -64,6 +68,7 @@ __type_mapping = {
     FlattenedObject: "nested",
     Any: "keyword",
     UpperKeyword: "keyword",
+    LowerKeyword: "keyword",
     Json: "keyword",
     ValidatedKeyword: "keyword",
 }
@@ -100,6 +105,7 @@ back_mapping = {
         ClassificationString,
         Any,
         UpperKeyword,
+        LowerKeyword,
         Json,
         ValidatedKeyword,
     ]
@@ -108,10 +114,7 @@ back_mapping.update({x: Keyword for x in set(__analyzer_mapping.values())})
 
 
 def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
-    """
-    The mapping for Elasticsearch based on a python model object.
-    """
-
+    """The mapping for Elasticsearch based on a python model object."""
     prefix = prefix or []
     mappings = {}
     dynamic = []
@@ -121,7 +124,8 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
         if body.get("type", "text") != "text":
             body["doc_values"] = temp_field.index
         if temp_field.copyto:
-            assert len(temp_field.copyto) == 1
+            if len(field.copyto) > 1:
+                logger.warning("copyto field larger than 1, only using first entry")
             body["copy_to"] = temp_field.copyto[0]
 
         return body
@@ -259,7 +263,8 @@ def build_templates(name, field, nested_template=False, index=True) -> list:
             }
 
             if field.copyto:
-                assert len(field.copyto) == 1
+                if len(field.copyto) > 1:
+                    logger.warning("copyto field larger than 1, only using first entry")
                 field_template["mapping"]["copy_to"] = field.copyto[0]
 
             return [{f"{name}_tpl": field_template}]

@@ -6,6 +6,7 @@ from howler.api import bad_request, created, make_subapi_blueprint
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
+from howler.common.swagger import generate_swagger_docs
 from howler.datastore.operations import OdmHelper
 from howler.odm.base import _Field
 from howler.odm.models.hit import Hit
@@ -28,11 +29,11 @@ logger = get_logger(__file__)
 hit_helper = OdmHelper(Hit)
 
 
+@generate_swagger_docs()
 @tool_api.route("/<tool_name>/hits", methods=["POST", "PUT"])
 @api_login(required_priv=["W"])
-def create_one_or_many_hits(tool_name, user: User, **kwargs):
-    """
-    Create one or many hits for a tool using field mapping.
+def create_one_or_many_hits(tool_name: str, user: User, **kwargs):  # noqa: C901
+    """Create one or many hits for a tool using field mapping.
 
     Variables:
     tool_name   => Name of the tool the hit is for
@@ -98,7 +99,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
     for hit in hits:
         cur_id = get_random_id()
         cur_time = now_as_iso()
-        obj = {
+        obj: dict[str, Any] = {
             "agent.type": tool_name,
             "event.created": cur_time,
             "event.id": cur_id,
@@ -164,6 +165,7 @@ def create_one_or_many_hits(tool_name, user: User, **kwargs):
         for odm in odms:
             if bundle_hit is not None:
                 bundle_hit.howler.hits.append(odm.howler.id)
+                bundle_hit.howler.bundle_size += 1
                 odm.howler.bundles.append(bundle_hit.howler.id)
 
             hit_service.create_hit(odm.howler.id, odm, user=user["uname"])

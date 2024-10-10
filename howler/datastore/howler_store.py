@@ -8,6 +8,7 @@ from howler.datastore.collection import ESCollection, log
 from howler.odm.models.action import Action
 from howler.odm.models.analytic import Analytic
 from howler.odm.models.hit import Hit
+from howler.odm.models.overview import Overview
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
@@ -18,6 +19,7 @@ class HowlerDatastore(object):
         self.ds = datastore_object
         self.ds.register("hit", Hit)
         self.ds.register("template", Template)
+        self.ds.register("overview", Overview)
         self.ds.register("analytic", Analytic)
         self.ds.register("action", Action)
         self.ds.register("user", User)
@@ -49,6 +51,10 @@ class HowlerDatastore(object):
     @property
     def template(self) -> ESCollection[Template]:
         return self.ds.template
+
+    @property
+    def overview(self) -> ESCollection[Overview]:
+        return self.ds.overview
 
     @property
     def view(self) -> ESCollection[View]:

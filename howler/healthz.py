@@ -8,8 +8,7 @@ healthz = Blueprint("healthz", __name__, url_prefix=API_PREFIX)
 
 @healthz.route("/live")
 def liveness(**_):
-    """
-    Check if the API is live
+    """Check if the API is live
 
     Variables:
     None
@@ -25,8 +24,7 @@ def liveness(**_):
 
 @healthz.route("/ready")
 def readyness(**_):
-    """
-    Check if the API is Ready
+    """Check if the API is Ready
 
     Variables:
     None
@@ -45,4 +43,5 @@ def readyness(**_):
 
 @healthz.errorhandler(503)
 def error(_):
+    "Handle errors exposed in healthz routes"
     return "FAIL", 503

@@ -1,16 +1,15 @@
 import base64
-import re
 from datetime import datetime, timedelta
-from urllib.parse import urlsplit
-import jwt
 
+import jwt
 import pytest
 import requests
 from conftest import APIError, get_api_data
 from flask import json
+from utils.oauth_credentials import get_token
+
 from howler.config import config
 from howler.datastore.howler_store import HowlerDatastore
-from utils.oauth_credentials import get_token
 
 ALPHABET = [chr(x + 65) for x in range(26)] + [str(x) for x in range(10)]
 
@@ -38,9 +37,7 @@ def test_add_delete_apikey(datastore: HowlerDatastore, login_session):
 
     req_result = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(f'admin:{result}'.encode()).decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(f'admin:{result}'.encode()).decode('utf-8')}"},
     )
 
     assert req_result.ok
@@ -53,17 +50,14 @@ def test_add_delete_apikey(datastore: HowlerDatastore, login_session):
 
     req_result = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(f'admin:{result}'.encode()).decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(f'admin:{result}'.encode()).decode('utf-8')}"},
     )
 
     assert not req_result.ok
 
 
 @pytest.mark.skipif(
-    not config.auth.max_apikey_duration_amount
-    or not config.auth.max_apikey_duration_unit,
+    not config.auth.max_apikey_duration_amount or not config.auth.max_apikey_duration_unit,
     reason="Can only be run when max expiry is set!",
 )
 def test_past_max_expiry(datastore: HowlerDatastore, login_session):
@@ -71,12 +65,7 @@ def test_past_max_expiry(datastore: HowlerDatastore, login_session):
 
     key_expiry = (
         datetime.now()
-        + timedelta(
-            **{
-                config.auth.max_apikey_duration_unit: config.auth.max_apikey_duration_amount
-                + 10
-            }
-        )
+        + timedelta(**{config.auth.max_apikey_duration_unit: config.auth.max_apikey_duration_amount + 10})
     ).isoformat()
 
     with pytest.raises(APIError) as err:
