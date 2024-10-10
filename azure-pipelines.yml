@@ -81,10 +81,9 @@ stages:
             persistCredentials: true
           - script: |
               python --version
-              python -m pip install poetry
-            displayName: Install poetry
-          - script: |
-              python -m pip install poetry
+              sudo apt install pipx
+              pipx ensurepath
+              pipx install poetry
             displayName: Install poetry
           - script: |
               poetry --version
@@ -147,10 +146,11 @@ stages:
               sudo apt install -yy python3.12 python3.12-dev python3.12-venv
             displayName: Install Python
           - script: |
-              pip install poetry
+              python$(python.version) -m pip install poetry
             displayName: Install Poetry
           - script: |
               poetry --version
+              poetry env use $(python.version)
               poetry check
               poetry env info
             displayName: Check for poetry config integrity
