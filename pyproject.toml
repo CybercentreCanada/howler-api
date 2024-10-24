@@ -199,7 +199,7 @@ wsproto = "1.2.0"
 chevron = "0.14.0"
 typing-extensions = "^4.12.2"
 flasgger = "^0.9.7.1"
-pysigma = "0.11.14"
+pysigma = "0.11.17"
 pysigma-backend-elasticsearch = "^1.1.2"
 
 [tool.poetry.group.dev.dependencies]
