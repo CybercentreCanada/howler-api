@@ -4,6 +4,7 @@ import os
 import pytest
 
 from howler.common.classification import InvalidClassification
+from howler.common.exceptions import HowlerException
 from howler.odm import (
     UUID,
     Classification,
@@ -802,3 +803,16 @@ def test_list_of_compounds():
     assert (
         validated.attachments[0].file.hash.sha256 == "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894"
     )
+
+    with pytest.raises(HowlerException):
+        Email(
+            {
+                "attachments.file.hash.sha256": [
+                    "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894",
+                    "a59d30df946cc54923a3f39401e489dab1f25c7eeec257ca662abce6a17dd894",
+                ],
+                "attachments.file.hash.sha1": [
+                    "c4a9b2d23e35f3f98d4117c3285f1a9db4ff0ced",
+                ],
+            }
+        )
