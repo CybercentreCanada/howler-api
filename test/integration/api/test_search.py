@@ -31,9 +31,7 @@ def test_deep_search(datastore, login_session):
         params["deep_paging_id"] = "*"
         res = []
         while True:
-            resp = get_api_data(
-                session, f"{host}/api/v1/search/{collection}/", params=params
-            )
+            resp = get_api_data(session, f"{host}/api/v1/search/{collection}/", params=params)
             res.extend(resp["items"])
             if len(resp["items"]) == 0 or "next_deep_paging_id" not in resp:
                 break
@@ -75,9 +73,7 @@ def test_histogram_search(datastore, login_session):
         if not hist_field:
             continue
 
-        resp = get_api_data(
-            session, f"{host}/api/v1/search/histogram/{collection}/{hist_field}/"
-        )
+        resp = get_api_data(session, f"{host}/api/v1/search/histogram/{collection}/{hist_field}/")
         for k, v in resp.items():
             assert k.startswith("2") and k.endswith("Z") and isinstance(v, int)
 
@@ -88,20 +84,16 @@ def test_histogram_search(datastore, login_session):
         if not hist_field:
             continue
 
-        resp = get_api_data(
-            session, f"{host}/api/v1/search/histogram/{collection}/{hist_field}/"
-        )
+        resp = get_api_data(session, f"{host}/api/v1/search/histogram/{collection}/{hist_field}/")
         for k, v in resp.items():
             assert isinstance(int(k), int) and isinstance(v, int)
 
 
-def test_count(datastore, login_session):
+def test_search(datastore, login_session):
     session, host = login_session
 
     for collection in collections:
-        resp = get_api_data(
-            session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"}
-        )
+        resp = get_api_data(session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"})
         assert TEST_SIZE <= resp["total"] >= len(resp["items"])
 
 
@@ -129,13 +121,11 @@ def test_get_fields(datastore, login_session):
 
 
 # noinspection PyUnusedLocal
-def test_search(datastore, login_session):
+def test_count(datastore, login_session):
     session, host = login_session
 
     for collection in collections:
-        search_resp = get_api_data(
-            session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"}
-        )
+        search_resp = get_api_data(session, f"{host}/api/v1/search/{collection}/", params={"query": "id:*"})
         count_resp = get_api_data(
             session,
             f"{host}/api/v1/search/count/{collection}/",
@@ -155,9 +145,7 @@ def test_stats_search(datastore, login_session):
         if not field:
             continue
 
-        resp = get_api_data(
-            session, f"{host}/api/v1/search/stats/{collection}/{field}/"
-        )
+        resp = get_api_data(session, f"{host}/api/v1/search/stats/{collection}/{field}/")
         assert sorted(list(resp.keys())) == ["avg", "count", "max", "min", "sum"]
         for v in resp.values():
             assert isinstance(v, int) or isinstance(v, float)

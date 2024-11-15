@@ -33,7 +33,7 @@ from howler.common.exceptions import (
     HowlerValueError,
 )
 from howler.common.net import is_valid_domain, is_valid_ip
-from howler.utils.dict_utils import recursive_update
+from howler.utils.dict_utils import flatten, recursive_update
 from howler.utils.isotime import now_as_iso
 from howler.utils.uid import get_random_id
 
@@ -786,33 +786,42 @@ class List(_Field):
             return None
 
         if isinstance(self.child_type, Compound) and isinstance(value, dict):
-            if any("." in key for key in value.keys()):
-                # Search queries of list of compound fields will return dotted paths of list of
-                # values. When processed through the flat_fields function, since this function
-                # has no idea about the data layout, it will transform the dotted paths into
-                # a dictionary of items then contains a list of object instead of a list
-                # of dictionaries with single items.
+            # Search queries of list of compound fields will return dotted paths of list of
+            # values. When processed through the flat_fields function, since this function
+            # has no idea about the data layout, it will transform the dotted paths into
+            # a dictionary of items then contains a list of object instead of a list
+            # of dictionaries with single items.
 
-                # The following piece of code transforms the dictionary of list into a list of
-                # dictionaries so the rest of the model validation can go through.
+            # The following piece of code transforms the dictionary of list into a list of
+            # dictionaries so the rest of the model validation can go through.
 
-                fixed_values = []
-                for t in zip(*value.values()):
-                    fixed_values.append(dict(zip(value, t)))
+            fixed_values = []
+            check_key = None
+            length = None
+            for key, val in flatten(value).items():
+                if not isinstance(val, list):
+                    val = [val]
 
-                return TypedList(
-                    self.child_type,
-                    *fixed_values,
-                    **kwargs,
-                )
-            else:
-                # It's also entirely possible that a flattened *single* object was passed. In that case, we just
-                # wrap the value and send it on its way.
-                return TypedList(
-                    self.child_type,
-                    value,
-                    **kwargs,
-                )
+                if length is None:
+                    check_key = key
+                    length = len(val)
+
+                    for entry in val:
+                        fixed_values.append({key: entry})
+                elif len(val) != length:
+                    raise HowlerValueError(
+                        "Flattened fields creating list of ODMs must have equal length. Key "
+                        f"{key} has length {len(val)} compared to key {check_key} with length {length}."
+                    )
+                else:
+                    for i in range(len(val)):
+                        fixed_values[i][key] = val[i]
+
+            return TypedList(
+                self.child_type,
+                *fixed_values,
+                **kwargs,
+            )
 
         return TypedList(self.child_type, *value, **kwargs)
 
