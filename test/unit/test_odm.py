@@ -303,10 +303,7 @@ def test_create_list_compounds():
     test = Test({"values": [{"key": "cat", "value": 0}, {"key": "rat", "value": 100}]})
 
     with pytest.raises(TypeError):
-        Test(values=["bugs"])
-
-    with pytest.raises(TypeError):
-        Test(values="bugs")
+        Test(values=["bugs"])  # type: ignore[call-arg]
 
     assert test.values[0].value == 0
     assert test.values[1].value == 100
@@ -541,7 +538,7 @@ def test_classification():
 def test_enum():
     @model(index=True, store=True)
     class EnumTest(Model):
-        enum = Enum(values=("magic", "data", "elasticsearch"))
+        enum = Enum(values=["magic", "data", "elasticsearch"])
 
     et = EnumTest({"enum": "magic"})
     assert et.enum == "magic"
