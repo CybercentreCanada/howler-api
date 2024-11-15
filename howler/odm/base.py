@@ -33,7 +33,7 @@ from howler.common.exceptions import (
     HowlerValueError,
 )
 from howler.common.net import is_valid_domain, is_valid_ip
-from howler.utils.dict_utils import recursive_update
+from howler.utils.dict_utils import flatten, recursive_update
 from howler.utils.isotime import now_as_iso
 from howler.utils.uid import get_random_id
 
@@ -794,9 +794,32 @@ class List(_Field):
 
             # The following piece of code transforms the dictionary of list into a list of
             # dictionaries so the rest of the model validation can go through.
+
+            fixed_values = []
+            check_key = None
+            length = None
+            for key, val in flatten(value).items():
+                if not isinstance(val, list):
+                    val = [val]
+
+                if length is None:
+                    check_key = key
+                    length = len(val)
+
+                    for entry in val:
+                        fixed_values.append({key: entry})
+                elif len(val) != length:
+                    raise HowlerValueError(
+                        "Flattened fields creating list of ODMs must have equal length. Key "
+                        f"{key} has length {len(val)} compared to key {check_key} with length {length}."
+                    )
+                else:
+                    for i in range(len(val)):
+                        fixed_values[i][key] = val[i]
+
             return TypedList(
                 self.child_type,
-                *[dict(zip(value, t)) for t in zip(*value.values())],
+                *fixed_values,
                 **kwargs,
             )
 
@@ -1214,6 +1237,7 @@ class Model:
 
         if data is None:
             data = {}
+
         if not hasattr(data, "items"):
             raise HowlerTypeError(f"'{self.__class__.__name__}' object must be constructed with dict like")
         self._odm_py_obj = {}

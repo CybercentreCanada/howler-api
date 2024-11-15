@@ -813,6 +813,33 @@ def test_add_labels_missing(datastore: HowlerDatastore, login_session):
     assert err.value.args[0] == "404: Label set thisshouldneverexistlmao does not exist"
 
 
+def test_overwrite_hit(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    hit_to_update: Hit = random_model_obj(Hit)
+    datastore.hit.save(hit_to_update.howler.id, hit_to_update)
+    datastore.hit.commit()
+
+    result = get_api_data(
+        session=session,
+        url=f"{host}/api/v1/hit/{hit_to_update.howler.id}/overwrite",
+        data=json.dumps({"source.ip": "127.0.0.1"}),
+        method="PUT",
+    )
+
+    assert result["source"]["ip"] == "127.0.0.1"
+    assert result["howler"]["assignment"] == hit_to_update.howler.assignment
+
+    data_1 = flatten(result)
+    data_2 = flatten(hit_to_update.as_primitives())
+
+    assert data_1 != data_2
+
+    del data_1["source.ip"]
+
+    assert data_1 == data_2
+
+
 def test_update_hit(datastore: HowlerDatastore, login_session):
     session, host = login_session
 

@@ -4,6 +4,7 @@ import os
 import pytest
 
 from howler.common.classification import InvalidClassification
+from howler.common.exceptions import HowlerException
 from howler.odm import (
     UUID,
     Classification,
@@ -21,6 +22,7 @@ from howler.odm import (
     model,
 )
 from howler.odm.models.ecs.client import Client
+from howler.odm.models.ecs.email import Email
 
 
 class CatError(Exception):
@@ -301,10 +303,7 @@ def test_create_list_compounds():
     test = Test({"values": [{"key": "cat", "value": 0}, {"key": "rat", "value": 100}]})
 
     with pytest.raises(TypeError):
-        Test(values=["bugs"])
-
-    with pytest.raises(TypeError):
-        Test(values="bugs")
+        Test(values=["bugs"])  # type: ignore[call-arg]
 
     assert test.values[0].value == 0
     assert test.values[1].value == 100
@@ -539,7 +538,7 @@ def test_classification():
 def test_enum():
     @model(index=True, store=True)
     class EnumTest(Model):
-        enum = Enum(values=("magic", "data", "elasticsearch"))
+        enum = Enum(values=["magic", "data", "elasticsearch"])
 
     et = EnumTest({"enum": "magic"})
     assert et.enum == "magic"
@@ -761,3 +760,56 @@ def test_ip():
     data = Client({"ip": ipv4})
 
     assert data.ip == ipv4
+
+
+def test_list_of_compounds():
+    validated = Email(
+        {
+            "attachments.file.hash.sha256": [
+                "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894",
+                "a59d30df946cc54923a3f39401e489dab1f25c7eeec257ca662abce6a17dd894",
+            ],
+            "attachments.file.hash.sha1": [
+                "c4a9b2d23e35f3f98d4117c3285f1a9db4ff0ced",
+                "c4a9b2d23e35f3f98d4127c3285f1a9db4ff0ced",
+            ],
+        }
+    )
+
+    assert len(validated.attachments) == 2
+
+    assert (
+        validated.attachments[0].file.hash.sha256 == "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894"
+    )
+    assert (
+        validated.attachments[1].file.hash.sha256 == "a59d30df946cc54923a3f39401e489dab1f25c7eeec257ca662abce6a17dd894"
+    )
+
+    assert validated.attachments[0].file.hash.sha1 == "c4a9b2d23e35f3f98d4117c3285f1a9db4ff0ced"
+    assert validated.attachments[1].file.hash.sha1 == "c4a9b2d23e35f3f98d4127c3285f1a9db4ff0ced"
+
+    assert (
+        len(
+            Email(
+                {"attachments.file.hash.sha256": "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894"}
+            ).attachments
+        )
+        == 1
+    )
+
+    assert (
+        validated.attachments[0].file.hash.sha256 == "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894"
+    )
+
+    with pytest.raises(HowlerException):
+        Email(
+            {
+                "attachments.file.hash.sha256": [
+                    "a59d30df946cc54923a3f39401e489dab1e25c7eeec257ca662abce6a17dd894",
+                    "a59d30df946cc54923a3f39401e489dab1f25c7eeec257ca662abce6a17dd894",
+                ],
+                "attachments.file.hash.sha1": [
+                    "c4a9b2d23e35f3f98d4117c3285f1a9db4ff0ced",
+                ],
+            }
+        )

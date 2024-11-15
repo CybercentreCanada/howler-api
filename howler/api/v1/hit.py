@@ -3,6 +3,7 @@ import json
 from typing import Any, Optional, cast
 
 from flask import request
+from mergedeep import Strategy, merge
 
 from howler.api import (
     bad_request,
@@ -16,11 +17,7 @@ from howler.api import (
     ok,
 )
 from howler.api.v1.utils.etag import add_etag
-from howler.common.exceptions import (
-    HowlerException,
-    HowlerValueError,
-    InvalidDataException,
-)
+from howler.common.exceptions import HowlerException, HowlerValueError, InvalidDataException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.common.swagger import generate_swagger_docs
@@ -270,6 +267,56 @@ def get_hit(id: str, server_version: str, **kwargs):
         return not_found(err="Hit %s does not exist" % id)
 
     return ok(hit.as_primitives()), server_version
+
+
+@generate_swagger_docs()
+@hit_api.route("/<id>/overwrite", methods=["PUT"])
+@api_login(audit=False, required_priv=["W"])
+@add_etag(getter=hit_service.get_hit, check_if_match=False)
+def overwrite_hit(id: str, server_version: str, **kwargs):
+    """Overwrite a hit.
+
+    Instead of providing a list of operations to run, provide a partial hit object to overwrite many fields at once.
+
+    Variables:
+    id       => Id of the hit you would like to update
+
+    Arguments:
+    replace => Should lists of values be replaced or merged?
+
+    Data Block:
+    {
+        ...hit
+    }
+
+    Result Example:
+    https://github.com/CybercentreCanada/howler-api/blob/main/howler/odm/models/hit.py
+    """
+    # The decorator will append the hit we want to edit to the kwargs if it exists
+    hit = cast(Hit | None, kwargs["cached_hit"])
+
+    if not hit:
+        return not_found(err="Hit %s does not exist" % id)
+
+    new_fields = request.json
+
+    if not isinstance(new_fields, dict):
+        raise ValueError(f"400: The JSON payload must be a subset of a valid Hit object.")
+
+    try:
+        new_hit = merge(
+            hit_service.flatten(hit.as_primitives(), odm=Hit),
+            hit_service.flatten(new_fields),
+            strategy=Strategy.REPLACE
+            if bool(request.args.get("replace", False, type=lambda v: v.lower() == "true"))
+            else Strategy.ADDITIVE,
+        )
+
+        new_hit, new_version = hit_service.save_hit(Hit(new_hit), server_version)
+
+        return ok(new_hit), new_version
+    except HowlerValueError as e:
+        return bad_request(err=e.message)
 
 
 @generate_swagger_docs()
