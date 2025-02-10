@@ -177,7 +177,9 @@ def update_action(id: str, user: User, **_) -> Response:
     if not existing_action:
         return not_found(err="The specified automation does not exist")
 
-    if "automation_advanced" not in user.type and updated_action["triggers"] != existing_action["triggers"]:
+    if "automation_advanced" not in user.type and updated_action.get("triggers", []) != existing_action.get(
+        "triggers", []
+    ):
         return forbidden(err="Updating triggers requires the role 'automation_advanced'.")
 
     updated_action = {

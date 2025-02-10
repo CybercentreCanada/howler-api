@@ -1,11 +1,12 @@
 import socket
 import uuid
 from ipaddress import IPv4Network, ip_address
+from typing import Union
 
 from howler.common.net_static import TLDS_ALPHA_BY_DOMAIN
 
 
-def is_valid_port(value: int) -> bool:
+def is_valid_port(value: Union[int, str, float]) -> bool:
     "Check if a port is valid"
     try:
         if 1 <= int(value) <= 65535:

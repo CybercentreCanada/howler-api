@@ -23,6 +23,7 @@ from typing import Dict, Tuple, Union
 from typing import Mapping as _Mapping
 
 import arrow
+import validators
 from dateutil.tz import tzutc
 
 from howler.common import loader
@@ -95,7 +96,7 @@ def flat_to_nested(data: dict[str, _Any]) -> dict[str, _Any]:
             nested_keys.append(child)
             try:
                 sub_data[child][sub_key] = value
-            except KeyError:
+            except (KeyError, TypeError):
                 sub_data[child] = {sub_key: value}
         else:
             sub_data[key] = value
@@ -423,22 +424,26 @@ class IP(Keyword):
 
 
 class Domain(Keyword):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, strict=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.validation_regex = re.compile(DOMAIN_ONLY_REGEX)
+        self.strict = strict
 
     def check(self, value, context=[], **kwargs):
         if not value:
             return None
 
-        if not self.validation_regex.match(value):
+        domain_result = validators.domain(value)
+        # We'll only raise the exception if strict mode is enabled - otherwise, we'll check hostname validation as well
+        if isinstance(domain_result, Exception) and self.strict:
             raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] '{value}' not match the "
-                f"validator: {self.validation_regex.pattern}"
-            )
+                f"[{'.'.join(context) or self.name}] '{value}' did not pass validation."
+            ) from domain_result
 
-        if not is_valid_domain(value):
-            raise HowlerValueError(f"[{'.'.join(context) or self.name}] '{value}' has a non-valid TLD.")
+        hostname_result = validators.hostname(value)
+        if isinstance(hostname_result, Exception):
+            raise HowlerValueError(
+                f"[{'.'.join(context) or self.name}] '{value}' did not pass validation."
+            ) from hostname_result
 
         return value.lower()
 
@@ -452,13 +457,13 @@ class Email(Keyword):
         if not value:
             return None
 
-        match = self.validation_regex.match(value)
-        if not match:
+        validation_result = validators.email(value)
+        if isinstance(validation_result, Exception):
             raise HowlerValueError(
-                f"[{'.'.join(context) or self.name}] '{value}' not match the "
-                f"validator: {self.validation_regex.pattern}"
-            )
+                f"[{'.'.join(context) or self.name}] '{value}' did not pass validation."
+            ) from validation_result
 
+        match = self.validation_regex.match(value)
         if not is_valid_domain(match.group(1)):
             raise HowlerValueError(
                 f"[{'.'.join(context) or self.name}] '{match.group(1)}' in email '{value}'" " is not a valid Domain."
@@ -1304,7 +1309,7 @@ class Model:
         # attribute assignment
         self.__frozen = True
 
-    def as_primitives(self, hidden_fields=False, strip_null=False) -> dict[str, typing.Any]:
+    def as_primitives(self, hidden_fields=False, strip_null=True) -> dict[str, typing.Any]:
         """Convert the object back into primitives that can be json serialized."""
         out = {}
 

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, AnyStr, Optional, cast
 from typing import Mapping as _Mapping
 
 if TYPE_CHECKING:
-    from howler.odm.base import Model
+    from howler.odm.base import Model, _Field
 
 
 def strip_nulls(d: Any):
@@ -107,18 +107,23 @@ def unflatten(data: _Mapping) -> _Mapping:
     return out
 
 
-def prune(data: _Mapping, keys: list[str], parent_key: Optional[str] = None) -> dict[str, Any]:
+def prune(  # noqa: C901
+    data: _Mapping, keys: list[str], fields: dict[str, "_Field"], mapping_class: type, parent_key: Optional[str] = None
+) -> dict[str, Any]:
     "Remove all keys in the given list from the dict if they exist"
     pruned_items: list[tuple[str, Any]] = []
 
     for key, val in data.items():
         cur_key = f"{parent_key}.{key}" if parent_key else key
 
-        if isinstance(val, dict):
+        # If this key is a mapping, preserve all children
+        if isinstance(fields.get(cur_key, None), mapping_class):
+            pruned_items.append((key, val))
+        elif isinstance(val, dict):
             child_keys = [_key for _key in keys if _key.startswith(cur_key)]
 
             if len(child_keys) > 0:
-                pruned_items.append((key, prune(val, child_keys, cur_key)))
+                pruned_items.append((key, prune(val, child_keys, fields, mapping_class, cur_key)))
         elif isinstance(val, list):
             if cur_key not in keys and not any(_key.startswith(cur_key) for _key in keys):
                 continue
@@ -129,7 +134,7 @@ def prune(data: _Mapping, keys: list[str], parent_key: Optional[str] = None) -> 
                     child_keys = [_key for _key in keys if _key.startswith(cur_key)]
 
                     if len(child_keys) > 0:
-                        pruned_items.append((key, prune(val, child_keys, cur_key)))
+                        pruned_items.append((key, prune(val, child_keys, fields, mapping_class, cur_key)))
                 else:
                     list_result.append(entry)
 

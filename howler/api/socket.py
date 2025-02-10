@@ -34,7 +34,7 @@ def emit(event: str):
     auth_data = base64.b64decode(request.headers["Authorization"].split(" ")[1]).decode().split(":")[1]
 
     if HWL_INTERPOD_COMMS_SECRET == "secret":  # noqa: S105
-        logger.warn("Using default interpod secret! DO NOT allow this on a production instance.")
+        logger.warning("Using default interpod secret! DO NOT allow this on a production instance.")
 
     if auth_data != HWL_INTERPOD_COMMS_SECRET:
         return unauthorized(err="Invalid auth data")

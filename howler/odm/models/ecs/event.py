@@ -66,6 +66,7 @@ class Event(odm.Model):
         )
     )
     code = odm.Optional(odm.Keyword(description="Identification code for this event, if one exists."))
+    count = odm.Integer(description="Count of events", optional=True)
     created = odm.Optional(
         odm.Date(description="Contains the date/time when the event was first read by an agent, or by your pipeline.")
     )

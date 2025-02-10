@@ -38,6 +38,7 @@ from howler.odm.models.gcp import GCP
 from howler.odm.models.howler_data import HowlerData
 
 
+
 @odm.model(index=True, store=True, description="ECS model version")
 class ECSVersion(odm.Model):
     version: str = odm.Keyword(
@@ -68,6 +69,11 @@ class Hit(odm.Model):
         odm.Keyword(),
         default=[],
         description="List of keywords used to tag each event.",
+        reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-base.html",
+    )
+    message: str = odm.Keyword(
+        default="",
+        description="Log message for log events, optimized for viewing in a log viewer",
         reference="https://www.elastic.co/guide/en/ecs/8.5/ecs-base.html",
     )
 

@@ -34,7 +34,7 @@ def setup_job(sched: BaseScheduler):
     """Initialize the retention job"""
     if not config.system.retention.enabled:
         if not DEBUG or config.system.type == "production":
-            logger.warn("Retention cronjob disabled! This is not recommended for a production settings.")
+            logger.warning("Retention cronjob disabled! This is not recommended for a production settings.")
 
         return
 

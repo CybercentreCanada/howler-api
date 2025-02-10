@@ -24,7 +24,7 @@ def migrate():
     result = input("y/[n]")
 
     if result.lower() != "y":
-        logger.warn("Did not receive an OK, stopping")
+        logger.warning("Did not receive an OK, stopping")
         return
 
     logger.info("Deleting...")

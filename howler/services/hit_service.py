@@ -430,11 +430,12 @@ def _update_hit(
         if not operation:
             continue
 
-        previous_value = None
-
         try:
             is_list = current_hit.flat_fields()[operation.key].multivalued
-            previous_value = current_hit[operation.key]
+            try:
+                previous_value = current_hit[operation.key]
+            except (TypeError, KeyError):
+                previous_value = None
         except KeyError:
             key = next(key for key in current_hit.flat_fields().keys() if key.startswith(operation.key))
             is_list = current_hit.flat_fields()[key].multivalued
@@ -450,8 +451,6 @@ def _update_hit(
             else:
                 operation_type = HitOperationType.REMOVED
         else:
-            previous_value = current_hit[operation.key]
-
             operation_type = HitOperationType.SET
 
         log.debug("%s - %s - %s -> %s", hit_id, operation.key, previous_value, operation.value)
@@ -500,6 +499,9 @@ def get_all_children(hit: Hit):
     child_hits = [get_hit(hit_id) for hit_id in hit["howler"].get("hits", [])]
 
     for entry in child_hits:
+        if not entry:
+            continue
+
         if entry["howler"]["is_bundle"]:
             child_hits.extend(get_all_children(entry))
 

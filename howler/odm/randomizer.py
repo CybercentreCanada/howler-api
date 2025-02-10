@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import random
 import time
@@ -338,6 +339,29 @@ def get_random_host() -> str:
 def get_random_ip() -> str:
     """Get a random ip"""
     return ".".join([str(random.randint(1, 254)) for _ in range(4)])
+
+
+def get_random_lat_lng():
+    "Get a random lat/lng"
+    pi = math.pi
+    cf = 180.0 / pi  # radians to degrees Correction Factor
+
+    # get a random Gaussian 3D vector:
+    gx = random.gauss(0.0, 1.0)
+    gy = random.gauss(0.0, 1.0)
+    gz = random.gauss(0.0, 1.0)
+
+    # normalize to an equidistributed (x,y,z) point on the unit sphere:
+    norm2 = gx * gx + gy * gy + gz * gz
+    norm1 = 1.0 / math.sqrt(norm2)
+    x = gx * norm1
+    y = gy * norm1
+    z = gz * norm1
+
+    rad_lat = math.asin(z)  # latitude  in radians
+    rad_lon = math.atan2(y, x)  # longitude in radians
+
+    return (round(cf * rad_lat, 5), round(cf * rad_lon, 5))
 
 
 def get_random_iso_date(epoch: _Optional[float] = None) -> str:

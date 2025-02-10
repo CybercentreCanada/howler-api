@@ -1,4 +1,5 @@
 from howler import odm
+from howler.odm.models.ecs.interface import Interface
 
 
 @odm.model(
@@ -8,3 +9,4 @@ from howler import odm
 )
 class Ingress(odm.Model):
     zone = odm.Optional(odm.Keyword(description="Network zone of incoming traffic as reported by observer"))
+    interface = odm.Optional(odm.Compound(Interface, description="Ingress Interface"))

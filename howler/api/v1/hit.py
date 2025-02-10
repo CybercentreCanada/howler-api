@@ -3,6 +3,7 @@ import json
 from typing import Any, Optional, cast
 
 from flask import request
+from mergedeep import Strategy, merge
 
 from howler.api import (
     bad_request,
@@ -16,11 +17,7 @@ from howler.api import (
     ok,
 )
 from howler.api.v1.utils.etag import add_etag
-from howler.common.exceptions import (
-    HowlerException,
-    HowlerValueError,
-    InvalidDataException,
-)
+from howler.common.exceptions import HowlerException, HowlerValueError, InvalidDataException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.common.swagger import generate_swagger_docs
@@ -32,7 +29,7 @@ from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import Comment, HitOperationType, HitStatusTransition
 from howler.odm.models.user import User
 from howler.security import api_login
-from howler.services import action_service, analytic_service, hit_service
+from howler.services import action_service, analytic_service, event_service, hit_service
 from howler.utils.str_utils import sanitize_lucene_query
 
 MAX_COMMENT_LEN = 5000
@@ -111,8 +108,8 @@ def create_hits(user: User, **kwargs):
             odms.append(odm)
             warnings.extend(_warnings)
         except HowlerException as e:
-            logger.warn(f"{type(e).__name__} when saving new hit!")
-            logger.warn(e)
+            logger.warning(f"{type(e).__name__} when saving new hit!")
+            logger.warning(e)
             response_body["invalid"].append({"input": hit, "error": str(e)})
 
     if len(response_body["invalid"]) == 0:
@@ -264,12 +261,61 @@ def get_hit(id: str, server_version: str, **kwargs):
     Result Example:
     https://github.com/CybercentreCanada/howler-api/blob/main/howler/odm/models/hit.py
     """
-    hit: Optional[Hit] = kwargs.get("cached_hit")
+    hit = cast(Optional[Hit], kwargs.get("cached_hit"))
 
     if not hit:
         return not_found(err="Hit %s does not exist" % id)
 
     return ok(hit.as_primitives()), server_version
+
+
+@generate_swagger_docs()
+@hit_api.route("/<id>/overwrite", methods=["PUT"])
+@api_login(audit=False, required_priv=["W"])
+@add_etag(getter=hit_service.get_hit, check_if_match=False)
+def overwrite_hit(id: str, server_version: str, **kwargs):
+    """Overwrite a hit.
+
+    Instead of providing a list of operations to run, provide a partial hit object to overwrite many fields at once.
+
+    Variables:
+    id       => Id of the hit you would like to update
+
+    Arguments:
+    replace => Should lists of values be replaced or merged?
+
+    Data Block:
+    {
+        ...hit
+    }
+
+    Result Example:
+    https://github.com/CybercentreCanada/howler-api/blob/main/howler/odm/models/hit.py
+    """
+    hit = cast(Optional[Hit], kwargs.get("cached_hit"))
+
+    if not hit:
+        return not_found(err="Hit %s does not exist" % id)
+
+    new_fields = request.json
+
+    if not isinstance(new_fields, dict):
+        return bad_request(err="The JSON payload must be a subset of a valid Hit object.")
+
+    try:
+        new_hit = merge(
+            hit_service.flatten(hit.as_primitives(), odm=Hit),
+            hit_service.flatten(new_fields),
+            strategy=Strategy.REPLACE
+            if bool(request.args.get("replace", False, type=lambda v: v.lower() == "true"))
+            else Strategy.ADDITIVE,
+        )
+
+        new_hit, new_version = hit_service.save_hit(Hit(new_hit), server_version)
+
+        return ok(new_hit), new_version
+    except HowlerValueError as e:
+        return bad_request(err=e.message)
 
 
 @generate_swagger_docs()
@@ -331,6 +377,8 @@ def update_hit(id: str, server_version: str, **kwargs):
         new_hit, new_version = hit_service.update_hit(
             hit.howler.id, operations, kwargs["user"]["uname"], server_version
         )
+
+        event_service.emit("hits", {"hit": new_hit, "version": new_version})
 
         return ok(new_hit), new_version
     except HowlerValueError as e:
@@ -1113,7 +1161,7 @@ def remove_bundle_children(id, **kwargs):
             try:
                 new_bundle_list.remove(bundle_hit.howler.id)
             except ValueError:
-                logger.warn("Bundle isn't included in child %s!", bundle_hit.howler.id)
+                logger.warning("Bundle isn't included in child %s!", bundle_hit.howler.id)
             child_hit.howler.bundles = new_bundle_list
 
             datastore().hit.save(child_hit.howler.id, child_hit)

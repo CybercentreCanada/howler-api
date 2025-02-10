@@ -22,6 +22,7 @@
         "**/__pycache__": true,
         "**/howler_api.egg-info": true,
         "**/.mypy_cache": true,
+        "**/.ruff_cache": true,
     },
     "npm.packageManager": "yarn",
     "python.terminal.activateEnvironment": false,
@@ -50,6 +51,6 @@
     ],
     "ruff.configurationPreference": "filesystemFirst",
     "python.analysis.extraPaths": [
-      "./test"
+        "./test"
     ]
 }

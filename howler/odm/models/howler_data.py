@@ -228,6 +228,7 @@ class HowlerData(odm.Model):
     data: list[str] = odm.List(
         odm.Keyword(description="Raw telemetry records associated with this hit."),
         default=[],
+        store=False,
     )
     links: list[Link] = odm.List(
         odm.Compound(Link),

@@ -16,3 +16,6 @@ class Interface(odm.Model):
     id: Optional[int] = odm.Integer(
         description="Interface ID as reported by an observer (typically SNMP interface ID).", optional=True
     )
+    name: Optional[str] = odm.Optional(
+        odm.Keyword(description="Name of interface"),
+    )

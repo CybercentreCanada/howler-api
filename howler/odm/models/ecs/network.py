@@ -16,6 +16,11 @@ class Network(odm.Model):
         ),
         optional=True,
     )
+    protocol = odm.Optional(
+        odm.Keyword(
+            description="Application layer protocol in the OSI Model",
+        )
+    )
     transport = odm.LowerKeyword(
         description=(
             "Transport layer protocol of the network traffic. "

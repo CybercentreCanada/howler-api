@@ -50,7 +50,7 @@ def websocket_auth(required_type: Optional[list[str]] = None, required_priv: Opt
                     raise AuthenticationException()
 
                 if not set(required_priv) & set(privs):
-                    logger.warn(f"{ws_id}: Authentication header is invalid")
+                    logger.warning(f"{ws_id}: Authentication header is invalid")
                     ws.close(
                         1008,
                         ws_response(
@@ -82,7 +82,7 @@ def websocket_auth(required_type: Optional[list[str]] = None, required_priv: Opt
                 ValueError,
                 InvalidTokenError,
             ):
-                logger.warn(f"{ws_id}: Authentication header is invalid")
+                logger.warning(f"{ws_id}: Authentication header is invalid")
                 ws.close(
                     1008,
                     ws_response(

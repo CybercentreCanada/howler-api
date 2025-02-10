@@ -1,6 +1,7 @@
 from howler import odm
 from howler.odm.models.ecs.egress import Egress
 from howler.odm.models.ecs.ingress import Ingress
+from howler.odm.models.ecs.interface import Interface
 
 
 @odm.model(
@@ -18,11 +19,17 @@ class Observer(odm.Model):
             description="Holds information like interface number, name, vlan, and zone to classify ingress traffic",
         )
     )
-    host_name = odm.Optional(odm.Keyword(description="Hostname of the observer"))
+    hostname = odm.Optional(odm.Keyword(description="Hostname of the observer"))
     ingress = odm.Optional(
         odm.Compound(
             Ingress,
             description="Holds information like interface number, name, vlan, and zone to classify ingress traffic",
+        )
+    )
+    interface = odm.Optional(
+        odm.Compound(
+            Interface,
+            description="Interface being observed",
         )
     )
     ip = odm.List(odm.IP(description="IP addresses of the observer."), default=[])

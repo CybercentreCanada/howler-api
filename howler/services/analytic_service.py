@@ -68,7 +68,7 @@ def save_from_hit(hit: Hit, user: User):
                 analytic.detections = new_detections
 
         if len(existing_analytics) > 1:
-            logger.warn("Duplicate analytics detected! Removing duplicates...")
+            logger.warning("Duplicate analytics detected! Removing duplicates...")
             for duplicate in existing_analytics[1:]:
                 storage.analytic.delete(duplicate.analytic_id)
 

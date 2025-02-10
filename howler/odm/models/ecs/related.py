@@ -26,7 +26,7 @@ class Related(odm.Model):
         description="All the user names or other user identifiers seen on the event.",
         default=[],
     )
-    id: list[str] = odm.List(
+    ids: list[str] = odm.List(
         odm.Keyword(),
         description="Any identifier that doesn't fit in other related fields like a GUID.",
         default=[],

@@ -167,7 +167,7 @@ class api_login(object):  # noqa: D101, N801
                         raise AuthenticationException("No impersonated user found")
 
                     # Success!
-                    logger.warn(
+                    logger.warning(
                         "%s is impersonating %s",
                         user["uname"],
                         impersonated_user["uname"],
@@ -181,7 +181,7 @@ class api_login(object):  # noqa: D101, N801
 
                 # Make sure the user has the correct type for this endpoint
                 if not set(self.required_type) & set(user["type"]):
-                    logger.warn(
+                    logger.warning(
                         f"{user['uname']} is missing one of the types: {', '.join(self.required_type)}. "
                         "Cannot access {request.path}"
                     )

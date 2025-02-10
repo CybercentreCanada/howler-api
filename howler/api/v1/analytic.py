@@ -3,14 +3,7 @@ from typing import Any, Optional
 
 from flask import Response, request
 
-from howler.api import (
-    bad_request,
-    forbidden,
-    make_subapi_blueprint,
-    no_content,
-    not_found,
-    ok,
-)
+from howler.api import bad_request, forbidden, make_subapi_blueprint, no_content, not_found, ok
 from howler.common.exceptions import HowlerException
 from howler.common.loader import datastore
 from howler.common.logging import get_logger

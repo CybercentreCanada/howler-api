@@ -1,3 +1,4 @@
+import base64
 import json
 import re
 import time
@@ -6,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+import requests
 from conftest import APIError, get_api_data
 
 from howler.datastore.howler_store import HowlerDatastore
@@ -49,9 +51,7 @@ def test_get_operations(datastore: HowlerDatastore, login_session):
         assert operation["title"]
 
         if not operation.get("i18nKey", None):
-            warnings.warn(
-                f"{operation['id']} is missing an i18nKey! Suggested: 'action.{operation['id']}'"
-            )
+            warnings.warn(f"{operation['id']} is missing an i18nKey! Suggested: 'action.{operation['id']}'")
 
         assert "description" in operation
 
@@ -158,15 +158,11 @@ def test_execute_action_labels_fail(datastore: HowlerDatastore, login_session):
         "operations": [
             {
                 "operation_id": "add_label",
-                "data_json": json.dumps(
-                    {"category": "doesnexistandneverwill", "label": "potato"}
-                ),
+                "data_json": json.dumps({"category": "doesnexistandneverwill", "label": "potato"}),
             },
             {
                 "operation_id": "remove_label",
-                "data_json": json.dumps(
-                    {"category": "doesnexistandneverwill", "label": "potato"}
-                ),
+                "data_json": json.dumps({"category": "doesnexistandneverwill", "label": "potato"}),
             },
         ],
     }
@@ -230,9 +226,7 @@ def test_execute_transition_basic(datastore: HowlerDatastore, login_session):
         assert report["outcome"] == "success"
 
         assert "message" in report
-        assert report["message"].startswith(
-            "The transition assign_to_other successfully executed on "
-        )
+        assert report["message"].startswith("The transition assign_to_other successfully executed on ")
         assert report["message"].endswith(" hits.")
 
         total = int(re.sub(r"^.+?(\d+).+$", r"\1", report["message"]))
@@ -248,9 +242,7 @@ def test_execute_transition_skipped(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
     if datastore.hit.search("-howler.status:open")["total"] < 1:
-        hit = datastore.hit.search(
-            "howler.status:open AND -howler.assignment:goose", rows=1
-        )["items"][0]
+        hit = datastore.hit.search("howler.status:open AND -howler.assignment:goose", rows=1)["items"][0]
 
         hit_service.transition_hit(
             hit["howler"]["id"],
@@ -265,11 +257,13 @@ def test_execute_transition_skipped(datastore: HowlerDatastore, login_session):
         "operations": [
             {
                 "operation_id": "transition",
-                "data_json": json.dumps({
-                    "status": "open",
-                    "transition": "assign_to_other",
-                    "assignee": "goose",
-                }),
+                "data_json": json.dumps(
+                    {
+                        "status": "open",
+                        "transition": "assign_to_other",
+                        "assignee": "goose",
+                    }
+                ),
             }
         ],
     }
@@ -286,12 +280,8 @@ def test_execute_transition_skipped(datastore: HowlerDatastore, login_session):
 
         # First report
         assert "query" in report[0]
-        assert (
-            report[0]["query"].startswith("((")
-            and report[0]["query"].endswith(") AND -howler.status:open)")
-        ) or (
-            report[0]["query"].startswith("(howler.id")
-            and report[0]["query"].endswith(")")
+        assert (report[0]["query"].startswith("((") and report[0]["query"].endswith(") AND -howler.status:open)")) or (
+            report[0]["query"].startswith("(howler.id") and report[0]["query"].endswith(")")
         )
 
         assert "outcome" in report[0]
@@ -351,9 +341,7 @@ def test_execute_transition_multiple(datastore: HowlerDatastore, login_session):
             "operations": [
                 {
                     "operation_id": "transition",
-                    "data_json": json.dumps(
-                        {"status": "in-progress", "transition": "release"}
-                    ),
+                    "data_json": json.dumps({"status": "in-progress", "transition": "release"}),
                 }
             ],
         },
@@ -414,9 +402,7 @@ def test_execute_transition_multiple(datastore: HowlerDatastore, login_session):
             "operations": [
                 {
                     "operation_id": "transition",
-                    "data_json": json.dumps(
-                        {"status": "resolved", "transition": "re_evaluate"}
-                    ),
+                    "data_json": json.dumps({"status": "resolved", "transition": "re_evaluate"}),
                 }
             ],
         },
@@ -463,15 +449,9 @@ def test_execute_transition_multiple(datastore: HowlerDatastore, login_session):
                 assert "title" in entry
                 assert "message" in entry
 
-    assert (
-        datastore.hit.search("howler.status:open")["total"]
-        == datastore.hit.search("howler.id:*")["total"]
-    )
+    assert datastore.hit.search("howler.status:open")["total"] == datastore.hit.search("howler.id:*")["total"]
 
-    assert (
-        datastore.hit.search("howler.escalation:alert")["total"]
-        == datastore.hit.search("howler.id:*")["total"]
-    )
+    assert datastore.hit.search("howler.escalation:alert")["total"] == datastore.hit.search("howler.id:*")["total"]
 
 
 def test_create_action_fails(datastore: HowlerDatastore, login_session):
@@ -569,7 +549,6 @@ def test_create_action_success(datastore: HowlerDatastore, login_session):
         "name": "Test Create action",
         "owner_id": "admin",
         "query": "howler.id:*",
-        "owner_id": "admin",
         "operations": [
             {
                 "operation_id": "add_label",
@@ -617,3 +596,24 @@ def test_update_action_success(datastore: HowlerDatastore, login_session):
     assert resp.get("name", None) is not None
 
     assert resp["name"] == "Test Update action"
+
+
+def test_update_action_failed(datastore: HowlerDatastore, login_session):
+    __, host = login_session
+
+    session = requests.Session()
+    session.headers.update({"Authorization": f"Basic {base64.b64encode(b'user:user').decode('utf-8')}"})
+
+    action_id = datastore.action.search("*:*", rows=1)["items"][0]["action_id"]
+
+    req = {"triggers": ["promote"]}
+
+    with pytest.raises(APIError) as err:
+        get_api_data(
+            session,
+            f"{host}/api/v1/action/{action_id}",
+            method="PUT",
+            data=json.dumps(req),
+        )
+
+    assert "Updating triggers" in str(err)

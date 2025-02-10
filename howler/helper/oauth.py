@@ -202,7 +202,7 @@ def fetch_avatar(  # noqa: C901
 
     # Quietly fail, it'll use gravatar instead
     except Exception as e:
-        logger.warn("Error while retrieving user profile: %s", str(e))
+        logger.warning("Error while retrieving user profile: %s", str(e))
         return None
 
 

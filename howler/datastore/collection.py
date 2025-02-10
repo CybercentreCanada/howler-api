@@ -736,7 +736,7 @@ class ESCollection(Generic[ModelType]):
                 "we will be splitting the index."
             )
             if target_shards % cur_shards != 0:
-                logger.warn("The current shards is not a factor of the target shards, aborting...")
+                logger.warning("The current shards is not a factor of the target shards, aborting...")
                 return
             else:
                 method = self.datastore.client.indices.split
@@ -1519,7 +1519,7 @@ class ESCollection(Generic[ModelType]):
         if fields is None or "*" in fields:
             return source_data
 
-        return prune(source_data, fields)
+        return prune(source_data, fields, self.stored_fields, mapping_class=Mapping)
 
     def _search(self, args=None, deep_paging_id=None, use_archive=False, track_total_hits=None):
         index = self.name

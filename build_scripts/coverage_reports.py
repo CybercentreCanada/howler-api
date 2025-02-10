@@ -27,7 +27,7 @@ def main():
     print(f"Running on branch {os.environ.get('GIT_BRANCH', 'unknown')}")
 
     develop = "develop" in os.environ.get("GIT_BRANCH", "unknown")
-    rc_or_main = any(x in os.environ.get("GIT_BRANCH", "unknown") for x in ["patch", "rc", "main", "master"])
+    rc_or_main = any(x in os.environ.get("GIT_BRANCH", "unknown") for x in ["patch", "rc", "main", "master", "sync"])
     pr_branch = "origin/" + (os.environ.get("PR_BRANCH", "develop") or "develop")
 
     try:

@@ -9,6 +9,7 @@ from howler.odm import (
     UUID,
     Classification,
     Compound,
+    Domain,
     Enum,
     FlattenedObject,
     Integer,
@@ -813,3 +814,24 @@ def test_list_of_compounds():
                 ],
             }
         )
+
+
+def test_domain():
+    @model()
+    class Test(Model):
+        domain = Domain(strict=False)
+        strict_domain = Domain(optional=True)
+
+    Test({"domain": "google.com", "strict_domain": "google.com"})
+    Test({"domain": "foo.com", "strict_domain": "foo.com"})
+    Test({"domain": "foo", "strict_domain": "foo.com"})
+    Test({"domain": "foo.bar.baz-qux", "strict_domain": "foo.bar.baz-qux"})
+
+    with pytest.raises(HowlerException):
+        Test({"domain": "invalid!type of text!!!.com"})
+
+    with pytest.raises(HowlerException):
+        Test({"domain": "piotato."})
+
+    with pytest.raises(HowlerException):
+        Test({"domain": "foo", "strict_domain": "foo"})

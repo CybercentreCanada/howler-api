@@ -57,8 +57,6 @@ def test_execute():
 
     assert len(result) == 2
 
-    print(result)
-
     assert result[0]["outcome"] == "skipped"
     assert result[0]["title"] == "Skipped Hit not in Bundle"
     assert result[0]["query"].startswith("howler.id:(")

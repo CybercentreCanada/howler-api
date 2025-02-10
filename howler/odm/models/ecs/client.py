@@ -118,7 +118,7 @@ class Client(odm.Model):
         )
     )
     bytes: Optional[int] = odm.Optional(odm.Integer(description="Bytes sent from the client to the server."))
-    domain: Optional[str] = odm.Optional(odm.Domain(description="The domain name of the client system."))
+    domain: Optional[str] = odm.Optional(odm.Keyword(description="The domain name of the client system."))
     geo: Geo = odm.Optional(
         odm.Compound(
             Geo,

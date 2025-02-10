@@ -155,7 +155,7 @@ def create_one_or_many_hits(tool_name: str, user: User, **kwargs):  # noqa: C901
             )
         except HowlerException as e:
             logger.warning(f"{type(e).__name__} when saving {cur_id}!")
-            logger.warn(e)
+            logger.warning(e)
 
             out.append({"id": None, "error": str(e)})
     # If there are any errors...

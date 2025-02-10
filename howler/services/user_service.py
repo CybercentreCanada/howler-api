@@ -119,7 +119,7 @@ def parse_user_data(  # noqa: C901
     if len(oauth_provider_config.required_groups) > 0:
         required_groups = set(oauth_provider_config.as_primitives()["required_groups"])
         if len(required_groups) != len(required_groups & set(user_data["groups"])):
-            logger.warn(
+            logger.warning(
                 f"User {user_data['uname']} is missing groups from their JWT:"
                 f" {', '.join(required_groups - (required_groups & set(user_data['groups'])))}"
             )
@@ -173,7 +173,7 @@ def parse_user_data(  # noqa: C901
             # Save updated user if there are changes to sync or it doesn't exist
             if old_user != current_user:
                 if user_id:
-                    logger.info("Updating %s with new data", user_id)
+                    logger.info("Updating %s with new data", user_id if not isinstance(user_id, list) else user_id[0])
                 else:
                     logger.info("Creating new user %s", username)
 

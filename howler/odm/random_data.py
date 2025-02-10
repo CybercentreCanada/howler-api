@@ -577,6 +577,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
             )
         )
 
+
         ds.analytic.save(analytic.analytic_id, analytic)
 
     fields = Hit.flat_fields()
@@ -622,8 +623,8 @@ def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
             ).strip()
         elif a.rule_type == "sigma":
             sigma_dir = Path(__file__).parent / "sigma"
-            if sigma_dir.exists() and len(files := list(sigma_dir.glob("*.yml"))) > 0:
-                file_name = random.choice(files)
+            if sigma_dir.exists():
+                file_name = random.choice(list(sigma_dir.glob("*.yml")))
                 file_data = file_name.read_text("utf-8")
                 data = yaml.safe_load(file_data)
                 a.name = data["title"]
