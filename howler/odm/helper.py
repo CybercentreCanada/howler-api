@@ -6,7 +6,6 @@ from hashlib import md5
 from math import ceil
 from random import choice, sample
 from typing import cast
-from uuid import uuid4
 
 from howler.common.logging import get_logger
 from howler.config import config
@@ -17,11 +16,9 @@ from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import Escalation, Link
 from howler.odm.models.user import User
 from howler.odm.randomizer import (
-    get_random_email,
     get_random_filename,
     get_random_host,
     get_random_ip,
-    get_random_lat_lng,
     get_random_user_agent,
     get_random_word,
     random_department,
@@ -187,7 +184,6 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover  # 
             }
         ),
     ]
-
 
     hit.howler.links = [
         Link(
