@@ -28,12 +28,7 @@ from howler.odm.models.overview import Overview
 from howler.odm.models.template import Template
 from howler.odm.models.user import User
 from howler.odm.models.view import View
-from howler.odm.randomizer import (
-    get_random_string,
-    get_random_user,
-    get_random_word,
-    random_model_obj,
-)
+from howler.odm.randomizer import get_random_string, get_random_user, get_random_word, random_model_obj
 from howler.security.utils import get_password_hash
 from howler.services import analytic_service
 
@@ -621,9 +616,14 @@ def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
             """
             ).strip()
         elif a.rule_type == "sigma":
+            files = []
+
             sigma_dir = Path(__file__).parent / "sigma"
             if sigma_dir.exists():
-                file_name = random.choice(list(sigma_dir.glob("*.yml")))
+                files = list(sigma_dir.glob("*.yml"))
+
+            if len(files) < 1:
+                file_name = random.choice(files)
                 file_data = file_name.read_text("utf-8")
                 data = yaml.safe_load(file_data)
                 a.name = data["title"]
