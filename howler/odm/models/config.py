@@ -444,6 +444,7 @@ DEFAULT_UI = {
     "static_folder": os.path.dirname(__file__) + "/../../../static",
 }
 
+
 @odm.model(index=False, store=False, description="Howler Core Component Configuration")
 class Core(odm.Model):
     metrics: Metrics = odm.Compound(
@@ -453,7 +454,6 @@ class Core(odm.Model):
     )
 
     redis: Redis = odm.Compound(Redis, default=DEFAULT_REDIS, description="Configuration for Redis instances")
-
 
 
 DEFAULT_CORE = {"metrics": DEFAULT_METRICS, "redis": DEFAULT_REDIS}

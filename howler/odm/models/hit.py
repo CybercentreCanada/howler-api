@@ -38,7 +38,6 @@ from howler.odm.models.gcp import GCP
 from howler.odm.models.howler_data import HowlerData
 
 
-
 @odm.model(index=True, store=True, description="ECS model version")
 class ECSVersion(odm.Model):
     version: str = odm.Keyword(

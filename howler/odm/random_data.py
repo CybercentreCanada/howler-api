@@ -577,7 +577,6 @@ def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
             )
         )
 
-
         ds.analytic.save(analytic.analytic_id, analytic)
 
     fields = Hit.flat_fields()

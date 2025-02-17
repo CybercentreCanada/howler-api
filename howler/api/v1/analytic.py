@@ -622,5 +622,3 @@ def remove_as_favourite(id, **kwargs):
         return no_content()
     except ValueError as e:
         return bad_request(err=str(e))
-
-
