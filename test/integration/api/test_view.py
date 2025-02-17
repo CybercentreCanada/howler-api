@@ -100,17 +100,13 @@ def test_remove_view(datastore: HowlerDatastore, login_session):
         session,
         f"{host}/api/v1/view/",
         method="POST",
-        data=json.dumps(
-            {"title": "testremove", "type": "global", "query": "howler.hash:*"}
-        ),
+        data=json.dumps({"title": "testremove", "type": "global", "query": "howler.hash:*"}),
     )
 
     datastore.view.commit()
     assert total + 1 == datastore.view.search("view_id:*")["total"]
 
-    res = get_api_data(
-        session, f"{host}/api/v1/view/{create_res['view_id']}/", method="DELETE"
-    )
+    res = get_api_data(session, f"{host}/api/v1/view/{create_res['view_id']}/", method="DELETE")
 
     datastore.view.commit()
     assert res is None
@@ -121,9 +117,7 @@ def test_remove_view(datastore: HowlerDatastore, login_session):
 def test_set_view(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
-    id = datastore.view.search("owner:admin AND type:(-readonly)")["items"][0][
-        "view_id"
-    ]
+    id = datastore.view.search("owner:admin AND type:(-readonly)")["items"][0]["view_id"]
 
     resp = get_api_data(
         session,
@@ -142,9 +136,7 @@ def test_set_view(datastore: HowlerDatastore, login_session):
 def test_favourite(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
-    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")[
-        "username"
-    ]
+    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")["username"]
 
     view: View = datastore.view.search(f"type:global OR owner:{uname}")["items"][0]
 
@@ -157,10 +149,7 @@ def test_favourite(datastore: HowlerDatastore, login_session):
 
     datastore.user.commit()
 
-    assert (
-        view.view_id
-        in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]
-    )
+    assert view.view_id in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]
 
     get_api_data(
         session,
@@ -170,7 +159,4 @@ def test_favourite(datastore: HowlerDatastore, login_session):
 
     datastore.user.commit()
 
-    assert (
-        view.view_id
-        not in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]
-    )
+    assert view.view_id not in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_views"]

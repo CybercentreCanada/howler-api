@@ -622,7 +622,7 @@ def create_analytics(ds: HowlerDatastore, num_analytics: int = 10):
             if sigma_dir.exists():
                 files = list(sigma_dir.glob("*.yml"))
 
-            if len(files) < 1:
+            if len(files) > 0:
                 file_name = random.choice(files)
                 file_data = file_name.read_text("utf-8")
                 data = yaml.safe_load(file_data)

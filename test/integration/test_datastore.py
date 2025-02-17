@@ -135,9 +135,7 @@ def es_connection(request):
     if collection:
         return collection
 
-    return pytest.skip(
-        "Connection to the Elasticsearch server failed. This test cannot be performed..."
-    )
+    return pytest.skip("Connection to the Elasticsearch server failed. This test cannot be performed...")
 
 
 def _test_exists(c: ESCollection):
@@ -237,9 +235,7 @@ def _test_update_fails(c: ESCollection):
     val = c.get("to_update", version=True)[1]
 
     with pytest.raises(VersionConflictException):
-        assert not c.update(
-            "to_update", [(c.UPDATE_SET, "map.b", 99)], version=val.replace("1", "2")
-        )
+        assert not c.update("to_update", [(c.UPDATE_SET, "map.b", 99)], version=val.replace("1", "2"))
 
 
 def _test_update_by_query(c: ESCollection):
@@ -321,9 +317,7 @@ def _test_group_search(c: ESCollection):
         total += item["total"]
     assert total == gs_simple["total"]
 
-    gs_complex = c.grouped_search(
-        "lvl_i", fl="classification_s", offset=1, rows=2, sort="lvl_i desc"
-    )
+    gs_complex = c.grouped_search("lvl_i", fl="classification_s", offset=1, rows=2, sort="lvl_i desc")
     assert gs_complex["offset"] == 1
     assert gs_complex["rows"] == 2
     assert gs_complex["total"] == 8
@@ -356,11 +350,7 @@ def _test_deepsearch(c: ESCollection):
 
 
 def _test_streamsearch(c: ESCollection):
-    items = list(
-        c.stream_search(
-            "classification_s:*", filters="lvl_i:400", fl="id,classification_s"
-        )
-    )
+    items = list(c.stream_search("classification_s:*", filters="lvl_i:400", fl="id,classification_s"))
     assert len(items) > 0
     for item in items:
         assert item["id"][0] in test_map
@@ -432,9 +422,7 @@ TEST_FUNCTIONS = [
 
 
 # noinspection PyShadowingNames
-@pytest.mark.parametrize(
-    "function", [f[0] for f in TEST_FUNCTIONS], ids=[f[1] for f in TEST_FUNCTIONS]
-)
+@pytest.mark.parametrize("function", [f[0] for f in TEST_FUNCTIONS], ids=[f[1] for f in TEST_FUNCTIONS])
 def test_es(es_connection: ESCollection, function):
     if es_connection:
         function(es_connection)
@@ -453,9 +441,7 @@ def reduced_scroll_cursors(es_connection: ESCollection):
     if "search" not in settings["transient"]:
         settings["transient"]["search"] = {}
     else:
-        old_value = settings["transient"]["search"].get(
-            "max_open_scroll_context", old_value
-        )
+        old_value = settings["transient"]["search"].get("max_open_scroll_context", old_value)
     settings["transient"]["search"]["max_open_scroll_context"] = 5
 
     try:
@@ -469,9 +455,7 @@ def reduced_scroll_cursors(es_connection: ESCollection):
 def test_empty_cursor_exhaustion(es_connection: ESCollection, reduced_scroll_cursors):
     """Test for a bug where short or empty searches with paging active would leak scroll cursors."""
     for _ in range(20):
-        result = es_connection.search(
-            'id: "TEST STRING THAT IS NOT AN ID"', deep_paging_id="*"
-        )
+        result = es_connection.search('id: "TEST STRING THAT IS NOT AN ID"', deep_paging_id="*")
         assert result["total"] == 0
 
 
@@ -492,9 +476,7 @@ def test_atomic_save(es_connection: ESCollection):
     data = {"id": unique_id, "cats": "good"}
 
     # Verify the document is new
-    no_data, version = es_connection.get_if_exists(
-        unique_id, as_obj=False, version=True
-    )
+    no_data, version = es_connection.get_if_exists(unique_id, as_obj=False, version=True)
     assert no_data is None
     assert version is not None
 
@@ -506,9 +488,7 @@ def test_atomic_save(es_connection: ESCollection):
         es_connection.save(unique_id, data, version=version)
 
     # Get the data, which exists now
-    new_data, version = es_connection.get_if_exists(
-        unique_id, as_obj=False, version=True
-    )
+    new_data, version = es_connection.get_if_exists(unique_id, as_obj=False, version=True)
     assert new_data is not None
 
     # Overwrite with real version

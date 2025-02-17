@@ -10,14 +10,12 @@ from retrying import retry
 
 from howler import odm
 from howler.datastore.collection import log
+from howler.datastore.constants import BACK_MAPPING
 from howler.datastore.exceptions import SearchException
-from howler.datastore.support.build import back_mapping
 from howler.odm import Mapping
 
 log.setLevel(logging.INFO)
-yml_config = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "classification.yml"
-)
+yml_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), "classification.yml")
 
 
 @odm.model(index=True, store=True)
@@ -218,9 +216,7 @@ def es_store():
     if ret_val:
         return store
 
-    return pytest.skip(
-        "Connection to the Elasticsearch server failed. This test cannot be performed."
-    )
+    return pytest.skip("Connection to the Elasticsearch server failed. This test cannot be performed.")
 
 
 @pytest.fixture(scope="module")
@@ -233,9 +229,7 @@ def es_connection(es_store, request):
     if collection:
         return collection
 
-    return pytest.skip(
-        "Connection to the Elasticsearch server failed. This test cannot be performed."
-    )
+    return pytest.skip("Connection to the Elasticsearch server failed. This test cannot be performed.")
 
 
 def get_obj(obj_map, key, as_obj):
@@ -267,19 +261,13 @@ def _test_get(col, as_obj):
     assert col.get_if_exists("not-a-key", as_obj=as_obj) is None
 
     for x in range(1, 4):
-        assert get_obj(test_map, f"test{x}", as_obj) == col.get(
-            f"test{x}", as_obj=as_obj
-        )
+        assert get_obj(test_map, f"test{x}", as_obj) == col.get(f"test{x}", as_obj=as_obj)
 
     for x in range(1, 4):
-        assert get_obj(test_map, f"dict{x}", as_obj) == col.get_if_exists(
-            f"dict{x}", as_obj=as_obj
-        )
+        assert get_obj(test_map, f"dict{x}", as_obj) == col.get_if_exists(f"dict{x}", as_obj=as_obj)
 
     for x in range(1, 4):
-        assert get_obj(test_map, f"extra{x}", as_obj) == col.require(
-            f"extra{x}", as_obj=as_obj
-        )
+        assert get_obj(test_map, f"extra{x}", as_obj) == col.require(f"extra{x}", as_obj=as_obj)
 
     assert col.get("string", as_obj=as_obj) is None
     assert col.get("list", as_obj=as_obj) is None
@@ -298,16 +286,12 @@ def _test_mget(col, as_obj):
         get_obj(test_map, "test2", as_obj),
         get_obj(test_map, "extra3", as_obj),
     ]
-    ds_raw = col.multiget(
-        ["test1", "dict1", "test2", "extra3"], as_dictionary=False, as_obj=as_obj
-    )
+    ds_raw = col.multiget(["test1", "dict1", "test2", "extra3"], as_dictionary=False, as_obj=as_obj)
     for item in ds_raw:
         raw.remove(item)
     assert len(raw) == 0
 
-    for k, v in col.multiget(
-        ["test1", "dict1", "test2", "extra3"], as_obj=as_obj
-    ).items():
+    for k, v in col.multiget(["test1", "dict1", "test2", "extra3"], as_obj=as_obj).items():
         assert get_obj(test_map, k, as_obj) == v
 
     with pytest.raises(KeyError) as error_info:
@@ -408,14 +392,8 @@ def _test_search_primitives(col, _):
 
 
 def _test_streamsearch(col, as_obj):
-    res = col.search(
-        "flavour:*", filters="height:[30 TO 400]", fl="flavour", as_obj=as_obj
-    )
-    items = list(
-        col.stream_search(
-            "flavour:*", filters="height:[30 TO 400]", fl="flavour", as_obj=as_obj
-        )
-    )
+    res = col.search("flavour:*", filters="height:[30 TO 400]", fl="flavour", as_obj=as_obj)
+    items = list(col.stream_search("flavour:*", filters="height:[30 TO 400]", fl="flavour", as_obj=as_obj))
     assert len(items) == res["total"]
     for item in items:
         assert item in res["items"]
@@ -466,7 +444,7 @@ def _test_fields(col, _):
         if isinstance(v, Mapping):
             continue
         else:
-            f_type = back_mapping[db_fields[k]["type"]]
+            f_type = BACK_MAPPING[db_fields[k]["type"]]
             assert isinstance(v, f_type)
 
 

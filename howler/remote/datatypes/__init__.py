@@ -28,7 +28,7 @@ pool: dict[tuple[str, str], redis.BlockingConnectionPool] = {}
 
 def now_as_iso():
     s = datetime.utcfromtimestamp(time.time()).isoformat()
-    return "".join((s, "Z"))
+    return f"{s}Z"
 
 
 def reply_queue_name(prefix=None, suffix=None):
@@ -57,7 +57,6 @@ def retry_call(func, *args, **kw):
                 log.info("Reconnected to Redis!")
 
             return ret_val
-
         except (redis.ConnectionError, ConnectionResetError) as ce:
             log.warning(f"No connection to Redis, reconnecting... [{ce}]")
             time.sleep(2**exponent)

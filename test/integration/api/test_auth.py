@@ -25,9 +25,7 @@ def host(host, auth_fail_queue, datastore_connection):
 
 # noinspection PyUnusedLocal
 def test_basic_apikey(host):
-    data = requests.get(
-        f"{host}/api/v1/auth/login", params={"user": "admin", "apikey": "devkey:admin"}
-    ).json()
+    data = requests.get(f"{host}/api/v1/auth/login", params={"user": "admin", "apikey": "devkey:admin"}).json()
 
     assert not data["api_error_message"]
 
@@ -35,17 +33,13 @@ def test_basic_apikey(host):
     assert not data["api_response"].get("access_token", None)
     assert not data["api_response"].get("refresh_token", None)
 
-    result = requests.get(
-        f"{host}/api/v1/user/whoami", headers={"Authorization": f"Bearer {token}"}
-    )
+    result = requests.get(f"{host}/api/v1/user/whoami", headers={"Authorization": f"Bearer {token}"})
 
     assert result.ok
 
 
 def test_basic_userpass(host):
-    data = requests.get(
-        f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}
-    ).json()
+    data = requests.get(f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}).json()
 
     assert not data["api_error_message"]
 
@@ -53,9 +47,7 @@ def test_basic_userpass(host):
     assert not data["api_response"].get("access_token", None)
     assert not data["api_response"].get("refresh_token", None)
 
-    result = requests.get(
-        f"{host}/api/v1/user/whoami", headers={"Authorization": f"Bearer {token}"}
-    )
+    result = requests.get(f"{host}/api/v1/user/whoami", headers={"Authorization": f"Bearer {token}"})
 
     assert result.ok
 
@@ -109,10 +101,7 @@ def test_basic_empty_fail(host):
         params={},
     ).json()
 
-    assert (
-        data["api_error_message"]
-        == "Not enough information to proceed with authentication"
-    )
+    assert data["api_error_message"] == "Not enough information to proceed with authentication"
     assert data["api_status_code"] == 401
 
 
@@ -148,9 +137,7 @@ def test_internal_token_priv(host):
 def test_basic_userpass_direct(host):
     res = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'admin:admin').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'admin:admin').decode('utf-8')}"},
     )
 
     assert res.ok
@@ -160,9 +147,7 @@ def test_basic_userpass_direct(host):
 def test_basic_apikey_direct(host):
     res = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"},
     )
 
     assert res.ok
@@ -172,9 +157,7 @@ def test_basic_apikey_direct(host):
 def test_basic_apikey_direct_nonexistent_fail(host):
     res = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'admin:devkey_DOESNTEXIST:admin').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'admin:devkey_DOESNTEXIST:admin').decode('utf-8')}"},
     )
 
     assert not res.ok
@@ -228,9 +211,7 @@ def test_impersonation_key_in_authorization(host):
     )
 
     assert not res.ok
-    assert res.json()["api_error_message"].startswith(
-        "Cannot use impersonation key in normal Authorization Header!"
-    )
+    assert res.json()["api_error_message"].startswith("Cannot use impersonation key in normal Authorization Header!")
 
 
 def test_malicious_impersonation(host):
@@ -295,9 +276,7 @@ def test_invalid_impersonation_methods(
     assert res.status_code == 401
     assert res.json()["api_error_message"] == "No impersonated user found"
 
-    data = requests.get(
-        f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}
-    ).json()
+    data = requests.get(f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}).json()
 
     assert not data["api_error_message"]
     token = data["api_response"]["app_token"]
@@ -328,16 +307,12 @@ def test_invalid_impersonation_methods(
 
 
 def test_invalid_impersonation_auth_type(host):
-    data = requests.get(
-        f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}
-    ).json()
+    data = requests.get(f"{host}/api/v1/auth/login", params={"user": "admin", "password": "admin"}).json()
 
     assert not data["api_error_message"]
     token = data["api_response"]["app_token"]
 
-    data2 = requests.get(
-        f"{host}/api/v1/auth/login", params={"user": "user", "password": "user"}
-    ).json()
+    data2 = requests.get(f"{host}/api/v1/auth/login", params={"user": "user", "password": "user"}).json()
 
     assert not data2["api_error_message"]
     token2 = data2["api_response"]["app_token"]
@@ -351,10 +326,7 @@ def test_invalid_impersonation_auth_type(host):
     )
 
     assert res.status_code == 400
-    assert (
-        res.json()["api_error_message"]
-        == "Not a valid authentication type for impersonation."
-    )
+    assert res.json()["api_error_message"] == "Not a valid authentication type for impersonation."
 
 
 # noinspection PyUnusedLocal
@@ -403,9 +375,7 @@ def test_read_api_key(login_session):
     assert resp.get("privileges", []) == ["R"]
 
     # Delete the read key
-    assert not get_api_data(
-        session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE"
-    )
+    assert not get_api_data(session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE")
 
 
 def test_read_write_api_key(login_session):
@@ -437,9 +407,7 @@ def test_read_write_api_key(login_session):
     assert resp.get("privileges", []) == ["R", "W"]
 
     # Delete the read/write key
-    assert not get_api_data(
-        session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE"
-    )
+    assert not get_api_data(session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE")
 
 
 def test_write_api_key(login_session):
@@ -471,9 +439,7 @@ def test_write_api_key(login_session):
     assert resp.get("privileges", []) == ["W"]
 
     # Delete the write key
-    assert not get_api_data(
-        session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE"
-    )
+    assert not get_api_data(session, f"{host}/api/v1/auth/apikey/{key_name}/", method="DELETE")
 
 
 def test_impersonate_key(login_session):
@@ -540,9 +506,7 @@ def test_impersonate_key(login_session):
     # Delete the key
     data = requests.delete(
         f"{host}/api/v1/auth/apikey/{write_pass.split(':')[0]}/",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'user:user').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'user:user').decode('utf-8')}"},
     )
 
     assert data.status_code == 204
@@ -564,18 +528,14 @@ def test_expired_key(login_session):
 
     result = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'admin:expired:admin').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'admin:expired:admin').decode('utf-8')}"},
     )
 
     assert not result.ok
 
     result = requests.get(
         f"{host}/api/v1/user/whoami",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(b'admin:not_expired:admin').decode('utf-8')}"
-        },
+        headers={"Authorization": f"Basic {base64.b64encode(b'admin:not_expired:admin').decode('utf-8')}"},
     )
 
     assert result.ok

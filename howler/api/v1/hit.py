@@ -17,7 +17,11 @@ from howler.api import (
     ok,
 )
 from howler.api.v1.utils.etag import add_etag
-from howler.common.exceptions import HowlerException, HowlerValueError, InvalidDataException
+from howler.common.exceptions import (
+    HowlerException,
+    HowlerValueError,
+    InvalidDataException,
+)
 from howler.common.loader import datastore
 from howler.common.logging import get_logger
 from howler.common.swagger import generate_swagger_docs

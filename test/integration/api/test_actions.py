@@ -10,7 +10,10 @@ import pytest
 import requests
 from conftest import APIError, get_api_data
 
+from howler.common import loader
 from howler.datastore.howler_store import HowlerDatastore
+from howler.odm.helper import generate_useful_hit
+from howler.odm.models.action import Action
 from howler.odm.models.howler_data import Assessment, HitStatusTransition
 from howler.odm.random_data import create_actions, create_hits, wipe_actions, wipe_hits
 from howler.services import hit_service
@@ -235,6 +238,95 @@ def test_execute_transition_basic(datastore: HowlerDatastore, login_session):
         time.sleep(5)
 
         assert datastore.hit.search("howler.assignment:user")["total"] >= total
+
+
+def test_valid_action_on_triage(datastore: HowlerDatastore, login_session):
+    session, host = login_session
+
+    lookups = loader.get_lookups()
+    users = datastore.user.search("*:*")["items"]
+
+    test_hit_promote = generate_useful_hit(lookups, users, False)
+    test_hit_promote.howler.analytic = "test_triage_assess_promote"
+    datastore.hit.save(test_hit_promote.howler.id, test_hit_promote)
+
+    test_hit_demote = generate_useful_hit(lookups, users, False)
+    test_hit_demote.howler.analytic = "test_triage_assess_demote"
+    datastore.hit.save(test_hit_demote.howler.id, test_hit_demote)
+
+    # Create actions
+    action_demote = Action(
+        {
+            "triggers": ["demote"],
+            "name": "Test demote on triage",
+            "owner_id": "admin",
+            "query": "howler.id:*",
+            "operations": [
+                {
+                    "operation_id": "add_label",
+                    "data_json": json.dumps({"category": "generic", "label": "demoted"}),
+                }
+            ],
+        }
+    )
+
+    datastore.action.save(action_demote.action_id, action_demote)
+    datastore.action.commit()
+    assert datastore.action.exists(action_demote.action_id)
+
+    # Create actions
+    action_promote = Action(
+        {
+            "triggers": ["promote"],
+            "name": "Test promote on triage",
+            "owner_id": "admin",
+            "query": "howler.id:*",
+            "operations": [
+                {
+                    "operation_id": "add_label",
+                    "data_json": json.dumps({"category": "generic", "label": "promoted"}),
+                }
+            ],
+        }
+    )
+
+    datastore.action.save(action_promote.action_id, action_promote)
+    datastore.action.commit()
+    assert datastore.action.exists(action_promote.action_id)
+
+    get_api_data(
+        session=session,
+        url=f"{host}/api/v1/hit/{test_hit_demote.howler.id}/transition/",
+        method="POST",
+        data=json.dumps(
+            {
+                "transition": HitStatusTransition.ASSESS,
+                "data": {"assessment": Assessment.FALSE_POSITIVE},
+            }
+        ),
+        headers={
+            "content-type": "application/json",
+        },
+    )
+
+    assert "demoted" in datastore.hit.get(test_hit_demote.howler.id).howler.labels.generic
+
+    get_api_data(
+        session=session,
+        url=f"{host}/api/v1/hit/{test_hit_promote.howler.id}/transition/",
+        method="POST",
+        data=json.dumps(
+            {
+                "transition": HitStatusTransition.ASSESS,
+                "data": {"assessment": Assessment.COMPROMISE},
+            }
+        ),
+        headers={
+            "content-type": "application/json",
+        },
+    )
+
+    assert "promoted" in datastore.hit.get(test_hit_promote.howler.id).howler.labels.generic
 
 
 @pytest.mark.skip(reason="Unstable Test")

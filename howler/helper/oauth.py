@@ -170,7 +170,7 @@ def fetch_avatar(  # noqa: C901
 
             if oauth_provider == "azure":
                 if not access_token:
-                    raise HowlerValueError("An azure access token is necessary to retrieve the profile picture")
+                    raise HowlerValueError("An azure access token is necessary to retrieve the profile picture")  # noqa: TRY301
 
                 token = azure_obo(access_token)
 
@@ -193,7 +193,7 @@ def fetch_avatar(  # noqa: C901
                 return avatar
 
         # Unprotected url
-        elif url.startswith("https://") or url.startswith("http://"):
+        elif url.startswith(("https://", "http://")):
             resp = requests.get(url, timeout=10)
             if resp.ok and resp.headers.get("content-type") is not None:
                 b64_img = base64.b64encode(resp.content).decode()
@@ -215,8 +215,8 @@ def fetch_groups(token: str):
         if oauth_provider == "azure":
             try:
                 token = azure_obo(token)
-            except HowlerException as e:
-                logger.error(e)
+            except HowlerException:
+                logger.exception("Exception on fetching groups data")
                 raise HowlerException("Something went wrong when getting the detailed groups data.")
 
         headers = {}

@@ -53,7 +53,7 @@ def test_translate_str():
 
 
 def test_remove_bidir_unicode_controls():
-    test_str = "a\u202Db\u202Ac\u200Ed\u200Fe\u202Efg\u202B"
+    test_str = "a\u202db\u202ac\u200ed\u200fe\u202efg\u202b"
     assert str_utils.remove_bidir_unicode_controls(test_str) == "abcdefg"
 
     other_test_str = "abcdéfg"
@@ -61,9 +61,9 @@ def test_remove_bidir_unicode_controls():
 
 
 def test_wrap_bidir_unicode_string():
-    test_str = "a\u202Db\u202Acde\u202Efg\u202B"
+    test_str = "a\u202db\u202acde\u202efg\u202b"
     a = str_utils.wrap_bidir_unicode_string(test_str)
-    assert a == "\u202aa\u202db\u202Acde\u202efg\u202b\u202c\u202c\u202c\u202c\u202c"
+    assert a == "\u202aa\u202db\u202acde\u202efg\u202b\u202c\u202c\u202c\u202c\u202c"
 
     byte_str = b"\u202Dabcdefg"
     assert str_utils.wrap_bidir_unicode_string(byte_str) == b"\u202Dabcdefg"
@@ -71,18 +71,13 @@ def test_wrap_bidir_unicode_string():
     fail_search_str = "abcdefg"
     assert str_utils.wrap_bidir_unicode_string(fail_search_str) == "abcdefg"
 
-    already_closed_str = "abc\u202Adef\u202cg"
-    assert (
-        str_utils.wrap_bidir_unicode_string(already_closed_str)
-        == "\u202Aabc\u202Adef\u202cg\u202C"
-    )
+    already_closed_str = "abc\u202adef\u202cg"
+    assert str_utils.wrap_bidir_unicode_string(already_closed_str) == "\u202aabc\u202adef\u202cg\u202c"
 
 
 def test_sanitize_lucene_query():
     assert str_utils.sanitize_lucene_query("APA3C - SENTINEL") == "APA3C \\- SENTINEL"
     assert (
-        str_utils.sanitize_lucene_query(
-            'Test ^ weird " ~ query * string ? thing: \\ / a ( b ) c[ d ] e{ f} g-'
-        )
+        str_utils.sanitize_lucene_query('Test ^ weird " ~ query * string ? thing: \\ / a ( b ) c[ d ] e{ f} g-')
         == 'Test \\^ weird \\" \\~ query \\* string \\? thing\\: \\\\ \\/ a \\( b \\) c\\[ d \\] e\\{ f\\} g\\-'
     )

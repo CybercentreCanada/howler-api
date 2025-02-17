@@ -26,9 +26,7 @@ def test_formatting(datastore_connection, login_session):
 
         for api in resp["apis"]:
             description: str = api["description"]
-            assert (
-                len(description) > 0
-            ), f"Endpoint {api['function']} is missing its docstring!"
+            assert len(description) > 0, f"Endpoint {api['function']} is missing its docstring!"
 
             path: str = api["path"]
             matches = re.findall(r"<(\w+)>", path)
@@ -41,8 +39,7 @@ def test_formatting(datastore_connection, login_session):
                 desc_parts = [
                     line
                     for line in description.splitlines()
-                    if line.startswith("Variables:")
-                    or any(line.startswith(match) for match in matches)
+                    if line.startswith("Variables:") or any(line.startswith(match) for match in matches)
                 ]
 
                 variables_err = (
@@ -69,11 +66,7 @@ def test_formatting(datastore_connection, login_session):
                     f"Endpoint {api['function']} has a Data Block: portion despite not permitting PATCH, POST or "
                     "PUT methods!"
                 )
-            elif (
-                "POST" in api["methods"]
-                or "PUT" in api["methods"]
-                or "PATCH" in api["methods"]
-            ):
+            elif "POST" in api["methods"] or "PUT" in api["methods"] or "PATCH" in api["methods"]:
                 assert re.search(r"Data Block:", description), (
                     f"Endpoint {api['function']} doesn't have a Data Block: portion despite permitting PATCH, POST or "
                     "PUT methods!"
@@ -83,9 +76,7 @@ def test_formatting(datastore_connection, login_session):
                 r"\n *Result Example:", description
             ), f"Endpoint {api['function']} doesn't have a Result Example: portion!"
 
-            headers = [
-                line.strip() for line in description.splitlines() if line.endswith(":")
-            ]
+            headers = [line.strip() for line in description.splitlines() if line.endswith(":")]
 
             header_error = (
                 f"Endpoint {api['function']} has headers in the incorrect order! Header order should be: "
@@ -97,9 +88,7 @@ def test_formatting(datastore_connection, login_session):
             assert headers[-1] == "Result Example:", header_error
 
             if "Arguments:" in headers and "Optional Arguments:" in headers:
-                assert (
-                    headers[1] == "Arguments:" and headers[2] == "Optional Arguments:"
-                ), header_error
+                assert headers[1] == "Arguments:" and headers[2] == "Optional Arguments:", header_error
 
             if "Data Block:" in headers:
                 assert headers[-2] == "Data Block:", header_error

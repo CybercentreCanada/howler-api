@@ -95,9 +95,7 @@ def test_set_user(datastore, login_session):
     u = datastore.user.get("user").as_primitives()
     u["uname"] = username
 
-    resp = get_api_data(
-        session, f"{host}/api/v1/user/{username}/", method="PUT", data=json.dumps(u)
-    )
+    resp = get_api_data(session, f"{host}/api/v1/user/{username}/", method="PUT", data=json.dumps(u))
     assert resp["success"]
 
     datastore.user.commit()
@@ -117,9 +115,7 @@ def test_set_user_avatar(datastore, login_session):
 
     new_avatar = "NEW AVATAR@!"
 
-    resp = get_api_data(
-        session, f"{host}/api/v1/user/avatar/admin/", method="POST", data=new_avatar
-    )
+    resp = get_api_data(session, f"{host}/api/v1/user/avatar/admin/", method="POST", data=new_avatar)
     assert resp["success"]
 
     datastore.user_avatar.commit()

@@ -350,4 +350,4 @@ if __name__ == "__main__":
     from pprint import pprint
 
     fields = {k: f"{v.__class__.__name__}{' (array)' if v.multivalued else ''}" for k, v in Hit.flat_fields().items()}
-    pprint(fields)
+    pprint(fields)  # noqa: T203

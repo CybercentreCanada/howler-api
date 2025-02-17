@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from howler.common.exceptions import InvalidDataException
 from howler.common.logging import get_logger
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 def assess_hit(
     assessment: Optional[str] = None,
     rationale: Optional[str] = None,
-    hit: Optional[dict[str, Any]] = None,
+    hit: Optional[Union[dict[str, Any], Hit]] = None,
     **kwargs,
 ) -> list[OdmUpdateOperation]:
     """Update the assessment and esclation of a hit

@@ -1,5 +1,3 @@
-import requests
-
 from howler.common.net import (
     is_ip_in_network,
     is_valid_domain,
@@ -7,16 +5,6 @@ from howler.common.net import (
     is_valid_ip,
     is_valid_port,
 )
-from howler.common.net_static import TLDS_ALPHA_BY_DOMAIN
-
-
-def test_domain_list():
-    """Make sure we aren't missing any domains."""
-    response = requests.get("https://data.iana.org/TLD/tlds-alpha-by-domain.txt")
-    for line in response.text.splitlines():
-        if not line or line.startswith("#"):
-            continue
-        assert line in TLDS_ALPHA_BY_DOMAIN
 
 
 def test_port_check():

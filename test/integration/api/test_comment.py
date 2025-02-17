@@ -68,9 +68,7 @@ def test_comments_analytic(datastore: HowlerDatastore, login_session):
         data=json.dumps([resp["comment"][0]["id"]]),
     )
 
-    final_analytic = get_api_data(
-        session, f"{host}/api/v1/analytic/{analytic.analytic_id}"
-    )
+    final_analytic = get_api_data(session, f"{host}/api/v1/analytic/{analytic.analytic_id}")
 
     assert len(final_analytic["comment"]) == len(resp["comment"]) - 1
 
@@ -105,9 +103,7 @@ def test_reactions_analytic(datastore: HowlerDatastore, login_session):
         data=json.dumps({"type": "thumbsup"}),
     )
 
-    assert any(
-        comment["reactions"]["admin"] == "thumbsup" for comment in resp["comment"]
-    )
+    assert any(comment["reactions"]["admin"] == "thumbsup" for comment in resp["comment"])
 
     resp = get_api_data(
         session,
@@ -116,9 +112,7 @@ def test_reactions_analytic(datastore: HowlerDatastore, login_session):
         data=json.dumps([resp["comment"][0]["id"]]),
     )
 
-    assert all(
-        comment["reactions"].get("admin", None) is None for comment in resp["comment"]
-    )
+    assert all(comment["reactions"].get("admin", None) is None for comment in resp["comment"])
 
 
 def test_comments_hit(datastore: HowlerDatastore, login_session):
@@ -186,10 +180,7 @@ def test_reactions_hit(datastore: HowlerDatastore, login_session):
         data=json.dumps({"type": "thumbsup"}),
     )
 
-    assert any(
-        comment["reactions"]["admin"] == "thumbsup"
-        for comment in resp["howler"]["comment"]
-    )
+    assert any(comment["reactions"]["admin"] == "thumbsup" for comment in resp["howler"]["comment"])
 
     resp = get_api_data(
         session,
@@ -198,7 +189,4 @@ def test_reactions_hit(datastore: HowlerDatastore, login_session):
         data=json.dumps([hit.howler.comment[0].id]),
     )
 
-    assert all(
-        comment["reactions"].get("admin", None) is None
-        for comment in resp["howler"]["comment"]
-    )
+    assert all(comment["reactions"].get("admin", None) is None for comment in resp["howler"]["comment"])

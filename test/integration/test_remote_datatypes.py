@@ -231,12 +231,8 @@ def test_priority_queue(redis_connection):
         assert pq.length() == 6
         assert pq.dequeue_range(lower_limit=106) == []
         assert pq.length() == 6
-        assert pq.dequeue_range(lower_limit=103) == [
-            4
-        ]  # 3 and 4 are both options, 4 has higher score
-        assert pq.dequeue_range(lower_limit=102, skip=1) == [
-            2
-        ]  # 2 and 3 are both options, 3 has higher score, skip it
+        assert pq.dequeue_range(lower_limit=103) == [4]  # 3 and 4 are both options, 4 has higher score
+        assert pq.dequeue_range(lower_limit=102, skip=1) == [2]  # 2 and 3 are both options, 3 has higher score, skip it
         assert pq.dequeue_range(upper_limit=100, num=10) == [
             5,
             0,
@@ -293,12 +289,8 @@ def test_unique_priority_queue(redis_connection):
         assert pq.length() == 6
         assert pq.dequeue_range(lower_limit=106) == []
         assert pq.length() == 6
-        assert pq.dequeue_range(lower_limit=103) == [
-            4
-        ]  # 3 and 4 are both options, 4 has higher score
-        assert pq.dequeue_range(lower_limit=102, skip=1) == [
-            2
-        ]  # 2 and 3 are both options, 3 has higher score, skip it
+        assert pq.dequeue_range(lower_limit=103) == [4]  # 3 and 4 are both options, 4 has higher score
+        assert pq.dequeue_range(lower_limit=102, skip=1) == [2]  # 2 and 3 are both options, 3 has higher score, skip it
         assert sorted(pq.dequeue_range(upper_limit=100, num=10)) == [
             0,
             5,

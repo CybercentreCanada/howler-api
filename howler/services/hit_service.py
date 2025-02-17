@@ -2,11 +2,12 @@ import json
 import re
 import typing
 from hashlib import sha256
-from typing import Any, Optional
+from typing import Any, Literal, Optional, Union, cast
 
 from prometheus_client import Counter
 
 import howler.services.event_service as event_service
+from howler.actions.promote import Escalation
 from howler.common.exceptions import (
     HowlerTypeError,
     HowlerValueError,
@@ -19,6 +20,7 @@ from howler.datastore.collection import ESCollection
 from howler.datastore.operations import OdmHelper, OdmUpdateOperation
 from howler.datastore.types import HitSearchResult
 from howler.helper.hit import (
+    AssessmentEscalationMap,
     assess_hit,
     assign_hit,
     check_ownership,
@@ -397,7 +399,9 @@ def update_hit(
     """Update one or more properties of a hit in the database."""
     # Status of a hit should only be updated through the transition function
     if _modifies_prop("status", operations):
-        raise Exception("Status of a Hit cannot be modified like other properties. Please use a transition to do so.")
+        raise HowlerValueError(
+            "Status of a Hit cannot be modified like other properties. Please use a transition to do so."
+        )
 
     return _update_hit(hit_id, operations, user, version=version)
 
@@ -555,11 +559,23 @@ def transition_hit(
                 version=(version if (hit_id == hit["howler"]["id"] and version) else None),
             )
 
-    if transition in ["promote", "demote"]:
+    if transition in ["promote", "demote", "assess"]:
+        trigger: Union[Literal["promote"], Literal["demote"]]
+
+        if transition == "assess":
+            new_assessment = AssessmentEscalationMap[kwargs["assessment"]]
+
+            if new_assessment == Escalation.EVIDENCE:
+                trigger = "promote"
+            else:
+                trigger = "demote"
+        else:
+            trigger = cast(Union[Literal["promote"], Literal["demote"]], transition)
+
         datastore().hit.commit()
         action_service.bulk_execute_on_query(
             f"howler.id:({' OR '.join(h['howler']['id'] for h in ([hit] + child_hits))})",
-            trigger=transition,
+            trigger=trigger,
             user=user,
         )
 

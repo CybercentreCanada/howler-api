@@ -66,7 +66,7 @@ class RangeTable(object):
             if not isinstance(d, _dict):
                 prev = d
                 d = _dict()
-                d.update({x: prev for x in range(0, 256)})
+                d.update({x: prev for x in range(256)})
             trie[point] = d
             trie = d
         trie[path[-1]] = value

@@ -29,7 +29,7 @@ hit_helper = OdmHelper(Hit)
 def emit(event: str):
     """Emit an event to all listening websockets"""
     if "Authorization" not in request.headers:
-        return unauthorized(err="Invalid auth data")
+        return unauthorized(err="Missing authorization header")
 
     auth_data = base64.b64decode(request.headers["Authorization"].split(" ")[1]).decode().split(":")[1]
 
@@ -102,7 +102,7 @@ def connect(ws: Server, *args: Any, ws_id: str, **kwargs):
         if isinstance(e, ConnectionClosed):
             raise
         else:
-            logger.exception(e)
+            logger.exception("Exception on connect.")
     finally:
         event_service.off("hits", send_hit)
         event_service.off("broadcast", send_broadcast)

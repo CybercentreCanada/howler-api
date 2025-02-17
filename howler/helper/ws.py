@@ -170,7 +170,7 @@ class Base:
                         continue
                 in_data = self.sock.recv(self.receive_bytes)
                 if len(in_data) == 0:
-                    raise OSError()
+                    raise OSError()  # noqa: TRY301
             except (
                 OSError,
                 ConnectionResetError,

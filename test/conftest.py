@@ -17,10 +17,7 @@ from howler.remote.datatypes.queues.named import NamedQueue
 original_skip = pytest.skip
 
 # Check if we are in an unattended build environment where skips won't be noticed
-IN_CI_ENVIRONMENT = any(
-    indicator in os.environ
-    for indicator in ["CI", "BITBUCKET_BUILD_NUMBER", "AGENT_JOBSTATUS"]
-)
+IN_CI_ENVIRONMENT = any(indicator in os.environ for indicator in ["CI", "BITBUCKET_BUILD_NUMBER", "AGENT_JOBSTATUS"])
 
 
 def skip_or_fail(message):
@@ -128,9 +125,7 @@ def host():
             try:
                 result = requests.get(
                     f"{host}/api/v1/user/whoami/",
-                    headers={
-                        "Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"
-                    },
+                    headers={"Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"},
                 )
                 if result.status_code in (200, 401):
                     return host
@@ -140,8 +135,7 @@ def host():
                 errors[host] = str(err)
 
     pytest.skip(
-        "Couldn't find the API server, can't test against it.\n"
-        + "\n".join(k + " " + v for k, v in errors.items())
+        "Couldn't find the API server, can't test against it.\n" + "\n".join(k + " " + v for k, v in errors.items())
     )
 
 
@@ -149,17 +143,13 @@ def host():
 def login_session(host):
     try:
         session = requests.Session()
-        session.headers.update(
-            {
-                "Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"
-            }
-        )
+        session.headers.update({"Authorization": f"Basic {base64.b64encode(b'admin:devkey:admin').decode('utf-8')}"})
         return session, host
     except requests.ConnectionError as err:
         pytest.skip(str(err))
 
 
-def get_api_data(
+def get_api_data(  # noqa: C901
     session,
     url,
     params=None,
@@ -187,9 +177,7 @@ def get_api_data(
                 files=files,
             )
         elif method == "DELETE":
-            res = session.delete(
-                url, data=data, params=params, verify=False, headers=headers
-            )
+            res = session.delete(url, data=data, params=params, verify=False, headers=headers)
         elif method == "PUT":
             res = session.put(
                 url,
@@ -226,6 +214,4 @@ def get_api_data(
                         json=res_data,
                     )
                 except JSONDecodeError:
-                    raise APIError(
-                        f"{res.status_code}: {res.content}", content=res.content
-                    )
+                    raise APIError(f"{res.status_code}: {res.content}", content=res.content)

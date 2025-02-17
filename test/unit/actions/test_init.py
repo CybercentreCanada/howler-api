@@ -32,7 +32,8 @@ def test_execute_bad_plugin():
     assert result["title"] == "Unknown Action"
     assert (
         result["message"]
-        == "The operation ID provided (doesntexistandneverwillpleasedontusethisid) does not match any enabled operations."
+        == "The operation ID provided (doesntexistandneverwillpleasedontusethisid) does not match any enabled "
+        "operations."
     )
 
 
@@ -51,5 +52,6 @@ def test_execute_missing_roles():
     assert result["title"] == "Insufficient permissions"
     assert (
         result["message"]
-        == "The operation ID provided (add_label) requires permissions you do not have (automation_basic). Contact HOWLER Support for more information."
+        == "The operation ID provided (add_label) requires permissions you do not have (automation_basic). Contact "
+        "HOWLER Support for more information."
     )

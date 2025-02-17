@@ -149,7 +149,7 @@ def delete_overview(id: str, user: User, **kwargs):
 @generate_swagger_docs()
 @overview_api.route("/<id>", methods=["PUT"])
 @api_login(required_priv=["R", "W"])
-def update_overview_fields(id: str, user: User, **kwargs):
+def update_overview_content(id: str, user: User, **kwargs):
     """Update an overview's content
 
     Variables:

@@ -1,27 +1,10 @@
 # mypy: ignore-errors
-from enum import Enum, EnumMeta
-from typing import Any, Optional
+from typing import Optional
 
 from howler import odm
 from howler.common.exceptions import HowlerValueError
-
-
-class HowlerEnumMeta(EnumMeta):
-    def __contains__(cls, obj) -> bool:
-        """Check if either the name or value contains the object"""
-        lowercase = str(obj)
-        uppercase = lowercase.upper().replace("-", "_")
-
-        return uppercase in [e.name for e in cls] or lowercase in [e.value for e in cls]
-
-    def __getitem__(cls, name):
-        return super().__getitem__(str(name).upper().replace("-", "_"))
-
-
-class HowlerEnum(Enum, metaclass=HowlerEnumMeta):
-    @classmethod
-    def list(cls):
-        return list(map(lambda c: c.value, cls))
+from howler.odm.howler_enum import HowlerEnum
+from howler.odm.models.lead import Lead
 
 
 class Scrutiny(str, HowlerEnum):
@@ -312,8 +295,8 @@ class HowlerData(odm.Model):
         default=DEFAULT_VOTES,
         description="Votes relating to the hit",
     )
-    dossier: Optional[Any] = odm.Optional(
-        odm.FlattenedObject(description="Raw data provided by the different sources.")
+    dossier: list[Lead] = odm.List(
+        odm.Compound(Lead), default=[], description="A list of leads forming the dossier associated with this hit"
     )
     viewers: list[str] = odm.List(
         odm.Keyword(description="A list of users currently viewing the hit"),

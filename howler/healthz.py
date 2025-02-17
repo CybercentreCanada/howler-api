@@ -2,7 +2,7 @@ from flask import Blueprint, abort, make_response
 
 from howler.common.loader import datastore
 
-API_PREFIX = "/healthz"
+API_PREFIX = "/api/healthz"
 healthz = Blueprint("healthz", __name__, url_prefix=API_PREFIX)
 
 

@@ -151,5 +151,5 @@ def decode(
         logger.debug("Validating token against audience %s", audience)
         return jwt.decode(jwt=access_token, key=key, algorithms=algorithms, audience=audience, **kwargs)  # type: ignore
     except jwt.InvalidTokenError as err:
-        logger.error("Error occurred when decoding JWT:\n%s", repr(err))
+        logger.exception("Error occurred when decoding JWT.")
         raise HowlerValueError("There was an error when decoding your JWT.", cause=err)

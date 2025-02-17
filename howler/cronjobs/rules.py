@@ -190,7 +190,7 @@ def create_executor(rule: Analytic):  # noqa: C901
                 correlated_hits = result["items"]
 
             else:  # pragma: no cover
-                raise HowlerValueError(f"Unknown rule type: {rule.rule_type}")
+                raise HowlerValueError(f"Unknown rule type: {rule.rule_type}")  # noqa: TRY301
 
             if correlated_hits and len(correlated_hits) > 0:
                 create_correlated_bundle(rule, query, correlated_hits)

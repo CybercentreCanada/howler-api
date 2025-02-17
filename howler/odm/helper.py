@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from hashlib import md5
 from math import ceil
 from random import choice, sample
-from typing import cast
+from typing import Any, cast
 
 from howler.common.logging import get_logger
 from howler.config import config
@@ -14,6 +14,7 @@ from howler.helper.discover import get_apps_list
 from howler.odm.base import Model
 from howler.odm.models.hit import Hit
 from howler.odm.models.howler_data import Escalation, Link
+from howler.odm.models.lead import Lead
 from howler.odm.models.user import User
 from howler.odm.randomizer import (
     get_random_filename,
@@ -33,7 +34,7 @@ ESCALATIONS = Escalation.list()
 logger = get_logger(__file__)
 
 
-def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover  # noqa: C901
+def generate_useful_hit(lookups: dict[str, dict[str, Any]], users: list[User], prune_hit: bool = True) -> Hit:  # noqa: C901
     "Create a random, useful/cogent hit for synthetic data"
     hit: Hit = random_model_obj(cast(Model, Hit))
 
@@ -217,6 +218,17 @@ def generate_useful_hit(lookups, users, prune_hit=True):  # pragma: no cover  # 
     hit.howler.bundle_size = 0
     hit.howler.bundles = []
     hit.howler.is_bundle = False
+
+    hit.howler.dossier = [
+        Lead(
+            {
+                "icon": "material-symbols:sound-detection-dog-barking",
+                "label": {"en": "Example Lead", "fr": "Exemple d'un lead"},
+                "format": "markdown",
+                "content": "# Hello, World!\n\nThis is a snippet of markdown to show off an example lead.",
+            }
+        )
+    ]
 
     for log in hit.howler.log:
         log.previous_version = get_random_id()

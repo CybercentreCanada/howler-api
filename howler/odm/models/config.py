@@ -4,7 +4,7 @@ import os
 from typing import Optional
 
 from howler import odm
-from howler.common.loader import APP_NAME, APP_PREFIX
+from howler.common.loader import APP_NAME
 
 OAUTH_AUTO_PROPERTY_TYPE = ["access", "classification", "role"]
 
@@ -115,24 +115,6 @@ DEFAULT_DATASTORE = {
     ],
     "ilm": DEFAULT_ILM,
     "type": "elasticsearch",
-}
-
-
-@odm.model(index=False, store=False, description="Filestore Configuration")
-class Filestore(odm.Model):
-    storage: list[Host] = odm.List(odm.Compound(Host), description="List of filestores used for storage")
-
-
-DEFAULT_FILESTORE = {
-    "storage": [
-        {
-            "name": "minio",
-            "username": f"{APP_PREFIX}_storage_key",
-            "password": "Ch@ngeTh!sPa33w0rd",
-            "scheme": "s3",
-            "host": f"localhost:9000?s3_bucket={APP_PREFIX}-storage&use_ssl=False",
-        }
-    ]
 }
 
 
@@ -482,7 +464,6 @@ class Config(odm.Model):
     auth: Auth = odm.Compound(Auth, default=DEFAULT_AUTH, description="Authentication module configuration")
     core: Core = odm.Compound(Core, default=DEFAULT_CORE, description="Core component configuration")
     datastore: Datastore = odm.Compound(Datastore, default=DEFAULT_DATASTORE, description="Datastore configuration")
-    filestore: Filestore = odm.Compound(Filestore, default=DEFAULT_FILESTORE, description="Filestore configuration")
     logging: Logging = odm.Compound(Logging, default=DEFAULT_LOGGING, description="Logging configuration")
     system: System = odm.Compound(System, default=DEFAULT_SYSTEM, description="System configuration")
     ui: UI = odm.Compound(UI, default=DEFAULT_UI, description="UI configuration parameters")
@@ -492,7 +473,6 @@ DEFAULT_CONFIG = {
     "auth": DEFAULT_AUTH,
     "core": DEFAULT_CORE,
     "datastore": DEFAULT_DATASTORE,
-    "filestore": DEFAULT_FILESTORE,
     "logging": DEFAULT_LOGGING,
     "system": DEFAULT_SYSTEM,
     "ui": DEFAULT_UI,

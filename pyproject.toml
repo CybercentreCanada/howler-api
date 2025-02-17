@@ -55,7 +55,7 @@ module = "howler.odm.models.*"
 disable_error_code = "assignment"
 
 [[tool.mypy.overrides]]
-module = ["howler.odm.base", "howler.filestore.transport.*", "test", "test.*"]
+module = ["howler.odm.base", "test", "test.*"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
@@ -83,10 +83,24 @@ target-version = "py39"
 exclude = ["howler/patched.py"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "C901", "I", "N", "D1", "D2", "ANN", "S"]
+select = [
+    "E",
+    "F",
+    "W",
+    "C901",
+    "I",
+    "N",
+    "D1",
+    "D2",
+    "ANN",
+    "S",
+    "T20",
+    "PIE",
+    "FLY",
+    "TRY",
+]
 ignore = [
     "ANN003",
-    "ANN101",
     "ANN201",
     "ANN401",
     "D100",
@@ -97,6 +111,8 @@ ignore = [
     "D213",
     "N818",
     "S603",
+    "TRY003",
+    "TRY300",
 ]
 exclude = ["howler/patched.py"]
 
@@ -107,18 +123,20 @@ suppress-dummy-args = true
 suppress-none-returning = true
 
 [tool.ruff.lint.per-file-ignores]
-"test/*" = ["D", "ANN", "S", "N818"]
-"build_scripts/*" = ["D", "ANN", "S", "N818"]
+"test/*" = ["D", "ANN", "S", "N818", "TRY", "PIE"]
+"test/utils/*" = ["T20"]
+"build_scripts/*" = ["D", "ANN", "S", "N818", "T20", "TRY"]
 "howler/odm/random*.py" = ["C901", "S105", "S311"]
+"howler/security/__init__.py" = ["TRY301"]
+"howler/external/*.py" = ["T20"]
 "howler/odm/helper.py" = ["S311"]
-"howler/common/classification.py" = ["D", "ANN", "C901"]
+"howler/common/classification.py" = ["D", "ANN", "C901", "TRY"]
 "howler/common/iprange.py" = ["D", "ANN", "C901"]
 "howler/common/random_user.py" = ["S311"]
 "howler/helper/ws.py" = ["C901", "D101", "D102"]
 "howler/odm/base.py" = ["D", "ANN", "C901"]
 "howler/odm/models/*" = ["D", "ANN", "C901"]
 "howler/datastore/*" = ["D", "ANN", "C901"]
-"howler/filestore/*" = ["D", "ANN", "C901"]
 "howler/remote/datatypes/*" = ["D", "ANN", "C901"]
 
 ###################
@@ -127,7 +145,7 @@ suppress-none-returning = true
 [tool.poetry]
 package-mode = true
 name = "howler-api"
-version = "2.6.0"
+version = "2.7.0"
 description = "Howler - API server"
 authors = [
     "Canadian Centre for Cyber Security <howler@cyber.gc.ca>",
@@ -219,7 +237,7 @@ pytest-cov = "^4.1.0"
 mock = "^5.1.0"
 mypy-extensions = "^1.0.0"
 coverage = { extras = ["toml"], version = "^7.4.4" }
-ruff = "^0.5.7"
+ruff = "^0.8.0"
 
 [tool.poetry.group.types.dependencies]
 types-PyYAML = "6.0.12.12"

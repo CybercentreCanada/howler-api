@@ -5,7 +5,9 @@ from pathlib import Path
 
 import yaml
 
+import howler.odm.base as base
 from howler import odm
+from howler.odm.models import config
 
 root_dir = Path(__file__).parent.parent
 odm_path = root_dir / "howler/odm/models"
@@ -24,7 +26,6 @@ MODELS_TO_EXPORT = [
     ),
 ]
 
-import howler.odm.base as base
 
 intro_data = """
     docs/odm/getting_started.md
@@ -41,7 +42,7 @@ intro_data = """
 
     |Name|Description|
     |:---|:----------|
-"""
+"""  # noqa: E501
 
 for class_name, _class in inspect.getmembers(
     base,
@@ -65,14 +66,12 @@ intro_data += """
     |:material-alert-box-outline: Deprecated|This field has been deprecated in the model. See field's description for more details.|
 
     __Note__: Fields that are ":material-alert-box-outline: Deprecated" that are still shown in the docs will still work as expected but you're encouraged to update your configuration as soon as possible to avoid future deployment issues.
-    """
+    """  # noqa: E501
 
 print(textwrap.dedent(intro_data).strip())
 
 print("\n\n")
 
-
-from howler.odm.models import config
 
 config_md = config.Config.markdown(url_prefix="#")
 
@@ -104,7 +103,7 @@ print(
       ```
 
 
-"""
+"""  # noqa: E501
     )
 )
 

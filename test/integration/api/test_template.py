@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import pytest
 from conftest import APIError, get_api_data
@@ -22,7 +23,7 @@ def datastore(datastore_connection):
 def test_add_template(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
-    template_data = {}
+    template_data: dict[str, Any] = {}
 
     with pytest.raises(APIError) as err:
         get_api_data(
@@ -98,17 +99,13 @@ def test_remove_template(datastore: HowlerDatastore, login_session):
         session,
         f"{host}/api/v1/template/",
         method="POST",
-        data=json.dumps(
-            {"analytic": "testremove", "type": "global", "keys": ["howler.hash"]}
-        ),
+        data=json.dumps({"analytic": "testremove", "type": "global", "keys": ["howler.hash"]}),
     )
 
     datastore.template.commit()
     assert total + 1 == datastore.template.search("template_id:*")["total"]
 
-    res = get_api_data(
-        session, f"{host}/api/v1/template/{create_res['template_id']}/", method="DELETE"
-    )
+    res = get_api_data(session, f"{host}/api/v1/template/{create_res['template_id']}/", method="DELETE")
 
     datastore.template.commit()
     assert res is None
@@ -122,9 +119,7 @@ def test_template_conflict(datastore: HowlerDatastore, login_session):
         session,
         f"{host}/api/v1/template/",
         method="POST",
-        data=json.dumps(
-            {"analytic": "test-conflict", "type": "global", "keys": ["howler.hash"]}
-        ),
+        data=json.dumps({"analytic": "test-conflict", "type": "global", "keys": ["howler.hash"]}),
     )
 
     datastore.template.commit()
@@ -134,9 +129,7 @@ def test_template_conflict(datastore: HowlerDatastore, login_session):
             session,
             f"{host}/api/v1/template/",
             method="POST",
-            data=json.dumps(
-                {"analytic": "test-conflict", "type": "global", "keys": ["howler.hash"]}
-            ),
+            data=json.dumps({"analytic": "test-conflict", "type": "global", "keys": ["howler.hash"]}),
         )
 
     assert "already exists" in str(err.value)
