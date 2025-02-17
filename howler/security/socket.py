@@ -47,7 +47,7 @@ def websocket_auth(required_type: Optional[list[str]] = None, required_priv: Opt
                 user, privs = auth_service.bearer_auth(auth_header)
 
                 if not user or not privs:
-                    raise AuthenticationException()
+                    raise AuthenticationException()  # noqa: TRY301
 
                 if not set(required_priv) & set(privs):
                     logger.warning(f"{ws_id}: Authentication header is invalid")

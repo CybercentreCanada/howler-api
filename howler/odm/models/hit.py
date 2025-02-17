@@ -38,6 +38,7 @@ from howler.odm.models.gcp import GCP
 from howler.odm.models.howler_data import HowlerData
 
 
+
 @odm.model(index=True, store=True, description="ECS model version")
 class ECSVersion(odm.Model):
     version: str = odm.Keyword(
@@ -350,4 +351,4 @@ if __name__ == "__main__":
     from pprint import pprint
 
     fields = {k: f"{v.__class__.__name__}{' (array)' if v.multivalued else ''}" for k, v in Hit.flat_fields().items()}
-    pprint(fields)
+    pprint(fields)  # noqa: T203

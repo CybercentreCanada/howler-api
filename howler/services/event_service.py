@@ -21,6 +21,8 @@ def emit(event: str, data: Any):
         event (str): The event id
         data (Any): A JSON-serializable package of data related to the event id
     """
+    logger.debug("Recieved emit request for event type %s", event)
+
     if not DEBUG and not HWL_USE_WEBSOCKET_API:
         res = None
         if config.ui.websocket_url:
@@ -29,12 +31,15 @@ def emit(event: str, data: Any):
             if HWL_INTERPOD_COMMS_SECRET == "secret":  # noqa: S105
                 logger.warning("Using default interpod secret! DO NOT allow this on a production instance.")
 
-            res = requests.post(
-                f"{config.ui.websocket_url}/{event}",
-                json=data,
-                auth=HTTPBasicAuth("user", HWL_INTERPOD_COMMS_SECRET),
-                timeout=5,
-            )
+            try:
+                res = requests.post(
+                    f"{config.ui.websocket_url}/{event}",
+                    json=data,
+                    auth=HTTPBasicAuth("user", HWL_INTERPOD_COMMS_SECRET),
+                    timeout=5,
+                )
+            except Exception:
+                logger.exception("Error on connection to websocket server.")
 
         if res is None or not res.ok:
             logger.fatal(

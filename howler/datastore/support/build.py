@@ -2,115 +2,25 @@ from typing import Union
 
 from howler.common.exceptions import HowlerNotImplementedError, HowlerValueError
 from howler.common.logging import get_logger
+from howler.datastore.constants import ANALYZER_MAPPING, NORMALIZER_MAPPING, TYPE_MAPPING
 from howler.odm import (
-    IP,
-    MAC,
-    MD5,
-    SHA1,
-    SHA256,
-    URI,
-    UUID,
     Any,
     Boolean,
     Classification,
-    ClassificationString,
     Compound,
     Date,
-    Domain,
-    Email,
-    Enum,
     FlattenedObject,
     Float,
     Integer,
     Json,
     Keyword,
     List,
-    LowerKeyword,
     Mapping,
     Optional,
-    PhoneNumber,
-    Platform,
-    Processor,
-    SSDeepHash,
     Text,
-    UpperKeyword,
-    URIPath,
-    ValidatedKeyword,
 )
 
 logger = get_logger(__file__)
-
-# Simple types can be resolved by a direct mapping
-__type_mapping = {
-    Keyword: "keyword",
-    Boolean: "boolean",
-    Integer: "integer",
-    Float: "float",
-    Date: "date",
-    Text: "text",
-    Classification: "keyword",
-    ClassificationString: "keyword",
-    Enum: "keyword",
-    UUID: "keyword",
-    IP: "ip",
-    Domain: "keyword",
-    Email: "keyword",
-    URI: "keyword",
-    URIPath: "keyword",
-    MAC: "keyword",
-    PhoneNumber: "keyword",
-    SSDeepHash: "text",
-    SHA1: "keyword",
-    SHA256: "keyword",
-    MD5: "keyword",
-    Platform: "keyword",
-    Processor: "keyword",
-    FlattenedObject: "nested",
-    Any: "keyword",
-    UpperKeyword: "keyword",
-    LowerKeyword: "keyword",
-    Json: "keyword",
-    ValidatedKeyword: "keyword",
-}
-__analyzer_mapping = {
-    SSDeepHash: "text_fuzzy",
-}
-__normalizer_mapping = {
-    SHA1: "lowercase_normalizer",
-    SHA256: "lowercase_normalizer",
-    MD5: "lowercase_normalizer",
-}
-# TODO: We might want to use custom analyzers for Classification and Enum and not create special backmapping cases
-back_mapping = {
-    v: k
-    for k, v in __type_mapping.items()
-    if k
-    not in [
-        Enum,
-        Classification,
-        UUID,
-        IP,
-        Domain,
-        URI,
-        URIPath,
-        MAC,
-        PhoneNumber,
-        SSDeepHash,
-        Email,
-        SHA1,
-        SHA256,
-        MD5,
-        Platform,
-        Processor,
-        ClassificationString,
-        Any,
-        UpperKeyword,
-        LowerKeyword,
-        Json,
-        ValidatedKeyword,
-    ]
-}
-back_mapping.update({x: Keyword for x in set(__analyzer_mapping.values())})
 
 
 def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
@@ -136,7 +46,7 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
         name = ".".join(path)
 
         if isinstance(field, Classification):
-            mappings[name.strip(".")] = set_mapping(field, {"type": __type_mapping[field.__class__]})
+            mappings[name.strip(".")] = set_mapping(field, {"type": TYPE_MAPPING[field.__class__]})
             if "." not in name:
                 mappings.update(
                     {
@@ -148,31 +58,31 @@ def build_mapping(field_data, prefix=None, allow_refuse_implicit=True):
                 )
 
         elif isinstance(field, (Boolean, Integer, Float, Text)):
-            mappings[name.strip(".")] = set_mapping(field, {"type": __type_mapping[field.__class__]})
+            mappings[name.strip(".")] = set_mapping(field, {"type": TYPE_MAPPING[field.__class__]})
 
-        elif field.__class__ in __analyzer_mapping:
+        elif field.__class__ in ANALYZER_MAPPING:
             mappings[name.strip(".")] = set_mapping(
                 field,
                 {
-                    "type": __type_mapping[field.__class__],
-                    "analyzer": __analyzer_mapping[field.__class__],
+                    "type": TYPE_MAPPING[field.__class__],
+                    "analyzer": ANALYZER_MAPPING[field.__class__],
                 },
             )
 
-        elif isinstance(field, Keyword):
-            es_data_type = __type_mapping[field.__class__]
+        elif isinstance(field, (Json, Keyword)):
+            es_data_type = TYPE_MAPPING[field.__class__]
             data: dict[str, Union[str, int]] = {"type": es_data_type}
             if es_data_type == "keyword":
                 data["ignore_above"] = 8191  # The maximum always safe value in elasticsearch
-            if field.__class__ in __normalizer_mapping:
-                data["normalizer"] = __normalizer_mapping[field.__class__]  # type: ignore
+            if field.__class__ in NORMALIZER_MAPPING:
+                data["normalizer"] = NORMALIZER_MAPPING[field.__class__]  # type: ignore
             mappings[name.strip(".")] = set_mapping(field, data)
 
         elif isinstance(field, Date):
             mappings[name.strip(".")] = set_mapping(
                 field,
                 {
-                    "type": __type_mapping[field.__class__],
+                    "type": TYPE_MAPPING[field.__class__],
                     "format": "date_optional_time||epoch_millis",
                 },
             )
@@ -257,7 +167,7 @@ def build_templates(name, field, nested_template=False, index=True) -> list:
             field_template = {
                 "path_match": name,
                 "mapping": {
-                    "type": __type_mapping[field.__class__],
+                    "type": TYPE_MAPPING[field.__class__],
                     "index": field.index,
                 },
             }

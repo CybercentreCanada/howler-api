@@ -21,6 +21,7 @@ from howler import odm
 from howler.common.exceptions import HowlerRuntimeError, HowlerValueError, NonRecoverableError
 from howler.common.loader import APP_NAME
 from howler.datastore.bulk import ElasticBulkPlan
+from howler.datastore.constants import BACK_MAPPING, TYPE_MAPPING
 from howler.datastore.exceptions import (
     DataStoreException,
     HowlerScanError,
@@ -30,7 +31,7 @@ from howler.datastore.exceptions import (
     SearchRetryException,
     VersionConflictException,
 )
-from howler.datastore.support.build import back_mapping, build_mapping
+from howler.datastore.support.build import build_mapping
 from howler.datastore.support.schemas import (
     default_dynamic_strings,
     default_dynamic_templates,
@@ -347,7 +348,6 @@ class ESCollection(Generic[ModelType]):
                     ret_val["deleted"] += deleted
 
                 return ret_val
-
             except elasticsearch.exceptions.NotFoundError as e:
                 if "index_not_found_exception" in str(e):
                     time.sleep(min(retries, self.MAX_RETRY_BACKOFF))
@@ -443,10 +443,7 @@ class ESCollection(Generic[ModelType]):
                 else:
                     raise
 
-        try:
-            return res["response"]
-        except KeyError:
-            return res["task"]["status"]
+        return res.get("response", res["task"]["status"])
 
     def _get_current_alias(self, index: str) -> typing.Optional[str]:
         if self.with_retries(self.datastore.client.indices.exists_alias, name=index):
@@ -466,7 +463,6 @@ class ESCollection(Generic[ModelType]):
                 err_code, _, _ = e.args
                 if err_code == 408 or err_code == "408":
                     log.warning(f"Waiting for index {index} to get to status {min_status}...")
-                    pass
                 else:
                     raise
 
@@ -599,7 +595,6 @@ class ESCollection(Generic[ModelType]):
                     self.with_retries(self._create_ilm_policy)
                 except ILMException:
                     time.sleep(0.1)
-                    pass
 
             # Create WARM index template
             if not self.with_retries(self.datastore.client.indices.exists_template, name=self.name):
@@ -983,7 +978,7 @@ class ESCollection(Generic[ModelType]):
                     key_list.remove(row["_id"])
                     add_to_output(row["_source"], row["_id"])
                 except ValueError:
-                    log.error(f'MGet returned multiple documents for id: {row["_id"]}')
+                    log.exception(f'MGet returned multiple documents for id: {row["_id"]}')
 
             if key_list and self.archive_access:
                 for row in self.scan_with_retry(query={"ids": {"values": key_list}}, index=f"{self.name}-*"):
@@ -991,7 +986,7 @@ class ESCollection(Generic[ModelType]):
                         key_list.remove(row["_id"])
                         add_to_output(row["_source"], row["_id"])
                     except ValueError:
-                        log.error(f'MGet returned multiple documents for id: {row["_id"]}')
+                        log.exception(f'MGet returned multiple documents for id: {row["_id"]}')
 
         if key_list and error_on_missing:
             raise MultiKeyError(key_list, out)
@@ -1415,13 +1410,12 @@ class ESCollection(Generic[ModelType]):
             )
         except elasticsearch.NotFoundError as e:
             log.warning("Update - elasticsearch.NotFoundError: %s %s", e.message, e.info)
-            pass
         except elasticsearch.BadRequestError as e:
             log.warning("Update - elasticsearch.BadRequestError: %s %s", e.message, e.info)
             return False
         except VersionConflictException as e:
             log.warning("Update - elasticsearch.ConflictError: %s", e.message)
-            raise e
+            raise
         except Exception as e:
             log.warning("Update - Generic Exception: %s", str(e))
             return False
@@ -1652,7 +1646,6 @@ class ESCollection(Generic[ModelType]):
                 )
 
             return result
-
         except (
             elasticsearch.ConnectionError,
             elasticsearch.ConnectionTimeout,
@@ -1920,6 +1913,7 @@ class ESCollection(Generic[ModelType]):
             }
 
             return ret_data
+
         except (elasticsearch.TransportError, elasticsearch.RequestError) as e:
             try:
                 err_msg = e.info["error"]["root_cause"][0]["reason"]  # type: ignore
@@ -2239,7 +2233,7 @@ class ESCollection(Generic[ModelType]):
     @staticmethod
     def _get_odm_type(ds_type):
         try:
-            return back_mapping[ds_type].__name__.lower()
+            return BACK_MAPPING[ds_type].__name__.lower()
         except KeyError:
             return ds_type.lower()
 
@@ -2336,16 +2330,18 @@ class ESCollection(Generic[ModelType]):
     def _ilm_policy_exists(self):
         try:
             self.datastore.client.ilm.get_lifecycle(name=f"{self.name}_policy")
-            return True
         except elasticsearch.NotFoundError:
             return False
+        else:
+            return True
 
     def _delete_ilm_policy(self):
         try:
             self.datastore.client.ilm.delete_lifecycle(name=f"{self.name}_policy")
-            return True
         except elasticsearch.ApiError:
             return False
+        else:
+            return True
 
     def _create_ilm_policy(self):
         data_base = {
@@ -2424,6 +2420,9 @@ class ESCollection(Generic[ModelType]):
         field_types = [field.__name__.lower()]
         if field.__bases__[0] != _Field:
             field_types.extend(self.__get_possible_fields(field.__bases__[0]))
+
+        if field_type := TYPE_MAPPING.get(field, None):
+            field_types.append(field_type)
 
         return field_types
 
@@ -2510,7 +2509,6 @@ class ESCollection(Generic[ModelType]):
                     self.with_retries(self._create_ilm_policy)
                 except ILMException:
                     time.sleep(0.1)
-                    pass
 
             # Create WARM index template
             if not self.with_retries(self.datastore.client.indices.exists_template, name=self.name):

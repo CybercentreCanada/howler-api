@@ -244,7 +244,7 @@ def login(**_):  # noqa: C901
         # First, we'll try oauth
         if oauth_provider:
             if not config.auth.oauth.enabled:
-                raise InvalidDataException("OAuth is disabled.")
+                raise InvalidDataException("OAuth is disabled.")  # noqa: TRY301
 
             oauth = current_app.extensions.get("authlib.integrations.flask_client")
             if not oauth:
@@ -323,7 +323,7 @@ def login(**_):  # noqa: C901
         # No oauth provider was specified, so we fall back to user/pass or user/apikey
         elif user and (password or apikey):
             if password and apikey:
-                raise InvalidDataException("Cannot specify password and API key.")
+                raise InvalidDataException("Cannot specify password and API key.")  # noqa: TRY301
 
             user_data, priv = auth_service.basic_auth(
                 f"{user}:{password or apikey}",
@@ -334,12 +334,12 @@ def login(**_):  # noqa: C901
             )
 
             if not user_data:
-                raise AuthenticationException("User does not exist, or authentication was invalid")
+                raise AuthenticationException("User does not exist, or authentication was invalid")  # noqa: TRY301
 
             logged_in_uname = user_data["uname"]
 
         else:
-            raise AuthenticationException("Not enough information to proceed with authentication")
+            raise AuthenticationException("Not enough information to proceed with authentication")  # noqa: TRY301
 
     # For sanity's sake, we throw exceptions throughout the authentication code and simply catch the exceptions here to
     # return the corresponding HTTP Code to the user
@@ -354,8 +354,8 @@ def login(**_):  # noqa: C901
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))
 
-    except HowlerException as err:
-        logger.exception(f"Internal Authentication Error. (U:{user} - IP:{ip}) [{err}]")
+    except HowlerException:
+        logger.exception(f"Internal Authentication Error. (U:{user} - IP:{ip})")
         return internal_error(
             err="Unhandled exception occured while Authenticating. Contact your administrator.",
         )

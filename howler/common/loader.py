@@ -191,13 +191,3 @@ def datastore(config=None, archive_access=True):
         _datastore = HowlerDatastore(ESStore(config=config, archive_access=archive_access))
 
     return _datastore
-
-
-def filestore(config=None, connection_attempts=None):
-    """Get a filestore connection"""
-    from howler.filestore import FileStore
-
-    if not config:
-        config = get_config()
-
-    return FileStore(*config.filestore.storage, connection_attempts=connection_attempts)

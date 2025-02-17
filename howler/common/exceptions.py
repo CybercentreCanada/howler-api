@@ -23,43 +23,29 @@ class HowlerException(Exception):
 class InvalidClassification(HowlerException):
     """Exception for Invalid Classification"""
 
-    pass
-
 
 class InvalidDefinition(HowlerException):
     """Exception for Invalid Definition"""
-
-    pass
 
 
 class InvalidRangeException(HowlerException):
     """Exception for Invalid Range"""
 
-    pass
-
 
 class NonRecoverableError(HowlerException):
     """Exception for an unrecoverable error"""
-
-    pass
 
 
 class RecoverableError(HowlerException):
     """Exception for a recoverable error"""
 
-    pass
-
 
 class ConfigException(HowlerException):
     """Exception thrown due to invalid configuration"""
 
-    pass
-
 
 class ResourceExists(HowlerException):
     """Exception thrown due to a pre-existing resource"""
-
-    pass
 
 
 class VersionConflict(HowlerException):
@@ -114,25 +100,17 @@ class HowlerRuntimeError(HowlerException, RuntimeError):
 class NotFoundException(HowlerException):
     """Exception thrown when a resource cannot be found"""
 
-    pass
-
 
 class AccessDeniedException(HowlerException):
     """Exception thrown when a resource cannot be accessed by a user"""
-
-    pass
 
 
 class InvalidDataException(HowlerException):
     """Exception thrown when user-provided data is invalid"""
 
-    pass
-
 
 class AuthenticationException(HowlerException):
     """Exception thrown when a user cannot be authenticated"""
-
-    pass
 
 
 class Chain(object):

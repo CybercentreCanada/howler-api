@@ -117,9 +117,7 @@ def test_comments(datastore: HowlerDatastore, login_session):
         data=json.dumps([resp["comment"][0]["id"]]),
     )
 
-    final_analytic = get_api_data(
-        session, f"{host}/api/v1/analytic/{analytic.analytic_id}"
-    )
+    final_analytic = get_api_data(session, f"{host}/api/v1/analytic/{analytic.analytic_id}")
 
     assert len(final_analytic["comment"]) == len(resp["comment"]) - 1
 
@@ -127,9 +125,7 @@ def test_comments(datastore: HowlerDatastore, login_session):
 def test_favourite(datastore: HowlerDatastore, login_session):
     session, host = login_session
 
-    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")[
-        "username"
-    ]
+    uname = get_api_data(session, f"{host}/api/v1/user/whoami", method="GET")["username"]
 
     analytic: Analytic = datastore.analytic.search("analytic_id:*")["items"][0]
 
@@ -142,10 +138,7 @@ def test_favourite(datastore: HowlerDatastore, login_session):
 
     datastore.user.commit()
 
-    assert (
-        analytic.analytic_id
-        in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_analytics"]
-    )
+    assert analytic.analytic_id in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_analytics"]
 
     get_api_data(
         session,
@@ -155,12 +148,7 @@ def test_favourite(datastore: HowlerDatastore, login_session):
 
     datastore.user.commit()
 
-    assert (
-        analytic.analytic_id
-        not in datastore.user.search(f"uname:{uname}")["items"][0][
-            "favourite_analytics"
-        ]
-    )
+    assert analytic.analytic_id not in datastore.user.search(f"uname:{uname}")["items"][0]["favourite_analytics"]
 
 
 def test_delete(datastore: HowlerDatastore, login_session):

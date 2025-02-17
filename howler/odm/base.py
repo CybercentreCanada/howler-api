@@ -21,6 +21,7 @@ from enum import EnumMeta
 from typing import Any as _Any
 from typing import Dict, Tuple, Union
 from typing import Mapping as _Mapping
+from venv import logger
 
 import arrow
 import validators
@@ -828,6 +829,10 @@ class List(_Field):
                 **kwargs,
             )
 
+        if value is None:
+            logger.warning("Value is None, but optional is not set to True. Using an empty list to avoid errors.")
+            value = []
+
         return TypedList(self.child_type, *value, **kwargs)
 
     def apply_defaults(self, index, store):
@@ -1072,7 +1077,7 @@ class Model:
             elif isinstance(sub_field, (List, Optional, Compound)) and sub_name != "":
                 out.update(
                     Model._recurse_fields(
-                        ".".join([name, sub_name]),
+                        f"{name}.{sub_name}",
                         sub_field.child_type,
                         show_compound,
                         skip_mappings,
@@ -1081,7 +1086,7 @@ class Model:
                 )
 
             elif sub_name:
-                out[".".join([name, sub_name])] = sub_field
+                out[f"{name}.{sub_name}"] = sub_field
 
             else:
                 out[name] = sub_field

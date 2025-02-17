@@ -8,8 +8,6 @@ from howler.datastore.operations import OdmUpdateOperation
 class WorkflowException(HowlerException):
     "Exception for errors caused during processing of a workflow"
 
-    pass
-
 
 class Transition(TypedDict):
     """Typed Dict outlining the propertyies of a valid transition object"""

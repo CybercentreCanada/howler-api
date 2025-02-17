@@ -43,7 +43,7 @@ def _timestamp_to_ms(ts: str) -> float:
 def epoch_to_iso(t: float) -> str:
     """Convert an epoch (in float format) to an ISO formatted string"""
     s = datetime.utcfromtimestamp(t).isoformat()
-    return "".join((s, "Z"))
+    return f"{s}Z"
 
 
 def epoch_to_local(t: float) -> str:

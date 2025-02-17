@@ -85,7 +85,8 @@ def get_configuration(user: User, **kwargs):
                 "banner": config.ui.banner,
                 "banner_level": config.ui.banner_level,
             },
-            "features": {},
+            "features": {
+            },
         },
         "c12nDef": classification_definition,
         "indexes": list_all_fields("admin" in user["type"] if user is not None else False),

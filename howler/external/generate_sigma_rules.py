@@ -10,7 +10,7 @@ def main():
     print("Generating sigma yaml")
 
     git_dir = Path(mkdtemp())
-    subprocess.call(shlex.split((f"git clone https://github.com/SigmaHQ/sigma.git {git_dir} --depth 1")))
+    subprocess.call(shlex.split((f"git clone git@github.com:SigmaHQ/sigma.git {git_dir} --depth 1")))
 
     output_dir = Path(__file__).parent.parent / "odm" / "sigma"
     if not output_dir.exists():
