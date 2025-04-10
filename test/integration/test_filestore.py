@@ -173,20 +173,6 @@ def test_file():
             common_actions(fs)
 
 
-# This currently doesn't run on WSL, commenting out until we actually use S3
-# def test_s3():
-#     """
-#     Test Amazon S3 FileStore by fetching a test file from
-#     the assemblyline-support bucket on Amazon S3.
-#     """
-#     fs = FileStore(
-#         "s3://AKIAIIESFCKMSXUP6KWQ:Uud08qLQ48Cbo9RB7b+H+M97aA2wdR8OXaHXIKwL@"
-#         "s3.amazonaws.com/?s3_bucket=assemblyline-support&aws_region=us-east-1"
-#     )
-#     assert fs.exists("al4_s3_pytest.txt") != []
-#     assert fs.get("al4_s3_pytest.txt") is not None
-
-
 def test_minio():
     """
     Test Minio FileStore by pushing and fetching back content from it.
